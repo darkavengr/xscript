@@ -1,0 +1,9 @@
+#!/bin/bash
+for f in `ls`;do
+
+ start=`grep "{" $f | wc -l`
+ end=`grep "}" $f | wc -l`
+ if [ $start != $end ]; then echo $f $start $end;fi
+
+done
+

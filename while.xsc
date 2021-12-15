@@ -1,0 +1,11 @@
+a = 1
+
+while a != 10
+ if a = 2 then
+  print "twooooooooo"
+ endif
+
+print a
+
+a = a + 1
+wend

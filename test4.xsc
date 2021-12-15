@@ -1,0 +1,4 @@
+for count = 1 to 10
+print count
+next count
+
