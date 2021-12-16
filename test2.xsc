@@ -1,6 +1,0 @@
-function multiply(a as integer,b as integer,c as integer)
-return a * b
-endfunction
-
-print multiply(1,2,3)
-

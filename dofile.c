@@ -712,11 +712,12 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=lc[l];
              if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
              if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
- 	     tokenize_line(buf,tokens,"+-*/^&|()\009");			/* tokenize line */
+ 	     tokenize_line(buf,tokens," \009");			/* tokenize line */
 
              touppercase(tokens[0]);
-
+	
   	     if(strcmp(tokens[0],"NEXT") == 0) {
+
 	      lc[l]=currentfunction->saveinformation[currentfunction->nestcount].lc;
 	      currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;		/* restore position */   	    
 	
@@ -795,7 +796,7 @@ do {
        while(*currentptr != 0) {
 
         currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
-        tc=tokenize_line(buf,tokens,"+-*/^&|()\009");
+        tc=tokenize_line(buf,tokens," \009");
 
         if(strcmp(tokens[0],"wend") == 0) {
          currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -810,7 +811,7 @@ do {
       if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
       if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
-      tc=tokenize_line(buf,tokens,"+-*/^&|()\009");
+      tc=tokenize_line(buf,tokens," \009");
 
       if(strcmp(tokens[0],"wend") == 0) {
        lc[l]=currentfunction->saveinformation[currentfunction->nestcount].lc;
@@ -892,7 +893,7 @@ int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
    if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
    if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
-   tokenize_line(buf,tokens,"+-*/^&|()\009");
+   tokenize_line(buf,tokens," \009");
 
    touppercase(tokens[0]);           
    if((strcmp(tokens[0],"WEND") == 0) || (strcmp(tokens[0],"NEXT") == 0)) {
@@ -1053,9 +1054,8 @@ do {
   b=buf;
   b--;
 
-  if(*b == '\n') break;
   if(*b == 0) break;
-
+  if(*b == '\n') break;
 } while(*b != 0);		/* until end of line */
 
 

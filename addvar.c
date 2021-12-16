@@ -151,11 +151,8 @@ next=currentfunction->vars;
     if(x == 0) x=1;
     if(y == 0) y=1;
 
-    printf("xxxxxxxxxx= %d %d %d\n",x,y,x*y);
     switch(next->type) {
-     case VAR_NUMBER:	
-       printf("val->d=%.6g\n",val->d);
- 		
+     case VAR_NUMBER:	 		
        next->val[x*y].d=val->d;
        break;
 
@@ -456,6 +453,8 @@ int function(char *name,char *args) {
 
   if(strcmp(tokens[0],"ENDFUNCTION") == 0) break;  
 }    while(*currentptr != 0); 			/* until end */
+
+// asm("int $3");
 
  return;
 }
