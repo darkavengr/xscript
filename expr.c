@@ -229,30 +229,29 @@ char *buf[10];
 	   ifexpr=EQUAL;
 	   break;
 	  }
-
-	  if(strcmp(tokens[exprpos],"!=") == 0) {
+	  else if(strcmp(tokens[exprpos],"!=") == 0) {
 	   ifexpr=NOTEQUAL;
 	   break;
 	  }
-
-	  if(strcmp(tokens[exprpos],">") == 0) {
+	  else if(strcmp(tokens[exprpos],">") == 0) {
 	   ifexpr=GTHAN;
 	   break;	
           }
-
-	  if(strcmp(tokens[exprpos],"<") == 0) {           
+	  else if(strcmp(tokens[exprpos],"<") == 0) {           
 	   ifexpr=LTHAN;
            break;
 	  }
-
-	  if(strcmp(tokens[exprpos],"=<") == 0) {
+	  else if(strcmp(tokens[exprpos],"=<") == 0) {
            ifexpr=EQLTHAN;
            break;
 	  }
-
-	  if(strcmp(tokens[exprpos],">=") == 0) {
+	  else if(strcmp(tokens[exprpos],">=") == 0) {
            ifexpr=EQGTHAN;
            break;
+	  }
+	  else
+	  {
+	   return(EQUAL);
 	  }
  }
         
@@ -282,7 +281,7 @@ char *buf[10];
 	   return(exprone >= exprtwo);
 
 	   default:
-	    return(0);
+	    return(-1);
           }
 
 	

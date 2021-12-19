@@ -15,9 +15,9 @@
 char *llcerrs[] = { "No error","Missing label","File not found","No parameters for statement","Bad expression",\
 		    "IF statement without ELSEIF or ENDIF","FOR statement without NEXT",\
 		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
-		    "Invalid variable name","Out of memory","EXIT FOR without FOR","Read error","Syntax error",\
+		    "Invalid variable name","Out of memory","BREAK outside FOR or WHILE loop","Read error","Syntax error",\
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
-		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments","EXIT LOOP without WHILE",
+		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments","",
 		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF" };
 
 char *readlinefrombuffer(char *buf,char *linebuf,int size);
@@ -38,7 +38,7 @@ int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int dim_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
@@ -59,10 +59,11 @@ statement statements[] = { { "IF",&if_statement },\
       { "ENDFUNCTION",&endfunction_statement },\ 
       { "RETURN",&return_statement },\ 
       { "INCLUDE",&include_statement },\ 
-      { "EXIT",&exit_statement },\
       { "DIM",&dim_statement },\
       { "RUN",&run_statement },\
       { "CONTINUE",&continue_statement },\
+      { "NEXT",&next_statement },\
+      { "BREAK",&break_statement },\
       { NULL,NULL } };
 
 extern functions *currentfunction;
@@ -509,7 +510,7 @@ touppercase(tokens[0]);
 
 if((strcmp(tokens[0],"IF") == 0) || (strcmp(tokens[0],"ELSEIF") == 0)) {
   exprtrue=do_condition(tokens,1,tc-1);
-
+ 
   if(exprtrue == 1) {
 		saveexprtrue=exprtrue;
 
@@ -678,12 +679,14 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=lc[l];
  	     tokenize_line(buf,tokens," \009");			/* tokenize line */
 
              touppercase(tokens[0]);
-	
+
   	     if(strcmp(tokens[0],"NEXT") == 0) {
 
 	      lc[l]=currentfunction->saveinformation[currentfunction->nestcount].lc;
+
 	      currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;		/* restore position */   	    
-	
+
+			
 	      if(ifexpr == 1) loopcount.d=loopcount.d-steppos;					/* increment or decrement counter */
  	      if(ifexpr == 0) loopcount.d=loopcount.d+steppos;      
 		
@@ -720,6 +723,13 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if((currentfunction->stat & WHILE_STATEMENT) == 0) print_error(WEND_NOWHILE);
  return;
+}
+
+int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ if((currentfunction->stat & FOR_STATEMENT) == 0) {
+  print_error(NEXT_NO_FOR);
+  return;
+ }
 }
 
 /* 
@@ -827,18 +837,13 @@ int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  
 }
 
-int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  char *buf[MAX_SIZE];
  char *d;
 
- if((strcmp(tokens[1],"FOR") == 0) && ((currentfunction->stat & FOR_STATEMENT) == 0)) {
-  print_error(EXITFOR_NO_FOR);
-  exit(EXITFOR_NO_FOR);
- }
-
- if((strcmp(tokens[1],"LOOP") == 0) && ((currentfunction->stat & WHILE_STATEMENT) == 0)) {
-  print_error(EXITWHILE_NO_LOOP);
-  exit(EXITWHILE_NO_LOOP);
+ if(((currentfunction->stat & FOR_STATEMENT) == 0) && ((currentfunction->stat & WHILE_STATEMENT) == 0)) {
+  print_error(INVALID_BREAK);
+  exit(INVALID_BREAK);
  }
 
  if((currentfunction->stat & FOR_STATEMENT) || (currentfunction->stat & WHILE_STATEMENT)) {
@@ -846,15 +851,16 @@ int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
    currentptr=readlinefrombuffer(currentptr,buf,MAX_SIZE);			/* get data */
    
    if(*currentptr == 0) {			/* at end without next or wend */   
-    print_error(EXITWHILE_NO_LOOP);
-    return(EXITWHILE_NO_LOOP);
+    if((currentfunction->stat & FOR_STATEMENT) == 0) {
+    print_error(FOR_NO_NEXT);
+    return(FOR_NO_NEXT);
    }
 
-   lc[l]++;
-
-   d=*buf+(strlen(buf)-1);
-   if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
-   if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
+    if((currentfunction->stat & WHILE_STATEMENT) == 0) {
+    print_error(WEND_NOWHILE);
+    return(WEND_NOWHILE);
+   }
+  }
 
    tokenize_line(buf,tokens," \009");
 

@@ -16,7 +16,7 @@
 #define ENDFUNCTION_NO_FUNCTION 10
 #define BAD_VARNAME	    11
 #define NO_MEM		    12
-#define EXITFOR_NO_FOR	    13
+#define INVALID_BREAK	    13
 #define READ_ERROR	    14
 #define SYNTAX_ERROR	    15
 #define MISSING_LIBSYM	    16
@@ -27,12 +27,11 @@
 #define WEND_NOWHILE	    21
 #define FUNCTION_IN_USE	    22
 #define TOO_FEW_ARGS	    23
-#define EXITWHILE_NO_LOOP    24
-#define BAD_ARRAY	    25
-#define TYPE_ERROR	    26
-#define BAD_TYPE	    27
-#define CONTINUE_NO_LOOP    28
-#define ELSEIF_NOIF	    29
+#define BAD_ARRAY	    24
+#define TYPE_ERROR	    25
+#define BAD_TYPE	    26
+#define CONTINUE_NO_LOOP    27
+#define ELSEIF_NOIF	    28
 
 #define TRUE 0
 #define FALSE 1
