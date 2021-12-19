@@ -533,7 +533,27 @@ if((strcmp(tokens[0],"IF") == 0) || (strcmp(tokens[0],"ELSEIF") == 0)) {
 
 	  } while((strcmp(tokens[0],"ENDIF") != 0) && (strcmp(tokens[0],"ELSEIF")) != 0);
   }
+}
 
+ if((strcmp(tokens[0],"ELSE") == 0)) {
+  if(exprtrue == 0) {
+	    do {
+    		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+
+		printf("elsebuf=%s\n",buf);
+		doline(buf);
+
+		tokenize_line(buf,tokens," \009");			/* tokenize line */
+
+		touppercase(tokens[0]);
+
+		if(strcmp(tokens[0],"ENDIF") == 0) {
+			currentfunction->stat |= IF_STATEMENT;
+			return;
+		}
+
+	  } while((strcmp(tokens[0],"ENDIF") != 0) && (strcmp(tokens[0],"ELSEIF")) != 0);
+ }
 }
 
  currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
