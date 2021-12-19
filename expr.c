@@ -26,7 +26,6 @@ int bracketcount=-1;
 char *b;
 char *d;
 varval val;
-char *operators="/*+=&|^<>!()";
 val.d=0;
 
 memset(temp,0,((end-1)-start)*MAX_SIZE);
@@ -51,14 +50,6 @@ for(count=start;count<end;count++) {
 if(bracketcount != -1) {				/* mismatched brackets */
  print_error(SYNTAX_ERROR);
  return;
-}
-
-for(count=start;count<end;count++) {
- if((getvartype(temp[count]) == VAR_STRING) && (getvartype(temp[count+1]) != VAR_STRING)) {
-  print_error(TYPE_ERROR);
-  return;
- }
-
 }
 
 if(start+1 == end) {

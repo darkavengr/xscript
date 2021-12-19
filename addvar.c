@@ -304,6 +304,7 @@ char *commapos;
 char *b;
 int expr;
 char *tokens[MAX_SIZE][MAX_SIZE];
+char *arrtokens[MAX_SIZE][MAX_SIZE];
 
 memset(arr,0,MAX_SIZE);			/* clear buffer */
 memset(split,0,sizeof(varsplit)-1);
@@ -339,7 +340,7 @@ if(commapos == NULL) {			/* 2d array */
 
  *--b=0;
 
- tokenize_line(arr,tokens,",");			/* tokenize line */
+ tokenize_line(arr,tokens," ");			/* tokenize line */
 
  split->x=atoi(tokens[0]);		/* get x pos */
  split->y=1;

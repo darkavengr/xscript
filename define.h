@@ -32,6 +32,7 @@
 #define TYPE_ERROR	    26
 #define BAD_TYPE	    27
 #define CONTINUE_NO_LOOP    28
+#define ELSEIF_NOIF	    29
 
 #define TRUE 0
 #define FALSE 1

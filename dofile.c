@@ -13,12 +13,12 @@
 #include "define.h"
 #include "defs.h"
 char *llcerrs[] = { "No error","Missing label","File not found","No parameters for statement","Bad expression",\
-		    "IF statement without ENDIF","FOR statement without NEXT",\
+		    "IF statement without ELSEIF or ENDIF","FOR statement without NEXT",\
 		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
 		    "Invalid variable name","Out of memory","EXIT FOR without FOR","Read error","Syntax error",\
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
 		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments","EXIT LOOP without WHILE",
-		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE" };
+		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF" };
 
 char *readlinefrombuffer(char *buf,char *linebuf,int size);
 
@@ -27,6 +27,7 @@ int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int goto_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int sys_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int if_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int for_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
@@ -41,9 +42,8 @@ int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int dim_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-
+int exprtrue=0;
 extern int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
-char *operators="+-*/^&|() \t";
 
 statement statements[] = { { "IF",&if_statement },\
       { "ELSE",&else_statement },\
@@ -84,10 +84,7 @@ int loadfile(char *filename) {
  int filesize;
  
  handle=fopen(filename,"r");				/* open file */
- if(!handle) {						/* can't open */
-  print_error(MISSING_FILE);
-  return(MISSING_FILE);
- }
+ if(!handle) return(-1);						/* can't open */
 
  fseek(handle,0,SEEK_END);				/* get file size */
  filesize=ftell(handle);
@@ -298,6 +295,11 @@ if(*d == ')') *d=0;	// no )
 if(check_function(functionname) == 0) {	/* user function */
  callfunc(functionname,args);
 } 
+else
+{
+ print_error(INVALID_STATEMENT);
+}
+
 return;
 }
 
@@ -383,14 +385,14 @@ memset(printargs,0,10*MAX_SIZE);
 memset(printtokens,0,10*MAX_SIZE);
 
 printtc=tokenize_line(buf,printargs,",");			/* copy args */
-//substitute_vars(0,printtc,printargs);
+substitute_vars(0,printtc,printargs);
 
 for(count=0;count < printtc;count++) {
  c=*printargs[count];
  
  if(c == '"' || (getvartype(printargs[count]) == VAR_STRING)) {
   valptr=printargs[count];
-  valptr += (strlen(printargs[count])-1);
+  valptr += (strlen(printargs[count])-2);
   
   *valptr=0;
 
@@ -491,7 +493,6 @@ int if_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *buf[MAX_SIZE];
 int count;
 int countx;
-int exprtrue;
 char *d;
 
 if(tc < 1) {						/* not enough parameters */
@@ -501,105 +502,52 @@ if(tc < 1) {						/* not enough parameters */
 
 currentfunction->stat |= IF_STATEMENT;
 
-if(strcmp(tokens[tc-1],"then") != 0) {		/* if single line if */
- for(count=1;count<tc;count++) {
-  if(strcmp(tokens[count],"then") == 0) break;
- }
+while(*currentptr != 0) {
 
- strcpy(buf,tokens[count+1]);		/* copy command */
- strcat(buf," ");
+touppercase(tokens[0]);
 
- for(countx=count+2;countx<tc-1;countx++) {
-  strcat(buf,tokens[countx]);
-  strcat(buf," ");
- }
+printf("token=%s\n",tokens[0]);
 
- strcat(buf,tokens[countx]);		/* copy command */
+exprtrue=do_condition(tokens,1,tc-1);
 
- exprtrue=do_condition(tokens,1,count);			/* do condition */
- if(exprtrue == 1) doline(buf);
+if((strcmp(tokens[0],"IF") == 0) || (strcmp(tokens[0],"ELSEIF") == 0)) {
 
- return;
-}
+  printf("exprtrue=%d\n",exprtrue);
 
-exprtrue=do_condition(tokens,1,tc-1);			/* do condition */
-/*
- * check if expression true or false:
- 
-   if expression is false skip to else or endif
-   if expression is true run until endif  
-*/
+  if(exprtrue == 1) {
 
-if(exprtrue == 0) {						/* expression is false */
- do {      
-  currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+		do {
+    		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
-  if(*currentptr == 0) {
-   print_error(IF_NO_ENDIF);
-   return;
+		printf("buf=%s\n",buf);
+		doline(buf);
+
+		tokenize_line(buf,tokens," \009");			/* tokenize line */
+
+		touppercase(tokens[0]);
+
+		if(strcmp(tokens[0],"ENDIF") == 0) {
+			currentfunction->stat |= IF_STATEMENT;
+			return;
+		}
+
+	  } while((strcmp(tokens[0],"ENDIF") != 0) && (strcmp(tokens[0],"ELSEIF")) != 0);
   }
 
-  d=buf+(strlen(buf)-1);
-   
-  if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
-  if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
-
-  tokenize_line(buf,tokens," \009");			/* tokenize line */
-
-
-  if(strcmp(tokens[0],"else") == 0) goto elseblock;
-        
- } while(strcmp(tokens[0],"endif") != 0);
-
-currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* skip line */
-return;
 }
 
-/* if expression is true, execute until end */
-if(exprtrue == 1) {						/* expression is 1 */
- elseblock:
-  while(strcmp(tokens[0],"endif") != 0) {   
-   currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
-
-   if(*currentptr == 0) {
-//    print_error(IF_NO_ENDIF);
-    return(IF_NO_ENDIF);
-   }
-
-  d=*buf+(strlen(buf)-1);
-  if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
-  if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
-
+ currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
  tokenize_line(buf,tokens," \009");			/* tokenize line */
 
- if(strcmp(tokens[0],"endif") == 0) return;			/* at end of if */
-         
- if(strcmp(tokens[0],"else") == 0)  {				/* if else block and true, skip to endif */
+}
 
-  while(strcmp(tokens[0],"endif") != 0) {   
-   currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
-
-   d=*buf+(strlen(buf)-1);
-   if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
-   if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
-  }
-
-  tokenize_line(buf,tokens," \009");			/* tokenize line */
-  return;			/* at end of if */
- }
-   
- doline(buf);
-
- }
-} 
-
- return;
+//print_error(ENDIF_NOIF);
 }
 
 int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  print_error(ENDIF_NOIF);
 }
- 
+
 /*
  * loop statement
  *

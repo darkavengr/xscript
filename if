@@ -1,0 +1,36 @@
+int if_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *buf[MAX_SIZE];
+int count;
+int countx;
+char *d;
+
+if(tc < 1) {						/* not enough parameters */
+ print_error(SYNTAX_ERROR);
+ return(SYNTAX_ERROR);
+}
+
+currentfunction->stat |= IF_STATEMENT;
+
+while(*currentptr != 0) {
+ currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+ tokenize_line(buf,tokens," \009");			/* tokenize line */
+
+ if((strcmp(tokens[0],"if") == 0) || (strcmp(tokens[0],"elseif") == 0)) {
+   if(do_condition(tokens,1,tc-1) == 1) {
+
+	   while((strcmp(tokens[0],"endif") == 0) {
+    		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+
+		tokenize_line(buf,tokens," \009");			/* tokenize line */
+
+		if(strcmp(tokens[0],"endif") == 0) {
+			currentfunction->stat |= IF_STATEMENT;
+			return;
+		}
+	  }
+  }
+ }  
+}
+
+print_error(IF_NOENDIF);
+}

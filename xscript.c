@@ -41,7 +41,7 @@ else
  dofile(argv[1]);						/* do file */
 }
 
-free_funcs();
+//sfree_funcs();
 
 exit(0);
 }
