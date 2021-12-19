@@ -42,7 +42,7 @@ int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int dim_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int exprtrue=0;
+int saveexprtrue=0;
 extern int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
 
 statement statements[] = { { "IF",&if_statement },\
@@ -494,6 +494,7 @@ char *buf[MAX_SIZE];
 int count;
 int countx;
 char *d;
+int exprtrue;
 
 if(tc < 1) {						/* not enough parameters */
  print_error(SYNTAX_ERROR);
@@ -506,20 +507,14 @@ while(*currentptr != 0) {
 
 touppercase(tokens[0]);
 
-printf("token=%s\n",tokens[0]);
-
-exprtrue=do_condition(tokens,1,tc-1);
-
 if((strcmp(tokens[0],"IF") == 0) || (strcmp(tokens[0],"ELSEIF") == 0)) {
-
-  printf("exprtrue=%d\n",exprtrue);
+  exprtrue=do_condition(tokens,1,tc-1);
 
   if(exprtrue == 1) {
+		saveexprtrue=exprtrue;
 
 		do {
     		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
-
-		printf("buf=%s\n",buf);
 		doline(buf);
 
 		tokenize_line(buf,tokens," \009");			/* tokenize line */
@@ -531,16 +526,16 @@ if((strcmp(tokens[0],"IF") == 0) || (strcmp(tokens[0],"ELSEIF") == 0)) {
 			return;
 		}
 
-	  } while((strcmp(tokens[0],"ENDIF") != 0) && (strcmp(tokens[0],"ELSEIF")) != 0);
+	  } while((strcmp(tokens[0],"ENDIF") != 0) && (strcmp(tokens[0],"ELSEIF") != 0)  && (strcmp(tokens[0],"ELSE") != 0));
   }
 }
 
  if((strcmp(tokens[0],"ELSE") == 0)) {
-  if(exprtrue == 0) {
+
+  if(saveexprtrue == 0) {
 	    do {
     		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
-		printf("elsebuf=%s\n",buf);
 		doline(buf);
 
 		tokenize_line(buf,tokens," \009");			/* tokenize line */
