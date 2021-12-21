@@ -229,29 +229,30 @@ char *buf[10];
 	   ifexpr=EQUAL;
 	   break;
 	  }
-	  else if(strcmp(tokens[exprpos],"!=") == 0) {
+
+	  if(strcmp(tokens[exprpos],"!=") == 0) {
 	   ifexpr=NOTEQUAL;
 	   break;
 	  }
-	  else if(strcmp(tokens[exprpos],">") == 0) {
+
+	  if(strcmp(tokens[exprpos],">") == 0) {
 	   ifexpr=GTHAN;
 	   break;	
           }
-	  else if(strcmp(tokens[exprpos],"<") == 0) {           
+
+	  if(strcmp(tokens[exprpos],"<") == 0) {           
 	   ifexpr=LTHAN;
            break;
 	  }
-	  else if(strcmp(tokens[exprpos],"=<") == 0) {
+
+	  if(strcmp(tokens[exprpos],"=<") == 0) {
            ifexpr=EQLTHAN;
            break;
 	  }
-	  else if(strcmp(tokens[exprpos],">=") == 0) {
+
+	  if(strcmp(tokens[exprpos],">=") == 0) {
            ifexpr=EQGTHAN;
            break;
-	  }
-	  else
-	  {
-	   return(EQUAL);
 	  }
  }
         

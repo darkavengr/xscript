@@ -78,6 +78,7 @@ typedef struct {
 typedef struct {
  char *filename[MAX_SIZE];
  FILE *handle;
+ int lc;
 } include;
 
 

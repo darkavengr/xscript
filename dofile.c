@@ -75,8 +75,6 @@ char *endptr=NULL;
 char *readbuf=NULL;
 int bufsize=0;
 int ic=0;
-int l;
-int lc[MAX_SIZE];
 
 include includefiles[MAX_INCLUDE];
 
@@ -132,7 +130,7 @@ int dofile(char *filename) {
 
  //printf("debug\n");
 
- lc[l]=0;
+ includefiles[ic].lc=0;
  
  if(loadfile(filename) == -1) {
   print_error(MISSING_FILE);
@@ -144,7 +142,7 @@ do {
 
  currentptr=readlinefrombuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
- currentfunction->saveinformation[currentfunction->nestcount].lc=lc[l];
+ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;;
 
  if(*currentptr == 0) {
   free(readbuf);
@@ -155,7 +153,7 @@ do {
 
  memset(linebuf,0,MAX_SIZE);
 
- lc[l]++;
+ includefiles[ic].lc++;
 }    while(*currentptr != 0); 			/* until end */
 
  
@@ -184,7 +182,7 @@ int doline(char *lbuf) {
  char *b;
  char *d;
 
- lc[l]++;						/* increment line counter */
+ includefiles[ic].lc++;						/* increment line counter */
 
  /* return if blank line */
 
@@ -386,30 +384,31 @@ memset(printargs,0,10*MAX_SIZE);
 memset(printtokens,0,10*MAX_SIZE);
 
 printtc=tokenize_line(buf,printargs,",");			/* copy args */
-substitute_vars(0,printtc,printargs);
+//substitute_vars(0,printtc,printargs);
 
 for(count=0;count < printtc;count++) {
  c=*printargs[count];
- 
- if(c == '"' || (getvartype(printargs[count]) == VAR_STRING)) {
-  valptr=printargs[count];
-  valptr += (strlen(printargs[count])-2);
+
+ if(strlen(printargs[count]) > 0) {
+  if(c == '"' || (getvartype(printargs[count]) == VAR_STRING)) {
+   valptr=printargs[count];
+   valptr += (strlen(printargs[count])-2);
   
-  *valptr=0;
+   *valptr=0;
 
-  valptr=printargs[count];
-  valptr++;
+   valptr=printargs[count];
+   valptr++;
 
-  printf("%s",valptr);
- }
- else
- {  
-  parttc=tokenize_line(printargs[count],printtokens," ");
+   printf("%s",valptr);
+  }
+  else
+  {  
+   parttc=tokenize_line(printargs[count],printtokens," ");
  
-  exprone=doexpr(printtokens,0,parttc);
-  printf("%.6g ",exprone);
+   exprone=doexpr(printtokens,0,parttc);
+   printf("%.6g ",exprone);
+  }
  }
-
 }
 
 printf("\n");
@@ -430,7 +429,7 @@ char *d;
  if(*(tokens[1]+(strlen(tokens[1])-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
 currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
-currentfunction->saveinformation[currentfunction->nestcount].lc=lc[l];
+currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
 while(*currentfunction->saveinformation[currentfunction->nestcount].bufptr = 0) {
  currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -663,7 +662,7 @@ else
 }
 
 currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
-currentfunction->saveinformation[currentfunction->nestcount].lc=lc[l];
+currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
 // printf("startptr=%lX\n",currentptr);
 
@@ -682,7 +681,7 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=lc[l];
 
   	     if(strcmp(tokens[0],"NEXT") == 0) {
 
-	      lc[l]=currentfunction->saveinformation[currentfunction->nestcount].lc;
+	      includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
 
 	      currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;		/* restore position */   	    
 
@@ -787,7 +786,7 @@ do {
       tc=tokenize_line(buf,tokens," \009");
 
       if(strcmp(tokens[0],"wend") == 0) {
-       lc[l]=currentfunction->saveinformation[currentfunction->nestcount].lc;
+       includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
        currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;
        return;
       }
@@ -1038,6 +1037,6 @@ return(buf);			/* return new position */
 }
 
 int print_error(int llcerr) {
- printf("FATAL ERROR %s %d: %s\n",includefiles[ic].filename,lc[l],llcerrs[llcerr]);
+ printf("FATAL ERROR %s %d: %s\n",includefiles[ic].filename,includefiles[ic].lc,llcerrs[llcerr]);
 }
 
