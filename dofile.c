@@ -24,8 +24,7 @@ char *readlinefrombuffer(char *buf,char *linebuf,int size);
 
 int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int goto_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int sys_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int if_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
@@ -39,7 +38,7 @@ int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int dim_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int saveexprtrue=0;
@@ -52,14 +51,13 @@ statement statements[] = { { "IF",&if_statement },\
       { "WHILE",&while_statement },\
       { "WEND",&wend_statement },\
       { "PRINT",&print_statement },\
-      { "GOTO",&goto_statement },\
-      { "SYS",&sys_statement },\ 
+      { "IMPORT",&import_statement },\ 
       { "END",&end_statement },\ 
       { "FUNCTION",&function_statement },\ 
       { "ENDFUNCTION",&endfunction_statement },\ 
       { "RETURN",&return_statement },\ 
       { "INCLUDE",&include_statement },\ 
-      { "DIM",&dim_statement },\
+      { "DECLARE",&declare_statement },\
       { "RUN",&run_statement },\
       { "CONTINUE",&continue_statement },\
       { "NEXT",&next_statement },\
@@ -76,6 +74,7 @@ char *readbuf=NULL;
 int bufsize=0;
 int ic=0;
 
+MODULES *modules=NULL;
 include includefiles[MAX_INCLUDE];
 
 int loadfile(char *filename) {
@@ -416,71 +415,53 @@ return;
 }
 
 /*
- * goto
  *
+ * import library
  */
 
-int goto_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-char *buf[MAX_SIZE];
-char *d;
-
- d=*tokens[1]+(strlen(tokens[1])-1);
- if(*(tokens[1]+(strlen(tokens[1])-1)) == '\n') *d=0;	/* remove newline from line if found */
- if(*(tokens[1]+(strlen(tokens[1])-1)) == '\r') *d=0;	/* remove newline from line if found */ 
-
-currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
-currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
-
-while(*currentfunction->saveinformation[currentfunction->nestcount].bufptr = 0) {
- currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
-
- if(*(buf+strlen(buf)-1) == ':') {
-  d=*buf+(strlen(buf)-1);
-  if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
-  if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
-
-  if(strcmp(buf,tokens[1]) == 0) return;	/* found label */ 
-  }
- }
-
-print_error(NO_GOTO);
-return(NO_GOTO);
- }
-
-
-/*
- *
- * call system/library function
- */
-
-int sys_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-void  (*dladdr)(void);			/* function pointer */
-void *dlhandle;
+int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;
+void *dlhandle;
+MODULES *next;
+MODULES *last;
 
-dlhandle=dlopen(tokens[0],RTLD_LAZY);			/* open library */
+dlhandle=dlopen(tokens[1],RTLD_LAZY);			/* open library */
 
 if(dlhandle == -1) {			/* can't open */
  print_error(MISSING_FILE);
  return(MISSING_FILE);
 }
 
-dladdr=dlsym(dlhandle,tokens[1]);		/* get address of library function */
-if(dladdr == NULL) {					/* can't call function */
- print_error(MISSING_LIBSYM);
- return(MISSING_LIBSYM);
+if(modules == NULL) {			/* first in list */
+ modules=malloc(sizeof(MODULES));
+ if(modules == NULL) {
+  print_error(NO_MEM);
+  return(-1);
+ }
+
+ last=modules;
+}
+else
+{
+ next=modules;
+
+ while(next != NULL) {
+  last=next;
+  next=next->next;
+ }
 }
 
-/* you are not expected to understand this */
+ last->next=malloc(sizeof(MODULES));
+ if(modules == NULL) {
+  print_error(NO_MEM);
+  return(-1);
+ }
 
-dladdr=dlsym;		/* point to dlsym */
+ next=last->next;
+ strcpy(next->modulename,tokens[1]);
+ next->dladdr=dlsym(dlhandle,tokens[1]);		/* get address of library function */
+ next->dlhandle=dlhandle;
 
-for(count=0;count<tc-1;count++) {
- asm volatile("push %0":: "b"(tokens[count]));
-}
-
-asm volatile("push %0":: "b"(dlhandle));
-dladdr();
 return;
 }
 
@@ -875,7 +856,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  } 
 }
 
-int dim_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  varsplit split;
  int count;
 

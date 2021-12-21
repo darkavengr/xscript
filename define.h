@@ -112,3 +112,10 @@ typedef struct {
  unsigned int (*call_statement)(int,void *);		/* function pointer */
 } statement;
 
+typedef struct {
+ char *modulename[MAX_SIZE];
+ void  (*dladdr)(void);			/* function pointer */
+ void *dlhandle;
+ struct MODULES *next;
+} MODULES;
+
