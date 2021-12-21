@@ -160,7 +160,7 @@ next=currentfunction->vars;
        strcpy(next->val[x*y].s,val->s);
        break;
 
-     case VAR_INTEGER:	     
+     case VAR_INTEGER:	
        next->val[x*y].i=val->i;
        break;
 
@@ -250,7 +250,7 @@ while(next != NULL) {
         strcpy(val->s,next->val[split.x*split.y].s);
         return(0);
 
-       case VAR_INTEGER:	     
+       case VAR_INTEGER:
         val->i=next->val[split.x*split.y].i;
 	return(0);
 

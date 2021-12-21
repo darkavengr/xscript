@@ -238,7 +238,21 @@ if(strcmp(tokens[1],"=") == 0) {
 
  exprone=doexpr(tokens,2,tc);
  
- val.d=exprone;
+char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
+
+ if(vartype == VAR_NUMBER) {
+  val.d=exprone;
+ }
+ else if(vartype == VAR_STRING) {
+  strcpy(val.s,tokens[2]);  
+ }
+ else if(vartype == VAR_INTEGER) {
+  val.i=exprone;
+ }
+ else if(vartype == VAR_SINGLE) {
+  val.f=exprone;
+ }
+
 
  if(vartype == -1) {		/* new variable */ 
   addvar(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
