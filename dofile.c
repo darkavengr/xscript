@@ -202,71 +202,6 @@ tc=tokenize_line(lbuf,tokens," \009");			/* tokenize line */
 
 if(*lbuf+(strlen(lbuf)-1) == ':') return;		/* label */
 
-/*
- *
- * assignment
- *
- */
-
-if(strcmp(tokens[1],"=") == 0) {
- splitvarname(tokens[0],&split);			/* split variable */
-
- vartype=getvartype(split.name);
-
- c=*tokens[2];
-
- if(c == '"') {			/* string */  
-  if(vartype == -1) addvar(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
-  
-  if(vartype != VAR_STRING) {		/* not string */
-   print_error(TYPE_ERROR);
-   exit(TYPE_ERROR);
-  }
-
-  strcpy(val.s,tokens[2]);  
-  updatevar(split.name,&val,split.x,split.y);		/* set variable */
-
-  return;
- }
-
-/* number otherwise */
-
- if(vartype == VAR_STRING) {		/* not string */
-  print_error(TYPE_ERROR);
-  exit(TYPE_ERROR);
- }
-
- exprone=doexpr(tokens,2,tc);
-
- if(vartype == VAR_NUMBER) {
-  val.d=exprone;
- }
- else if(vartype == VAR_STRING) {
-  strcpy(val.s,tokens[2]);  
- }
- else if(vartype == VAR_INTEGER) {
-  val.i=exprone;
- }
- else if(vartype == VAR_SINGLE) {
-  val.f=exprone;
- }
- else
- {
-  val.d=exprone;
- }
-
-
- if(vartype == -1) {		/* new variable */ 
-  addvar(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
-  updatevar(split.name,&val,split.x,split.y);
-  return;
- }
-
- updatevar(split.name,&val,split.x,split.y);
-
- return;
-} 
-
 /* do statement */
 
 statementcount=0;
@@ -309,10 +244,77 @@ if(*d == ')') *d=0;	// no )
 if(check_function(functionname) == 0) {	/* user function */
  callfunc(functionname,args);
 } 
-else
-{
- print_error(INVALID_STATEMENT);
+
+
+/*
+ *
+ * assignment
+ *
+ */
+
+for(count=1;count<tc-1;count++) {
+ if(strcmp(tokens[count],"=") == 0) {
+	 splitvarname(tokens[0],&split);			/* split variable */
+
+	 vartype=getvartype(split.name);
+
+	 c=*tokens[2];
+
+	 if(c == '"') {			/* string */  
+	  if(vartype == -1) addvar(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
+  
+	  if(vartype != VAR_STRING) {		/* not string */
+	   print_error(TYPE_ERROR);
+	   exit(TYPE_ERROR);
+	  }
+
+	  strcpy(val.s,tokens[2]);  
+	  updatevar(split.name,&val,split.x,split.y);		/* set variable */
+
+	  return;
+	 }
+
+	/* number otherwise */
+
+	 if(vartype == VAR_STRING) {		/* not string */
+	  print_error(TYPE_ERROR);
+	  exit(TYPE_ERROR);
+	 }
+
+	 exprone=doexpr(tokens,2,tc);
+
+	 if(vartype == VAR_NUMBER) {
+	  val.d=exprone;
+	 }
+ 	 else if(vartype == VAR_STRING) {
+	  strcpy(val.s,tokens[2]);  
+	 }
+	 else if(vartype == VAR_INTEGER) {
+	  val.i=exprone;
+	 }
+	 else if(vartype == VAR_SINGLE) {
+	  val.f=exprone;
+	 }
+	 else
+	 {
+	  val.d=exprone;
+	 }
+
+
+	 if(vartype == -1) {		/* new variable */ 
+	  addvar(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
+	  updatevar(split.name,&val,split.x,split.y);
+	  return;
+	 }
+
+	 updatevar(split.name,&val,split.x,split.y);
+
+	 return;
+	} 
+
+ return;
 }
+print_error(INVALID_STATEMENT);
 
 return;
 }
