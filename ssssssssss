@@ -1,0 +1,49 @@
+	case VAR_STRING:
+	    if(strpbrk(tokens[count],"[") != NULL) {	/* slice */
+		b=tokens[count];
+		o=buf;
+
+		while(*b != 0) {			/* get variable name */
+			if(*b == ']') break;
+			*o++=*b++;
+		}
+
+commapos=strpbrk(name,",");	/* find comma position */
+if(commapos == NULL) {			/* 2d array */
+ o++;				/* copy subscript */
+ b=arr;
+
+ while(*o != 0) {
+  if(*o == ']' || o == ')') break;
+  *b++=*o++;
+ }
+
+ *--b=0;
+
+ tokenize_line(arr,tokens," ");			/* tokenize line */
+
+ split->x=atoi(tokens[0]);		/* get x pos */
+ split->y=1;
+ return;
+} 
+else
+{				/* 3d array */
+
+ o++;				/* copy subscript */
+ b=arr;
+
+ while(*o != 0) {
+  if(*o == ',') break;
+  *b++=*o++;
+ }
+
+ o++;
+
+ tokenize_line(arr,tokens,",");			/* tokenize line */
+
+ split->x=atoi(tokens[0]);		/* get x pos */
+ split->y=atoi(tokens[1]);		/* get y pos */
+
+ return;
+ }
+

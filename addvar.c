@@ -151,8 +151,11 @@ next=currentfunction->vars;
     if(x == 0) x=1;
     if(y == 0) y=1;
 
+    printf("xxxxxxxxxx= %d %d %d\n",x,y,x*y);
     switch(next->type) {
-     case VAR_NUMBER:	 		
+     case VAR_NUMBER:	
+       printf("val->d=%.6g\n",val->d);
+ 		
        next->val[x*y].d=val->d;
        break;
 
@@ -160,7 +163,7 @@ next=currentfunction->vars;
        strcpy(next->val[x*y].s,val->s);
        break;
 
-     case VAR_INTEGER:	
+     case VAR_INTEGER:	     
        next->val[x*y].i=val->i;
        break;
 
@@ -250,7 +253,7 @@ while(next != NULL) {
         strcpy(val->s,next->val[split.x*split.y].s);
         return(0);
 
-       case VAR_INTEGER:
+       case VAR_INTEGER:	     
         val->i=next->val[split.x*split.y].i;
 	return(0);
 
@@ -304,7 +307,6 @@ char *commapos;
 char *b;
 int expr;
 char *tokens[MAX_SIZE][MAX_SIZE];
-char *arrtokens[MAX_SIZE][MAX_SIZE];
 
 memset(arr,0,MAX_SIZE);			/* clear buffer */
 memset(split,0,sizeof(varsplit)-1);
@@ -340,7 +342,7 @@ if(commapos == NULL) {			/* 2d array */
 
  *--b=0;
 
- tokenize_line(arr,tokens," ");			/* tokenize line */
+ tokenize_line(arr,tokens,",");			/* tokenize line */
 
  split->x=atoi(tokens[0]);		/* get x pos */
  split->y=1;
@@ -454,8 +456,6 @@ int function(char *name,char *args) {
 
   if(strcmp(tokens[0],"ENDFUNCTION") == 0) break;  
 }    while(*currentptr != 0); 			/* until end */
-
-// asm("int $3");
 
  return;
 }

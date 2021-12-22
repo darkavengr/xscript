@@ -57,6 +57,8 @@
 
 #define MAX_NEST_COUNT 256
 
+#define SUBSCRIPT_NUM 1
+#define SUBSCRIPT_STR 2
 #include <stdio.h>
 
 typedef struct {

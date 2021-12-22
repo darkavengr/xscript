@@ -237,8 +237,6 @@ if(strcmp(tokens[1],"=") == 0) {
  }
 
  exprone=doexpr(tokens,2,tc);
- 
-char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
 
  if(vartype == VAR_NUMBER) {
   val.d=exprone;
@@ -252,12 +250,16 @@ char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
  else if(vartype == VAR_SINGLE) {
   val.f=exprone;
  }
+ else
+ {
+  val.d=exprone;
+ }
 
 
  if(vartype == -1) {		/* new variable */ 
   addvar(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
   updatevar(split.name,&val,split.x,split.y);
-  return(0);
+  return;
  }
 
  updatevar(split.name,&val,split.x,split.y);
@@ -397,7 +399,7 @@ memset(printargs,0,10*MAX_SIZE);
 memset(printtokens,0,10*MAX_SIZE);
 
 printtc=tokenize_line(buf,printargs,",");			/* copy args */
-//substitute_vars(0,printtc,printargs);
+substitute_vars(0,printtc,printargs);
 
 for(count=0;count < printtc;count++) {
  c=*printargs[count];

@@ -52,6 +52,14 @@ if(bracketcount != -1) {				/* mismatched brackets */
  return;
 }
 
+for(count=start;count<end;count++) {
+ if((getvartype(temp[count]) == VAR_STRING) && (getvartype(temp[count+1]) != VAR_STRING)) {
+  print_error(TYPE_ERROR);
+  return;
+ }
+
+}
+
 if(start+1 == end) {
  return(atof(temp[start]));
 }
@@ -282,7 +290,7 @@ char *buf[10];
 	   return(exprone >= exprtwo);
 
 	   default:
-	    return(-1);
+	    return(0);
           }
 
 	
