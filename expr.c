@@ -20,7 +20,7 @@ char *token;
 int countx;
 double exprone;
 char *temp[end-start][MAX_SIZE];
-char *brackettemp[MAX_SIZE][MAX_SIZE];
+char *brackettemp[10][MAX_SIZE];
 int countz;
 int bracketcount=-1;
 char *b;
@@ -194,7 +194,7 @@ return(val.d);
 
 int deletefromarray(char *arr[255][255],int n,int end) {
  int count;
- char *temp[255][255];
+ char *temp[10][255];
  int oc=0;
 
  for(count=n;count<end;count++) {

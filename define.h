@@ -57,8 +57,9 @@
 
 #define MAX_NEST_COUNT 256
 
-#define SUBSCRIPT_NUM 1
-#define SUBSCRIPT_STR 2
+#define ARRAY_SUBSCRIPT 1
+#define ARRAY_SLICE	2
+
 #include <stdio.h>
 
 typedef struct {
@@ -88,6 +89,7 @@ typedef struct {
  char *name[MAX_SIZE];
  int x;
  int y;
+ int arraytype;
 } varsplit;
 
 typedef struct {

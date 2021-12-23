@@ -17,7 +17,7 @@ char *llcerrs[] = { "No error","Missing label","File not found","No parameters f
 		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
 		    "Invalid variable name","Out of memory","BREAK outside FOR or WHILE loop","Read error","Syntax error",\
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
-		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments","",
+		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments",\
 		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF" };
 
 char *readlinefrombuffer(char *buf,char *linebuf,int size);
@@ -94,14 +94,14 @@ int loadfile(char *filename) {
 
   if(readbuf == NULL) {
    print_error(NO_MEM);
-   exit(NO_MEM);
+   return(NO_MEM);
   }
  }
  else
  {
   if(realloc(readbuf,bufsize+filesize) == NULL) {
    print_error(NO_MEM);
-   exit(NO_MEM);
+   return(NO_MEM);
   }
  }
 
@@ -113,7 +113,7 @@ int loadfile(char *filename) {
 
  if(fread(readbuf,filesize,1,handle) != 1) {		/* read to buffer */
   print_error(READ_ERROR);
-  exit(READ_ERROR);
+  return(READ_ERROR);
  }
 
 
@@ -133,7 +133,7 @@ int dofile(char *filename) {
  
  if(loadfile(filename) == -1) {
   print_error(MISSING_FILE);
-  exit(MISSING_FILE);
+  return(MISSING_FILE);
 }
 
 do {
@@ -254,21 +254,24 @@ if(check_function(functionname) == 0) {	/* user function */
 
 for(count=1;count<tc-1;count++) {
  if(strcmp(tokens[count],"=") == 0) {
-	 splitvarname(tokens[0],&split);			/* split variable */
+	 splitvarname(tokens[count-1],&split);			/* split variable */
 
 	 vartype=getvartype(split.name);
 
 	 c=*tokens[2];
 
 	 if(c == '"') {			/* string */  
-	  if(vartype == -1) addvar(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
-  
-	  if(vartype != VAR_STRING) {		/* not string */
+	  if(vartype == -1) {
+		addvar(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
+	  }
+	  else
+	  {  
 	   print_error(TYPE_ERROR);
-	   exit(TYPE_ERROR);
+	   return(TYPE_ERROR);
 	  }
 
-	  strcpy(val.s,tokens[2]);  
+	  strcpy(val.s,tokens[count+1]);  
+
 	  updatevar(split.name,&val,split.x,split.y);		/* set variable */
 
 	  return;
@@ -278,16 +281,16 @@ for(count=1;count<tc-1;count++) {
 
 	 if(vartype == VAR_STRING) {		/* not string */
 	  print_error(TYPE_ERROR);
-	  exit(TYPE_ERROR);
+	  return(TYPE_ERROR);
 	 }
 
-	 exprone=doexpr(tokens,2,tc);
+	 exprone=doexpr(tokens,count+1,tc);
 
 	 if(vartype == VAR_NUMBER) {
 	  val.d=exprone;
 	 }
  	 else if(vartype == VAR_STRING) {
-	  strcpy(val.s,tokens[2]);  
+	  strcpy(val.s,tokens[count+1]);  
 	 }
 	 else if(vartype == VAR_INTEGER) {
 	  val.i=exprone;
@@ -408,8 +411,9 @@ for(count=0;count < printtc;count++) {
 
  if(strlen(printargs[count]) > 0) {
   if(c == '"' || (getvartype(printargs[count]) == VAR_STRING)) {
+
    valptr=printargs[count];
-   valptr += (strlen(printargs[count])-2);
+   valptr += (strlen(printargs[count])-1);
   
    *valptr=0;
 
@@ -421,7 +425,7 @@ for(count=0;count < printtc;count++) {
   else
   {  
    parttc=tokenize_line(printargs[count],printtokens," ");
- 
+
    exprone=doexpr(printtokens,0,parttc);
    printf("%.6g ",exprone);
   }
@@ -777,11 +781,6 @@ do {
 
       }
 
-
-      d=*buf+(strlen(buf)-1);
-      if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
-      if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
-
       tc=tokenize_line(buf,tokens," \009");
 
       if(strcmp(tokens[0],"wend") == 0) {
@@ -841,7 +840,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  if(((currentfunction->stat & FOR_STATEMENT) == 0) && ((currentfunction->stat & WHILE_STATEMENT) == 0)) {
   print_error(INVALID_BREAK);
-  exit(INVALID_BREAK);
+  return(INVALID_BREAK);
  }
 
  if((currentfunction->stat & FOR_STATEMENT) || (currentfunction->stat & WHILE_STATEMENT)) {
@@ -895,7 +894,7 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
   if(vartypenames[count] == NULL) {		/* invalid type */
    print_error(BAD_TYPE);
-   exit(BAD_TYPE);
+   return(BAD_TYPE);
   }
  }
  else
@@ -912,7 +911,7 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(dofile(tokens[1]) == -1) {
   print_error(MISSING_FILE);
-  exit(MISSING_FILE);
+  return(MISSING_FILE);
  }
 
 }
@@ -924,7 +923,7 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  }
 
  print_error(CONTINUE_NO_LOOP);
- exit(CONTINUE_NO_LOOP);
+ return(CONTINUE_NO_LOOP);
 }
 
 int tokenize_line(char *linebuf,char *tokens[][MAX_SIZE],char *split) {

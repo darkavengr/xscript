@@ -42,7 +42,7 @@ int init_funcs(void) {
 funcs=malloc(sizeof(funcs));		/* functions */
 if(funcs == NULL) {
  print_error(NO_MEM);
- exit(NO_MEM);
+ return(-1);
 }
 
 memset(funcs,0,sizeof(funcs));
@@ -133,29 +133,22 @@ char *o;
 varsplit split;
 varval *varv;
 
-touppercase(name);
-
 next=currentfunction->vars;
 
  while(next != NULL) {
-   touppercase(next->varname);
-   touppercase(name);
 
    if(strcmp(next->varname,name) == 0) {		/* already defined */
 
     if((x > next->xsize)) {
      print_error(BAD_ARRAY);
-     exit(BAD_ARRAY);
+     return(-1);
     }
     
     if(x == 0) x=1;
     if(y == 0) y=1;
 
-    printf("xxxxxxxxxx= %d %d %d\n",x,y,x*y);
     switch(next->type) {
-     case VAR_NUMBER:	
-       printf("val->d=%.6g\n",val->d);
- 		
+     case VAR_NUMBER:			
        next->val[x*y].d=val->d;
        break;
 
@@ -260,6 +253,10 @@ while(next != NULL) {
        case VAR_SINGLE:	     
         next->val[split.x*split.y].f=val->f;
 	return(0);
+
+       default:
+        val->d=next->val[split.x*split.y].d;
+        return(0);
     }
 
   }
@@ -301,23 +298,21 @@ return(-1);
 
 int splitvarname(char *name,varsplit *split) {
 char *arrpos;
-char *arr[MAX_SIZE];
+char *arrx[MAX_SIZE];
+char *arry[MAX_SIZE];
 char *o;
 char *commapos;
 char *b;
-int expr;
-char *tokens[MAX_SIZE][MAX_SIZE];
+char *tokens[10][MAX_SIZE];
+int tc;
 
-memset(arr,0,MAX_SIZE);			/* clear buffer */
+memset(arrx,0,MAX_SIZE);			/* clear buffer */
+memset(arry,0,MAX_SIZE);			/* clear buffer */
+
 memset(split,0,sizeof(varsplit)-1);
 
-if(split->x == 0) split->x=1;
-if(split->y == 0) split->y=1;
-
-o=name;
-if((strpbrk(o,"(") == NULL) && (strpbrk(o,"[") == NULL)) {				/* find start of subscript */
+if((strpbrk(name,"(") == NULL) && (strpbrk(name,"[") == NULL)) {				/* find start of subscript */
  strcpy(split->name,name);
-
  return;
 }
 
@@ -325,7 +320,15 @@ o=name;				/* copy name */
 b=split->name;
 
 while(*o != 0) {
- if(*o == '(' || *o == '[') break;
+ if(*o == '(') {
+	split->arraytype=ARRAY_SUBSCRIPT;
+	break;
+ }
+
+ if(*o == '[') {
+	split->arraytype=ARRAY_SLICE;
+	break;
+ }
 
  *b++=*o++;
 }
@@ -333,7 +336,7 @@ while(*o != 0) {
 commapos=strpbrk(name,",");	/* find comma position */
 if(commapos == NULL) {			/* 2d array */
  o++;				/* copy subscript */
- b=arr;
+ b=arrx;
 
  while(*o != 0) {
   if(*o == ']' || o == ')') break;
@@ -342,17 +345,19 @@ if(commapos == NULL) {			/* 2d array */
 
  *--b=0;
 
- tokenize_line(arr,tokens,",");			/* tokenize line */
+ tc=tokenize_line(arrx,tokens," ");			/* tokenize line */
 
- split->x=atoi(tokens[0]);		/* get x pos */
+ split->x=doexpr(tokens,0,tc);		/* get x pos */
  split->y=1;
+
+ free(tokens);
  return;
 } 
 else
 {				/* 3d array */
 
  o++;				/* copy subscript */
- b=arr;
+ b=arrx;
 
  while(*o != 0) {
   if(*o == ',') break;
@@ -361,11 +366,22 @@ else
 
  o++;
 
- tokenize_line(arr,tokens,",");			/* tokenize line */
+ b=arry;
 
- split->x=atoi(tokens[0]);		/* get x pos */
- split->y=atoi(tokens[1]);		/* get y pos */
+ while(*o != 0) {
+  if(*o == ']' || o == ')') break;
+  *b++=*o++;
+ }
 
+ *--b=0;
+
+ tc=tokenize_line(arrx,tokens," ");			/* tokenize line */
+ split->x=doexpr(tokens,0,tc);		/* get x pos */
+
+ tc=tokenize_line(arry,tokens," ");			/* tokenize line */
+ split->y=doexpr(tokens,0,tc);		/* get x pos */
+
+ free(tokens);
  return;
  }
 }
@@ -555,7 +571,7 @@ for(count=0;count < tc;count++) {
 
 	 if(vartypenames[typecount] == NULL) {		/* invalid type */
 	   print_error(BAD_TYPE);
-	   exit(BAD_TYPE);
+	   return(-1);
 	}
  }
  else
@@ -592,7 +608,7 @@ for(count=0;count < tc;count++) {
 while(*currentptr != 0) {	
  currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
- tc=tokenize_line(buf,argbuf,"+-*/^&|()\009"); 
+ tc=tokenize_line(buf,argbuf," \009"); 
  doline(buf);
 
  if(strcmp(argbuf[0],"endfunction") == 0) break;
@@ -728,6 +744,14 @@ for(count=start;count<end;count++) {
 
    switch(getvartype(tokens[count])) {
 	case VAR_STRING:
+	  //  if(split.arraytype == ARRAY_SLICE) {		/* part of string */
+	//	b=&val.s;			/* get start */
+	//	b += split.x;
+
+	//	memcpy(tokens[count],b,split.y);	/* copy data */
+	//	break;
+	//    }
+
 	    strcpy(tokens[count],val.s);
 	    break;
 	

@@ -15,19 +15,19 @@ char *filename=NULL;
 char *buffer[MAX_SIZE];
 varval cmdargs;
 
-memset(args,0,MAX_SIZE);
-
-for(count=1;count<argc;count++) {
- strcat(args,argv[count]);			/* get command line */
-
- if(count != argc-1) strcat(args," ");			/* get command line */
-
-}
-
 init_funcs();
 
-addvar("command",0,0);			/* add commandline variable */
-//updatevar("command",&cmdargs.s,0,0);
+/* intialized command-line arguments */
+
+addvar("argv",VAR_STRING,argc,0);			/* add commandline variable */
+
+memset(cmdargs.s,0,MAX_SIZE);
+
+for(count=0;count<argc;count++) {
+ strcpy(cmdargs.s,argv[count]);
+ updatevar("argv",&cmdargs.s,count,0);
+}
+
 
 if(argc == 1) {					/* no args */ 
  while(1) {
@@ -41,7 +41,7 @@ else
  dofile(argv[1]);						/* do file */
 }
 
-//sfree_funcs();
+free_funcs();
 
 exit(0);
 }
