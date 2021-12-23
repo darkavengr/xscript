@@ -350,7 +350,6 @@ if(commapos == NULL) {			/* 2d array */
  split->x=doexpr(tokens,0,tc);		/* get x pos */
  split->y=1;
 
- free(tokens);
  return;
 } 
 else
@@ -380,8 +379,6 @@ else
 
  tc=tokenize_line(arry,tokens," ");			/* tokenize line */
  split->y=doexpr(tokens,0,tc);		/* get x pos */
-
- free(tokens);
  return;
  }
 }

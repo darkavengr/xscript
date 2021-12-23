@@ -19,15 +19,18 @@ init_funcs();
 
 /* intialized command-line arguments */
 
+addvar("argc",VAR_INTEGER,argc,0);
+cmdargs.i=argc;
+updatevar("argc",&cmdargs,count,0);
+
 addvar("argv",VAR_STRING,argc,0);			/* add commandline variable */
 
 memset(cmdargs.s,0,MAX_SIZE);
 
 for(count=0;count<argc;count++) {
  strcpy(cmdargs.s,argv[count]);
- updatevar("argv",&cmdargs.s,count,0);
+ updatevar("argv",&cmdargs,count,0);
 }
-
 
 if(argc == 1) {					/* no args */ 
  while(1) {

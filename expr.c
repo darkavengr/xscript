@@ -233,6 +233,13 @@ char *buf[10];
  exprtwo=0;
 
  for(exprpos=start;exprpos<end;exprpos++) {
+	  if((getvartype(tokens[exprpos-1]) != -1) && (getvartype(tokens[exprpos-1]) != -1)) {
+		if( getvartype(tokens[exprpos-1]) != getvartype(tokens[exprpos+1])) {
+		   print_error(TYPE_ERROR);
+		   return(-1);
+        	  }
+	  }
+
 	  if(strcmp(tokens[exprpos],"=") == 0) {
 	   ifexpr=EQUAL;
 	   break;
@@ -264,6 +271,13 @@ char *buf[10];
 	  }
  }
         
+	if(getvartype(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
+	 substitute_vars(exprpos-1,exprpos,tokens);
+	 substitute_vars(exprpos+1,exprpos+1,tokens);
+
+	 return(!strcmp(tokens[exprpos-1],tokens[exprpos+1]));
+	}
+	
 	exprone=doexpr(tokens,start,exprpos);				/* do expression */
         exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
 

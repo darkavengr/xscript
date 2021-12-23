@@ -143,10 +143,8 @@ do {
 
  currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;;
 
- if(*currentptr == 0) {
-  free(readbuf);
-  return; 
- }
+ if(*currentptr == 0) return; 
+
 
  doline(linebuf);
 
@@ -155,8 +153,6 @@ do {
  includefiles[ic].lc++;
 }    while(*currentptr != 0); 			/* until end */
 
- 
- free(readbuf);
  return;
 }	
 
@@ -926,6 +922,7 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  return(CONTINUE_NO_LOOP);
 }
 
+
 int tokenize_line(char *linebuf,char *tokens[][MAX_SIZE],char *split) {
 char *token;
 char *tokenx;
@@ -949,21 +946,25 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
  
  d=tokens[0];
 
-while(*token != 0) { 	
+while(*token != 0) {
  if(*token == '"') {		/* quoted text */
 
    token++;
    *d++='"';
    while(*token != 0) {
-    *d++=*token++;
-    if(*d == '"') break;
-   }
+    *d=*token++;
 
-   *d++=0;  
-   tc++;
+    if(*d == '"') {
+	*d++='"';
+	break;
+    }
+
+    d++;
+  }
+
  }
- else
- {
+
+
   s=split;
 
   while(*s != 0) {
@@ -979,7 +980,6 @@ while(*token != 0) {
    }
 
    s++;
-  }
  }
 
  token++;
@@ -987,7 +987,6 @@ while(*token != 0) {
 
 return(tc+1);
 }
-
 
 int touppercase(char *token) {
  char *z;
