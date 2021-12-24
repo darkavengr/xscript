@@ -306,6 +306,8 @@ char *b;
 char *tokens[10][MAX_SIZE];
 int tc;
 
+printf("name=%s\n",name);
+
 memset(arrx,0,MAX_SIZE);			/* clear buffer */
 memset(arry,0,MAX_SIZE);			/* clear buffer */
 
@@ -373,6 +375,9 @@ else
  }
 
  *--b=0;
+
+ printf("arrx=%s\n",arrx);
+ printf("arry=%s\n",arry);
 
  tc=tokenize_line(arrx,tokens," ");			/* tokenize line */
  split->x=doexpr(tokens,0,tc);		/* get x pos */
@@ -731,6 +736,8 @@ double ret;
 /* replace variables with values */
 
 for(count=start;count<end;count++) {
+ printf("token=%s\n",tokens[count]);
+
  splitvarname(tokens[count],&split);
 
 // if(check_function(split.name)) {			/* is function */
@@ -741,13 +748,23 @@ for(count=start;count<end;count++) {
 
    switch(getvartype(tokens[count])) {
 	case VAR_STRING:
-	  //  if(split.arraytype == ARRAY_SLICE) {		/* part of string */
-	//	b=&val.s;			/* get start */
-	//	b += split.x;
+	    if(split.arraytype == ARRAY_SLICE) {		/* part of string */
+		printf("slice=%s\n",split.name);
+		printf("slice xy=%d %d\n",split.x,split.y);
 
-	//	memcpy(tokens[count],b,split.y);	/* copy data */
-	//	break;
-	//    }
+		b=&val.s;			/* get start */
+		b++;
+		b += split.x;
+		printf("b=%s\n",b);
+
+		memset(tokens[count],0,MAX_SIZE);
+		*b++='"';
+
+		memcpy(tokens[count],b,split.y);	/* copy data */
+		*b++='"';
+		printf("token=%s\n",tokens[count]);
+		break;
+	    }
 
 	    strcpy(tokens[count],val.s);
 	    break;

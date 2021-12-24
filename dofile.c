@@ -185,9 +185,6 @@ int doline(char *lbuf) {
 
 if(c == '\r' || c == '\n' || c == 0) return;			/* blank line */
 
-if(*(lbuf+(strlen(lbuf)-1)) == '\n') *(lbuf+(strlen(lbuf)-1))=0;	/* remove newline from line if found */
-if(*(lbuf+(strlen(lbuf)-1)) == '\r') *(lbuf+(strlen(lbuf)-1))=0;	/* remove newline from line if found */
-
 while(*lbuf == ' ' || *lbuf == '\t') lbuf++;	/* skip white space */
 
 if(memcmp(lbuf,"//",2) == 0) return;		/* skip comments */
@@ -195,8 +192,6 @@ if(memcmp(lbuf,"//",2) == 0) return;		/* skip comments */
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
 tc=tokenize_line(lbuf,tokens," \009");			/* tokenize line */
-
-if(*lbuf+(strlen(lbuf)-1) == ':') return;		/* label */
 
 /* do statement */
 
@@ -947,15 +942,16 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
  d=tokens[0];
 
 while(*token != 0) {
- if(*token == '"') {		/* quoted text */
+ if((*token == '"') || (*token == '(') || (*token == '[') ) {		/* quoted text */
 
+   c=*token;
    token++;
-   *d++='"';
+   *d++=c;
    while(*token != 0) {
     *d=*token++;
 
-    if(*d == '"') {
-	*d++='"';
+    if((*d == '"') || (*d == '(') || (*d == '[') ) {		/* quoted text */
+	*d++=c;
 	break;
     }
 
