@@ -281,6 +281,7 @@ for(count=1;count<tc-1;count++) {
 	  val.d=exprone;
 	 }
  	 else if(vartype == VAR_STRING) {
+	  substitute_vars(count+1,count+1,tokens); 
 	  strcpy(val.s,tokens[count+1]);  
 	 }
 	 else if(vartype == VAR_INTEGER) {
@@ -504,7 +505,7 @@ touppercase(tokens[0]);
 if((strcmp(tokens[0],"IF") == 0) || (strcmp(tokens[0],"ELSEIF") == 0)) {
   exprtrue=do_condition(tokens,1,tc-1);
  
-  if(exprtrue == 1) {
+if(exprtrue == 1) {
 		saveexprtrue=exprtrue;
 
 		do {
