@@ -416,7 +416,7 @@ int function(char *name,char *args) {
  functions *last;
  char *linebuf[MAX_SIZE];
  char *savepos;
- char *tokens[MAX_SIZE][10];
+ char *tokens[10][MAX_SIZE];
  int count;
  
  if((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT) return(NESTED_FUNCTION);
@@ -441,13 +441,6 @@ int function(char *name,char *args) {
 
  strcpy(next->name,name);				/* copy name */
  next->funcargcount=tokenize_line(args,next->argvars,",");			/* copy args */
-
- printf("declare args=%s\n",args);
- 
-
- for(count=0;count < next->funcargcount;count++) {
-  printf("argvar=%s\n",next->argvars[count]);
- }
 
  next->vars=NULL;
  next->funcstart=currentptr;
@@ -543,10 +536,13 @@ currentfunction->stat |= FUNCTION_STATEMENT;
 
 tc=tokenize_line(args,varbuf,",");
 
+printf("name=%s\n",name);
+printf("args=%s\n",args);
+
 for(count=0;count < tc;count++) {
   parttc=tokenize_line(next->argvars[count],parttokens," ");		/* split token again */
 
-  printf("%s %s\n",parttokens[0],varbuf[count]);
+  printf("tokens=%s %s\n",parttokens[0],varbuf[count]);
 
   /* check if declaring variable with type */
   touppercase(parttokens[1]);
@@ -601,9 +597,14 @@ while(*currentptr != 0) {
  currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
  tc=tokenize_line(buf,argbuf," \009"); 
+ printf("line=%s\n",buf);
+
+ touppercase(argbuf[0]);
+
+ if(strcmp(argbuf[0],"ENDFUNCTION") == 0) break;
+
  doline(buf);
 
- if(strcmp(argbuf[0],"endfunction") == 0) break;
 }
 
 currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */

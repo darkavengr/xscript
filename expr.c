@@ -40,7 +40,6 @@ substitute_vars(start,end,temp);
 /* do syntax checking on expression */
 
 for(count=start;count<end;count++) {
-
  if(strcmp(temp[count],"(") == 0) bracketcount++;		/* open bracket */
  if(strcmp(temp[count],")") == 0) bracketcount--;		/* close bracket */
 
@@ -226,6 +225,8 @@ int exprtrue=0;
 int exprpos=0;
 int count=0;
 char *buf[10];
+int conditions[MAX_SIZE];
+int condcount=0;
 
 /* check kind of expression */
 

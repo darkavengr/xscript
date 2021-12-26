@@ -41,6 +41,8 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+
 int saveexprtrue=0;
 extern int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
 
@@ -62,6 +64,7 @@ statement statements[] = { { "IF",&if_statement },\
       { "CONTINUE",&continue_statement },\
       { "NEXT",&next_statement },\
       { "BREAK",&break_statement },\
+      { "AS",&as_statement },\
       { NULL,NULL } };
 
 extern functions *currentfunction;
@@ -145,7 +148,6 @@ do {
 
  if(*currentptr == 0) return; 
 
-
  doline(linebuf);
 
  memset(linebuf,0,MAX_SIZE);
@@ -181,9 +183,14 @@ int doline(char *lbuf) {
 
  /* return if blank line */
 
- c=*lbuf;
+c=*lbuf;
 
 if(c == '\r' || c == '\n' || c == 0) return;			/* blank line */
+
+if(strlen(lbuf) > 1) {
+ b=lbuf+strlen(lbuf)-1;
+ if((*b == '\n') || (*b == '\r')) *b=0;
+}
 
 while(*lbuf == ' ' || *lbuf == '\t') lbuf++;	/* skip white space */
 
@@ -396,7 +403,6 @@ memset(printargs,0,10*MAX_SIZE);
 memset(printtokens,0,10*MAX_SIZE);
 
 printtc=tokenize_line(buf,printargs,",");			/* copy args */
-substitute_vars(0,printtc,printargs);
 
 for(count=0;count < printtc;count++) {
  c=*printargs[count];
@@ -708,6 +714,8 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
  */
 
 int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ printf("return\n");
+
  currentfunction->stat &= FUNCTION_STATEMENT;
  currentfunction->retval=doexpr(tokens,1,tc);				/* start value */	
 
@@ -918,6 +926,9 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  return(CONTINUE_NO_LOOP);
 }
 
+int as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ print_error(SYNTAX_ERROR);
+}
 
 int tokenize_line(char *linebuf,char *tokens[][MAX_SIZE],char *split) {
 char *token;
@@ -1016,8 +1027,9 @@ do {
   b=buf;
   b--;
 
-  if(*b == 0) break;
-  if(*b == '\n') break;
+//  if(*b == 0) break;
+  if(*b == '\n' || *b == '\r') break;
+
 } while(*b != 0);		/* until end of line */
 
 
@@ -1031,6 +1043,12 @@ return(buf);			/* return new position */
 }
 
 int print_error(int llcerr) {
- printf("FATAL ERROR %s %d: %s\n",includefiles[ic].filename,includefiles[ic].lc,llcerrs[llcerr]);
+ if(*includefiles[ic].filename == 0) {
+  printf("%s\n",llcerrs[llcerr]);
+ }
+ else
+ {
+  printf("%s %d: %s\n",includefiles[ic].filename,includefiles[ic].lc,llcerrs[llcerr]);
+ }
 }
 
