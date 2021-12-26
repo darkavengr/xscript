@@ -139,13 +139,13 @@ next=currentfunction->vars;
 
    if(strcmp(next->varname,name) == 0) {		/* already defined */
 
-    if((x > next->xsize)) {
-     print_error(BAD_ARRAY);
-     return(-1);
-    }
-    
     if(x == 0) x=1;
     if(y == 0) y=1;
+
+    if((x*y) > (next->xsize*next->ysize)) {		/* outside array */
+	print_error(BAD_ARRAY);
+	return;
+    }
 
     switch(next->type) {
      case VAR_NUMBER:			
@@ -221,6 +221,11 @@ c=*name;
 if(c >= '0' && c <= '9') {
  val->d=atof(name);
  return;
+}
+
+if(c == '"') {
+ strcpy(val->s,name);
+ return(0);
 }
 
 splitvarname(name,&split);

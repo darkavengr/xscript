@@ -240,7 +240,7 @@ if(*d == ')') *d=0;	// no )
 
 
 if(check_function(functionname) == 0) {	/* user function */
- callfunc(functionname,args);
+// callfunc(functionname,args);
 } 
 
 
@@ -250,7 +250,8 @@ if(check_function(functionname) == 0) {	/* user function */
  *
  */
 
-for(count=1;count<tc-1;count++) {
+for(count=1;count<tc;count++) {
+
  if(strcmp(tokens[count],"=") == 0) {
 	 splitvarname(tokens[count-1],&split);			/* split variable */
 
@@ -411,7 +412,7 @@ for(count=0;count < printtc;count++) {
   if(c == '"' || (getvartype(printargs[count]) == VAR_STRING)) {
 
    valptr=printargs[count];
-   valptr += (strlen(printargs[count])-1);
+   valptr += (strlen(printargs[count]));
   
    *valptr=0;
 
@@ -754,6 +755,9 @@ if(tc < 1) {						/* Not enough parameters */
 
 //asm("int $3");
 
+currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
+currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
+
 memcpy(condition_tokens,tokens,(tc*(MAX_SIZE*MAX_SIZE)));		/* save copy of condition */
 condition_tc=tc;
 
@@ -955,15 +959,12 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
 
 while(*token != 0) {
  if((*token == '"') || (*token == '(') || (*token == '[') ) {		/* quoted text */
-
-   c=*token;
-   token++;
-   *d++=c;
+   
+   *d++=*token++;
    while(*token != 0) {
     *d=*token++;
 
-    if((*d == '"') || (*d == '(') || (*d == '[') ) {		/* quoted text */
-	*d++=c;
+    if((*d == '"') || (*d == ')') || (*d == ']') ) {		/* quoted text */
 	break;
     }
 

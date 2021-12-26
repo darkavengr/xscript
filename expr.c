@@ -127,7 +127,14 @@ for(count=start;count<end;count++) {
 for(count=start;count<end;count++) {
 
  if(strcmp(temp[count],"+") == 0) { 
-  val.d += atof(temp[count+1]);
+		  
+  if(*temp[count] == '"' || (getvartype(temp[count]) == VAR_STRING)) {		/* conatecating strings */
+	strcat(val.s,temp[count]);
+  }
+  else
+  {
+	  val.d += atof(temp[count+1]);
+  }
 
   deletefromarray(temp,count,2);		/* remove rest */
 
