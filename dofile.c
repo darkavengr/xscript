@@ -257,9 +257,9 @@ for(count=1;count<tc;count++) {
 
 	 vartype=getvartype(split.name);
 
-	 c=*tokens[2];
+	 c=*tokens[count+1];
 
-	 if(c == '"') {			/* string */  
+	 if((c == '"') || getvartype(split.name) == VAR_STRING) {			/* string */  
 	  if(vartype == -1) {
 		addvar(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
 	  }
@@ -269,7 +269,7 @@ for(count=1;count<tc;count++) {
 	   return(TYPE_ERROR);
 	  }
 
-	  strcpy(val.s,tokens[count+1]);  
+	  conatecate_strings(count+1,tc,tokens,&val);					/* join all the strings on the line */
 
 	  updatevar(split.name,&val,split.x,split.y);		/* set variable */
 
@@ -379,57 +379,22 @@ return;
  */
 
 int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-int count;
-char *val;
-int countx;
 double exprone;
-char *buf[MAX_SIZE];
-int countz;
-char *valptr;
-int printtc;
-char *printargs[10][MAX_SIZE];
-char *printtokens[10][MAX_SIZE];
-int parttc;
 char c;
-	
-memset(buf,0,MAX_SIZE);
+varval val;
+c=*tokens[1];
 
-for(count=1;count != tc;count++) {				/* get print tokens */
- strcat(buf,tokens[count]);
+if((c == '"') || (getvartype(tokens[1]) == VAR_STRING) ) {		/* if it's a string */
 
- if((count != tc-1) && (*buf != ',')) strcat(buf," ");
+ conatecate_strings(1,tc,tokens,&val);					/* join all the strings on the line */
+
+ printf("%s\n",val.s);
+
+ return;
 }
 
-memset(printargs,0,10*MAX_SIZE);
-memset(printtokens,0,10*MAX_SIZE);
-
-printtc=tokenize_line(buf,printargs,",");			/* copy args */
-
-for(count=0;count < printtc;count++) {
- c=*printargs[count];
-
- if(strlen(printargs[count]) > 0) {
-  if(c == '"' || (getvartype(printargs[count]) == VAR_STRING)) {
-
-   valptr=printargs[count];
-   valptr += (strlen(printargs[count]));
-  
-   *valptr=0;
-
-   valptr=printargs[count];
-   valptr++;
-
-   printf("%s",valptr);
-  }
-  else
-  {  
-   parttc=tokenize_line(printargs[count],printtokens," ");
-
-   exprone=doexpr(printtokens,0,parttc);
-   printf("%.6g ",exprone);
-  }
- }
-}
+exprone=doexpr(tokens,1,tc);
+printf("%.6g ",exprone);
 
 printf("\n");
 return;

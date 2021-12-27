@@ -732,8 +732,7 @@ double ret;
 
 /* replace variables with values */
 
-for(count=start;count<end;count++) {
-
+for(count=start;count<end;count++) { 
  splitvarname(tokens[count],&split);
 
 // if(check_function(split.name)) {			/* is function */
@@ -750,7 +749,6 @@ for(count=start;count<end;count++) {
 
 		memset(tokens[count],0,MAX_SIZE);
 		d=tokens[count];
-
 		*d++='"';
 
 		for(count=0;count < split.y+1;count++) {
@@ -761,6 +759,9 @@ for(count=start;count<end;count++) {
 	    }
 	    else
 	    {
+	     d=tokens[count];
+	     *d++='"';
+		
 	     strcpy(tokens[count],val.s);
             }
 
@@ -783,4 +784,47 @@ for(count=start;count<end;count++) {
   }
 }
 
+int conatecate_strings(int start,int end,char *tokens[][MAX_SIZE],varval *val) {
+int count;
+char *b;
+char *d;
+
+substitute_vars(start,end,tokens);
+
+for(count=start;count<end;count++) {
+ printf("tokenzzz=%s\n",tokens[count]);
+}
+
+b=tokens[start];			/* point to first token */
+if(*b == '"') b++;			/* skip over quote */
+
+d=val->s;				/* copy token */
+while(*b != 0) {
+ if(*b == '"') break;
+ if(*b == 0) break;
+
+ *d++=*b++;
+}
+
+for(count=start+1;count<end;count++) {
+
+ if(strcmp(tokens[count],"+") == 0) { 
+    printf("cat=%s\n",tokens[count+1]);
+
+    b=tokens[count+1];
+    if(*b == '"') b++;			/* skip over quote */
+
+    while(*b != 0) {			/* copy token */
+     if(*b == '"') break;
+     if(*b == 0) break;
+
+     *d++=*b++;
+    }
+
+    count++;
+   }
+  }
+
+ return;
+}
 

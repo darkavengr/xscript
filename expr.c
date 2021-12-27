@@ -56,7 +56,6 @@ for(count=start;count<end;count++) {
   print_error(TYPE_ERROR);
   return;
  }
-
 }
 
 if(start+1 == end) {
@@ -127,15 +126,7 @@ for(count=start;count<end;count++) {
 for(count=start;count<end;count++) {
 
  if(strcmp(temp[count],"+") == 0) { 
-		  
-  if(*temp[count] == '"' || (getvartype(temp[count]) == VAR_STRING)) {		/* conatecating strings */
-	strcat(val.s,temp[count]);
-  }
-  else
-  {
-	  val.d += atof(temp[count+1]);
-  }
-
+  val.d += atof(temp[count+1]);
   deletefromarray(temp,count,2);		/* remove rest */
 
   count++;
@@ -234,6 +225,7 @@ int count=0;
 char *buf[10];
 int conditions[MAX_SIZE];
 int condcount=0;
+varval val;
 
 /* check kind of expression */
 
@@ -280,8 +272,8 @@ int condcount=0;
  }
         
 	if(getvartype(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	 substitute_vars(exprpos-1,exprpos,tokens);
-	 substitute_vars(exprpos+1,exprpos+1,tokens);
+	 conatecate_strings(start,exprpos,tokens,&val);					/* join all the strings on the line */
+	 conatecate_strings(exprpos+1,end,tokens,&val);					/* join all the strings on the line */
 
 	 return(!strcmp(tokens[exprpos-1],tokens[exprpos+1]));
 	}
