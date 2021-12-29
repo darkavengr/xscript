@@ -17,11 +17,12 @@ int getvarval(char *name,varval *val);
 int getvartype(char *name);
 int splitvarname(char *name,varsplit *split);
 int removevar(char *name);
-int function(char *name,char *args);
+int function(char *name,char *args,int function_return_type);
 int check_function(char *name);
 int atoi_base(char *hex,int base);
 int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
 
+extern varval retval;
 functions *funcs=NULL;
 functions *currentfunction=NULL;
 
@@ -29,6 +30,8 @@ char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
 
 extern char *currentptr;
 extern statement statements[];
+
+int returnvalue=0;
 
 struct {
  char *callptr;
@@ -416,7 +419,7 @@ int removevar(char *name) {
  */
 
 
-int function(char *name,char *args) {
+int function(char *name,char *args,int function_return_type) {
  functions *next;
  functions *last;
  char *linebuf[MAX_SIZE];
@@ -449,13 +452,12 @@ int function(char *name,char *args) {
 
  next->vars=NULL;
  next->funcstart=currentptr;
- 
+ next->return_type=function_return_type;
 
 /* find end of function */
 
  do {
   currentptr=readlinefrombuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
-
   tokenize_line(linebuf,tokens," ");			/* copy args */
 
   touppercase(tokens[0]);
@@ -505,6 +507,9 @@ int parttc;
 int typecount;
 int countx;
 
+printf("functioooooooooooooooooooon\n");
+
+
 next=funcs;						/* point to variables */
 
 /* find function name */
@@ -540,10 +545,6 @@ currentfunction->stat |= FUNCTION_STATEMENT;
 /* add variables from args */
 
 tc=tokenize_line(args,varbuf,",");
-
-printf("name=%s\n",name);
-printf("args=%s\n",args);
-
 for(count=0;count < tc;count++) {
   parttc=tokenize_line(next->argvars[count],parttokens," ");		/* split token again */
 
@@ -552,11 +553,12 @@ for(count=0;count < tc;count++) {
   /* check if declaring variable with type */
   touppercase(parttokens[1]);
 
-  if(strcmp(parttokens[1],"AS") == 0) {		/* array as type */
+  if(strcmp(parttokens[1],"AS") == 0) {		/* variable type */
  	  typecount=0;
 
+	 touppercase(parttokens[2]);
+
  	 while(vartypenames[typecount] != NULL) {
-	   touppercase(parttokens[2]);
 	   if(strcmp(vartypenames[typecount],parttokens[2]) == 0) break;	/* found type */
   
 	   typecount++;
@@ -569,7 +571,6 @@ for(count=0;count < tc;count++) {
  }
  else
  {
-  typecount=VAR_NUMBER;
  }
 
   splitvarname(parttokens[0],&split);		/* get name and subscripts */
@@ -696,13 +697,13 @@ varsplit split;
 char *valptr;
 char *buf[MAX_SIZE];
 functions *next;
-char *functionargs[2][MAX_SIZE];
+char *functionargs[MAX_SIZE];
 functions *func;
 char *b;
 char *d;
 int county;
-varval val;
 double ret;
+varval val;
 
 /* replace non-decimal numbers with decimal equivalents */
  for(count=start;count<end;count++) {
@@ -735,9 +736,49 @@ double ret;
 for(count=start;count<end;count++) { 
  splitvarname(tokens[count],&split);
 
-// if(check_function(split.name)) {			/* is function */
- // function_statement(end-start,tokens[count]);
-// }
+ if(check_function(split.name) == 0) {			/* is function */
+  printf("is function\n");
+
+  b=tokens[count];
+  d=buf;
+
+/* get function name */
+
+  while(*b != 0) {
+   if(*b == '(') break;
+   *d++=*b++;
+  }
+
+  d=functionargs;
+  b++;
+
+/* get function args */
+
+  while(*b != 0) {
+   *d++=*b++;
+  }
+
+  callfunc(buf,functionargs);
+
+//  get_return_value(val);		/* get return value */
+
+  if(retval.type == VAR_STRING) {		/* returning string */   
+   strcpy(tokens[count],retval.s);
+   return;
+  }
+  else if(retval.type == VAR_INTEGER) {		/* returning integer */
+	 sprintf(tokens[count],"%d",retval.i);
+  }
+  else if(retval.type == VAR_NUMBER) {		/* returning double */
+	 printf("return double=%.6g\n",retval.d);
+
+	 sprintf(tokens[count],"%.6g",retval.d);
+  }
+  else if(retval.type == VAR_SINGLE) {		/* returning single */
+	 sprintf(tokens[count],"%f",retval.f);
+  }
+
+ }
 
  if(getvarval(split.name,&val) != -1) {		/* is variable */
 
@@ -827,4 +868,5 @@ for(count=start+1;count<end;count++) {
 
  return;
 }
+
 

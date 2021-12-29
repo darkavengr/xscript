@@ -67,6 +67,7 @@ typedef struct {
   char *s[MAX_SIZE];
   int i;
   float f;
+  int type;
 } varval;
 
 typedef struct {
@@ -101,10 +102,10 @@ typedef struct {
  char *name[MAX_SIZE];
  char *funcstart;
  int funcargcount;
- int retval;
  int stat;	
  int lastlooptype;
  int nestcount;
+ int return_type;
  SAVEINFORMATION saveinformation[MAX_NEST_COUNT];
  struct vars_t *vars;
  char *argvars[25][MAX_SIZE];

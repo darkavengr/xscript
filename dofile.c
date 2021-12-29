@@ -45,6 +45,7 @@ int as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 int saveexprtrue=0;
 extern int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
+varval retval;
 
 statement statements[] = { { "IF",&if_statement },\
       { "ELSE",&else_statement },\
@@ -240,7 +241,7 @@ if(*d == ')') *d=0;	// no )
 
 
 if(check_function(functionname) == 0) {	/* user function */
-// callfunc(functionname,args);
+ callfunc(functionname,args);
 } 
 
 
@@ -334,11 +335,8 @@ char *args[MAX_SIZE];
 char *b;
 char *d;
 int count;
-
-if(tc < 2) {						/* Not enough parameters */
- print_error(SYNTAX_ERROR);
- return(SYNTAX_ERROR);
-}
+int vartype;
+int countx;
 
 b=tokens[1];		/* get function name */
 d=functionname;
@@ -352,7 +350,6 @@ while(*b != 0) {
  *d++=*b++;
 }
 
-*d++=' ';
 
 for(count=2;count<tc;count++) {
  touppercase(tokens[count]);
@@ -361,14 +358,40 @@ for(count=2;count<tc;count++) {
  
  while(*b != 0) *d++=*b++;
 
+ if(*d == ')') break;		/* at end of args */
  *d++=' ';
 }
 
-d -= 2;
-
 if(*d == ')') *d=0;
 
-function(functionname,args);
+while(count < tc) {
+ if(strcmp(tokens[count],"AS") == 0) {		/* array as type */
+  vartype=0;
+
+  while(vartypenames[vartype] != NULL) {
+   touppercase(vartypenames[vartype]);
+    if(strcmp(vartypenames[vartype],tokens[3]) == 0) break;	/* found type */
+   
+   vartype++;
+  }
+
+  if(vartypenames[vartype] == NULL) {		/* invalid type */
+   print_error(BAD_TYPE);
+   return(BAD_TYPE);
+  }
+
+  break;
+ }
+ else
+ {
+  vartype=VAR_NUMBER;
+  break;
+ }
+
+ count++;
+}
+
+function(functionname,args,vartype);
 return;
 }
  
@@ -680,12 +703,33 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
  */
 
 int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- printf("return\n");
+ int count;
 
  currentfunction->stat &= FUNCTION_STATEMENT;
- currentfunction->retval=doexpr(tokens,1,tc);				/* start value */	
+
+ retval.type=currentfunction->return_type;
+
+ if(currentfunction->return_type == VAR_STRING) {		/* returning string */
+  conatecate_strings(1,tc,tokens,retval.s);		/* get strings */
+  return;
+ }
+ else if(currentfunction->return_type == VAR_INTEGER) {		/* returning integer */
+	 retval.i=doexpr(tokens,1,tc);
+ }
+ else if(currentfunction->return_type == VAR_NUMBER) {		/* returning double */
+	 retval.d=doexpr(tokens,1,tc);
+	 printf("retval.d=%.6g\n",retval.d);
+
+ }
+ else if(currentfunction->return_type == VAR_SINGLE) {		/* returning single */
+	 retval.f=doexpr(tokens,1,tc);	
+ }
 
  return;
+}
+
+int get_return_value(varval *val) {
+ val=&retval;
 }
 
 int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -1009,7 +1053,7 @@ return(buf);			/* return new position */
 }
 
 int print_error(int llcerr) {
- if(*includefiles[ic].filename == 0) {
+ if(*includefiles[ic].filename == 0) {			/* if in interactive mode */
   printf("%s\n",llcerrs[llcerr]);
  }
  else

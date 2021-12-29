@@ -107,7 +107,7 @@ for(count=start;count<end;count++) {
 
  if(strcmp(temp[count],"/") == 0) {
   val.d /= atof(temp[count+1]);
-  deletefromarray(temp,count+1,2);		/* remove rest */
+  deletefromarray(temp,count,2);		/* remove rest */
 
   count++;
  } 
@@ -117,9 +117,10 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"*") == 0) {
 
   val.d *= atof(temp[count+1]);
+
+  deletefromarray(temp,count,2);		/* remove rest */
   count++;
 	
-  deletefromarray(temp,count+1,2);		/* remove rest */
  } 
 }
      
@@ -184,7 +185,6 @@ for(count=start;count<end;count++) {
 
  count++;
 }
-
 
 return(val.d);
 }
