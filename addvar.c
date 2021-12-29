@@ -72,9 +72,6 @@ varsplit split;
 functions *funcnext;
 int statementcount;
 
-if(xsize == 0) xsize=1;	/* sanity check */
-if(ysize == 0) ysize=1;	/* sanity check */
-
 splitvarname(name,&split);				/* parse variable name */
 
 touppercase(split.name);
@@ -116,9 +113,6 @@ do {
   free(next);
   return(NO_MEM);
  }
-
- if(xsize == 0) xsize=1;	/* sanity check */
- if(ysize == 0) ysize=1;	/* sanity check */
   
  next->xsize=xsize;				/* set size */
  next->ysize=ysize;
@@ -136,14 +130,13 @@ char *o;
 varsplit split;
 varval *varv;
 
+splitvarname(name,&split);
+
+touppercase(split.name);
 next=currentfunction->vars;
 
  while(next != NULL) {
-
-   if(strcmp(next->varname,name) == 0) {		/* already defined */
-
-    if(x == 0) x=1;
-    if(y == 0) y=1;
+   if(strcmp(next->varname,split.name) == 0) {		/* already defined */
 
     if((x*y) > (next->xsize*next->ysize)) {		/* outside array */
 	print_error(BAD_ARRAY);
@@ -159,7 +152,7 @@ next=currentfunction->vars;
        strcpy(next->val[x*y].s,val->s);
        break;
 
-     case VAR_INTEGER:	     
+     case VAR_INTEGER:	 
        next->val[x*y].i=val->i;
        break;
 
@@ -233,9 +226,6 @@ if(c == '"') {
 
 splitvarname(name,&split);
 
-if(split.x == 0) split.x=1;		
-if(split.y == 0) split.y=1;
-
 next=currentfunction->vars;
 
 while(next != NULL) {  
@@ -263,7 +253,7 @@ while(next != NULL) {
 	return(0);
 
        default:
-        val->d=next->val[split.x*split.y].d;
+        val->i=next->val[split.x*split.y].i;
         return(0);
     }
 
@@ -507,9 +497,6 @@ int parttc;
 int typecount;
 int countx;
 
-printf("functioooooooooooooooooooon\n");
-
-
 next=funcs;						/* point to variables */
 
 /* find function name */
@@ -548,8 +535,6 @@ tc=tokenize_line(args,varbuf,",");
 for(count=0;count < tc;count++) {
   parttc=tokenize_line(next->argvars[count],parttokens," ");		/* split token again */
 
-  printf("tokens=%s %s\n",parttokens[0],varbuf[count]);
-
   /* check if declaring variable with type */
   touppercase(parttokens[1]);
 
@@ -571,7 +556,9 @@ for(count=0;count < tc;count++) {
  }
  else
  {
+	typecount=0;
  }
+
 
   splitvarname(parttokens[0],&split);		/* get name and subscripts */
 
@@ -593,8 +580,8 @@ for(count=0;count < tc;count++) {
 	break;
   }
 
-   addvar(parttokens[0],typecount,split.x,split.y);
-   updatevar(parttokens[0],&val,split.x,split.y);   
+   addvar(split.name,typecount,split.x,split.y);
+   updatevar(split.name,&val,split.x,split.y);   
 }
 
 /* do function */
@@ -603,7 +590,6 @@ while(*currentptr != 0) {
  currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
  tc=tokenize_line(buf,argbuf," \009"); 
- printf("line=%s\n",buf);
 
  touppercase(argbuf[0]);
 
@@ -737,8 +723,6 @@ for(count=start;count<end;count++) {
  splitvarname(tokens[count],&split);
 
  if(check_function(split.name) == 0) {			/* is function */
-  printf("is function\n");
-
   b=tokens[count];
   d=buf;
 
@@ -760,8 +744,6 @@ for(count=start;count<end;count++) {
 
   callfunc(buf,functionargs);
 
-//  get_return_value(val);		/* get return value */
-
   if(retval.type == VAR_STRING) {		/* returning string */   
    strcpy(tokens[count],retval.s);
    return;
@@ -770,8 +752,6 @@ for(count=start;count<end;count++) {
 	 sprintf(tokens[count],"%d",retval.i);
   }
   else if(retval.type == VAR_NUMBER) {		/* returning double */
-	 printf("return double=%.6g\n",retval.d);
-
 	 sprintf(tokens[count],"%.6g",retval.d);
   }
   else if(retval.type == VAR_SINGLE) {		/* returning single */
@@ -832,10 +812,6 @@ char *d;
 
 substitute_vars(start,end,tokens);
 
-for(count=start;count<end;count++) {
- printf("tokenzzz=%s\n",tokens[count]);
-}
-
 b=tokens[start];			/* point to first token */
 if(*b == '"') b++;			/* skip over quote */
 
@@ -850,7 +826,6 @@ while(*b != 0) {
 for(count=start+1;count<end;count++) {
 
  if(strcmp(tokens[count],"+") == 0) { 
-    printf("cat=%s\n",tokens[count+1]);
 
     b=tokens[count+1];
     if(*b == '"') b++;			/* skip over quote */

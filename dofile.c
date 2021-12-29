@@ -718,8 +718,6 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  }
  else if(currentfunction->return_type == VAR_NUMBER) {		/* returning double */
 	 retval.d=doexpr(tokens,1,tc);
-	 printf("retval.d=%.6g\n",retval.d);
-
  }
  else if(currentfunction->return_type == VAR_SINGLE) {		/* returning single */
 	 retval.f=doexpr(tokens,1,tc);	
