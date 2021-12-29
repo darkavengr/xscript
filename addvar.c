@@ -615,13 +615,15 @@ while(vars != NULL) {
   vars=vars->next;
 }
 
-callpos--;
-currentfunction=callstack[callpos].funcptr;
-currentptr=callstack[callpos].callptr;	/* restore information aboutn the calling function */
-
+return_from_function();			/* return */
 return;
 }
 
+int return_from_function(void) {
+callpos--;
+currentfunction=callstack[callpos].funcptr;
+currentptr=callstack[callpos].callptr;	/* restore information aboutn the calling function */
+}
 
 int atoi_base(char *hex,int base) {
 int num=0;

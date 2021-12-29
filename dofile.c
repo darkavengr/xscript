@@ -702,6 +702,9 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
  * return from call
  */
 
+extern int callpos;
+extern struct callstack;
+
 int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  int count;
 
@@ -723,6 +726,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	 retval.f=doexpr(tokens,1,tc);	
  }
 
+return_from_function();			/* return */
  return;
 }
 
