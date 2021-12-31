@@ -475,6 +475,7 @@ while(next != NULL) {
 return(-1);
 }
 
+
 /*
  * call function
  *
@@ -523,6 +524,8 @@ callstack[callpos].funcptr=next;
 
 currentfunction=next;
 currentptr=next->funcstart;
+
+printf("currentfunction->return_type=%d\n",currentfunction->return_type);
 
 currentfunction->stat |= FUNCTION_STATEMENT;
 
@@ -691,7 +694,7 @@ char *functionargs[MAX_SIZE];
 functions *func;
 char *b;
 char *d;
-int county;
+int countx;
 double ret;
 varval val;
 
@@ -749,6 +752,7 @@ for(count=start;count<end;count++) {
   callfunc(buf,functionargs);
 
   if(retval.type == VAR_STRING) {		/* returning string */   
+   printf("subst=%s\n",retval.s);
    strcpy(tokens[count],retval.s);
   }
   else if(retval.type == VAR_INTEGER) {		/* returning integer */
@@ -815,10 +819,16 @@ char *d;
 
 substitute_vars(start,end,tokens);
 
-b=tokens[start];			/* point to first token */
-if(*b == '"') b++;			/* skip over quote */
+val->type=VAR_STRING;
 
 d=val->s;				/* copy token */
+
+b=tokens[start];			/* point to first token */
+if(*b == '"') {
+ *d++='"';
+ b++;			/* skip over quote */
+}
+
 while(*b != 0) {
  if(*b == '"') break;
  if(*b == 0) break;
@@ -844,6 +854,7 @@ for(count=start+1;count<end;count++) {
    }
   }
 
+*d++='"';
  return;
 }
 

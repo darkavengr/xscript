@@ -410,15 +410,15 @@ if((strlen(tokens[2]) > 0) && (strcmp(tokens[2],"RETURNS") != 0)) {			/* not ret
 
 if(strcmp(tokens[2],"RETURNS") == 0) {			/* return type */
  vartype=check_var_type(tokens[3]);		/* get variable type */  
- 
+
  if(vartype == -1) {				/* invalid variable type */
   print_error(BAD_TYPE);
   return(-1);
  }
- else
- {
-  vartype=VAR_NUMBER;
- } 
+}
+else
+{
+ vartype=VAR_NUMBER;
 }
 
 function(functionname,args,vartype);
@@ -434,14 +434,16 @@ int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 double exprone;
 char c;
 varval val;
+int countx;
+varsplit splitname;
+
+splitvarname(tokens[1],&splitname);
+
+
 c=*tokens[1];
 
-if((c == '"') || (getvartype(tokens[1]) == VAR_STRING) ) {		/* if it's a string */
-
+if((c == '"') || (getvartype(tokens[1]) == VAR_STRING) ) {		/* if it's a string or string variable */
  conatecate_strings(1,tc,tokens,&val);					/* join all the strings on the line */
-
- printf("%s\n",val.s);
-
  return;
 }
 
@@ -737,17 +739,48 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
  */
 
 extern int callpos;
-extern struct callstack;
 
 int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  int count;
+ int vartype;
 
  currentfunction->stat &= FUNCTION_STATEMENT;
+
+/* check return type */
+
+ for(count=1;count<tc;count++) {
+  if((*tokens[count] >= '0' && *tokens[count] <= '9') && (currentfunction->return_type == VAR_STRING)) {
+   print_error(TYPE_ERROR);
+   return(-1);
+  }
+
+  if((*tokens[count] == '"') && (currentfunction->return_type != VAR_STRING)) {
+   print_error(TYPE_ERROR);
+   return(-1);
+  }
+
+  vartype=getvartype(tokens[count]);
+
+  if(vartype != -1) {
+   if((currentfunction->return_type == VAR_STRING) && (vartype != VAR_STRING)) {
+    print_error(TYPE_ERROR);
+    return(-1);
+   }
+
+   if((currentfunction->return_type != VAR_STRING) && (vartype == VAR_STRING)) {
+    print_error(TYPE_ERROR);
+    return(-1);
+   }
+
+ }
+}
 
  retval.type=currentfunction->return_type;
 
  if(currentfunction->return_type == VAR_STRING) {		/* returning string */
-  conatecate_strings(1,tc,tokens,retval.s);		/* get strings */
+  conatecate_strings(1,tc,tokens,&retval);		/* get strings */
+
+  printf("retval.s=%s\n",retval.s);
   return;
  }
  else if(currentfunction->return_type == VAR_INTEGER) {		/* returning integer */
