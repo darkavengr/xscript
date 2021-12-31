@@ -211,7 +211,7 @@ int intval;
 double floatval;
 
 if(name == NULL) return(-1);
-	
+
 c=*name;
 
 if(c >= '0' && c <= '9') {
@@ -228,13 +228,12 @@ splitvarname(name,&split);
 
 next=currentfunction->vars;
 
-while(next != NULL) {  
+while(next != NULL) {
 
  touppercase(next->varname);		/* to lowercase */
  touppercase(split.name);
 
- if(strcmp(next->varname,split.name) == 0) { 
-
+ if(strcmp(next->varname,split.name) == 0) {
    switch(next->type) {
       case VAR_NUMBER:
         val->d=next->val[split.x*split.y].d;
@@ -244,23 +243,23 @@ while(next != NULL) {
         strcpy(val->s,next->val[split.x*split.y].s);
         return(0);
 
-       case VAR_INTEGER:	     
+       case VAR_INTEGER:
         val->i=next->val[split.x*split.y].i;
 	return(0);
 
-       case VAR_SINGLE:	     
+       case VAR_SINGLE:
         next->val[split.x*split.y].f=val->f;
 	return(0);
 
        default:
-        val->i=next->val[split.x*split.y].i;
+        val->d=next->val[split.x*split.y].d;
         return(0);
     }
 
   }
-   
+
   next=next->next;
- } 
+ }
 
 return(-1);
 }
@@ -519,7 +518,7 @@ callstack[callpos].callptr=currentptr;	/* save information aboutn the calling fu
 callstack[callpos].funcptr=currentfunction;
 callpos++;
 
-callstack[callpos].callptr=next->funcstart;	/* nformation about the current function */
+callstack[callpos].callptr=next->funcstart;	/* information about the current function */
 callstack[callpos].funcptr=next;
 
 currentfunction=next;
@@ -620,9 +619,12 @@ return;
 }
 
 int return_from_function(void) {
-callpos--;
-currentfunction=callstack[callpos].funcptr;
-currentptr=callstack[callpos].callptr;	/* restore information aboutn the calling function */
+
+if(callpos-1 >= 0) {
+ callpos--;
+ currentfunction=callstack[callpos].funcptr;  
+ currentptr=callstack[callpos].callptr;	/* restore information aboutn the calling function */
+}
 }
 
 int atoi_base(char *hex,int base) {
@@ -748,7 +750,6 @@ for(count=start;count<end;count++) {
 
   if(retval.type == VAR_STRING) {		/* returning string */   
    strcpy(tokens[count],retval.s);
-   return;
   }
   else if(retval.type == VAR_INTEGER) {		/* returning integer */
 	 sprintf(tokens[count],"%d",retval.i);
@@ -846,4 +847,19 @@ for(count=start+1;count<end;count++) {
  return;
 }
 
+int check_var_type(char *typename) {
+ int typecount=0;
+
+ touppercase(typename);
+
+ while(vartypenames[typecount] != NULL) {
+   if(strcmp(vartypenames[typecount],typename) == 0) break;	/* found type */
+  
+   typecount++;
+ }
+
+ if(vartypenames[typecount] == NULL) return(-1);		/* invalid type */
+
+ return(typecount);
+}
 

@@ -70,7 +70,7 @@ for(count=start;count<end;count++) {
 
    if(strcmp(temp[countx],")") == 0) {
 
-    sprintf(brackettemp[bracketcount],"%.6g",doexpr(temp,count+1,countx));		/* do expression */  
+    sprintf(brackettemp[bracketcount],"%.6g",doexpr(temp,count+1,countx-1));		/* do expression */  
 
     break;
  
@@ -218,11 +218,10 @@ int do_condition(char *tokens[][MAX_SIZE],int start,int end) {
 int inverse;
 double exprone;
 double exprtwo;
-int ifexpr=0;
+int ifexpr=-1;
 int exprtrue=0;
 int exprpos=0;
 int count=0;
-char *buf[10];
 int conditions[MAX_SIZE];
 int condcount=0;
 varval val;
@@ -244,33 +243,30 @@ varval val;
 	   ifexpr=EQUAL;
 	   break;
 	  }
-
-	  if(strcmp(tokens[exprpos],"!=") == 0) {
+	  else if(strcmp(tokens[exprpos],"!=") == 0) {
 	   ifexpr=NOTEQUAL;
 	   break;
 	  }
-
-	  if(strcmp(tokens[exprpos],">") == 0) {
+	  else if(strcmp(tokens[exprpos],">") == 0) {
 	   ifexpr=GTHAN;
 	   break;	
           }
-
-	  if(strcmp(tokens[exprpos],"<") == 0) {           
+	  else if(strcmp(tokens[exprpos],"<") == 0) {           
 	   ifexpr=LTHAN;
            break;
 	  }
-
-	  if(strcmp(tokens[exprpos],"=<") == 0) {
+	  else if(strcmp(tokens[exprpos],"=<") == 0) {
            ifexpr=EQLTHAN;
            break;
 	  }
-
-	  if(strcmp(tokens[exprpos],">=") == 0) {
+	  else if(strcmp(tokens[exprpos],">=") == 0) {
            ifexpr=EQGTHAN;
            break;
 	  }
  }
-        
+
+	if(ifexpr == -1) return(-1);
+
 	if(getvartype(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
 	 conatecate_strings(start,exprpos,tokens,&val);					/* join all the strings on the line */
 	 conatecate_strings(exprpos+1,end,tokens,&val);					/* join all the strings on the line */
@@ -302,9 +298,6 @@ varval val;
 
           case EQGTHAN:						/* exprone >= exprtwo */
 	   return(exprone >= exprtwo);
-
-	   default:
-	    return(0);
           }
 
 	

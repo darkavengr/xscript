@@ -12,13 +12,14 @@
 
 #include "define.h"
 #include "defs.h"
-char *llcerrs[] = { "No error","Missing label","File not found","No parameters for statement","Bad expression",\
+char *llcerrs[] = { "No error","File not found","No parameters for statement","Bad expression",\
 		    "IF statement without ELSEIF or ENDIF","FOR statement without NEXT",\
 		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
 		    "Invalid variable name","Out of memory","BREAK outside FOR or WHILE loop","Read error","Syntax error",\
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
 		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments",\
-		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF" };
+		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
+		    "Invalid condition","Invalid type" };
 
 char *readlinefrombuffer(char *buf,char *linebuf,int size);
 
@@ -41,7 +42,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 int saveexprtrue=0;
 extern int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
@@ -65,7 +66,11 @@ statement statements[] = { { "IF",&if_statement },\
       { "CONTINUE",&continue_statement },\
       { "NEXT",&next_statement },\
       { "BREAK",&break_statement },\
-      { "AS",&as_statement },\
+      { "AS",&bad_keyword_as_statement },\
+      { "TO",&bad_keyword_as_statement },\
+      { "STEP",&bad_keyword_as_statement },\
+      { "THEN",&bad_keyword_as_statement },\
+      { "RETURNS",&bad_keyword_as_statement },\
       { NULL,NULL } };
 
 extern functions *currentfunction;
@@ -175,6 +180,7 @@ int doline(char *lbuf) {
  char c;
  int vartype;
  int count;
+ int countx;
  char *functionname[MAX_SIZE];
  char *args[MAX_SIZE];
  char *b;
@@ -212,7 +218,7 @@ do {
 // printf("%s %s\n",statements[statementcount].statement,tokens[0]);
 
  if(strcmp(statements[statementcount].statement,tokens[0]) == 0) {  
-  statements[statementcount].call_statement(tc,tokens);
+  if(statements[statementcount].call_statement(tc,tokens) == -1) exit(-1);		/* call statement and exit if error */
   statementcount=0;
 
   return;
@@ -237,7 +243,7 @@ while(*b != 0) {
 }
 
 d--;
-if(*d == ')') *d=0;	// no )
+if(*d == ')') *d=' ';	// no )
 
 
 if(check_function(functionname) == 0) {	/* user function */
@@ -250,10 +256,10 @@ if(check_function(functionname) == 0) {	/* user function */
  * assignment
  *
  */
-
 for(count=1;count<tc;count++) {
 
  if(strcmp(tokens[count],"=") == 0) {
+
 	 splitvarname(tokens[count-1],&split);			/* split variable */
 
 	 vartype=getvartype(split.name);
@@ -324,6 +330,7 @@ return;
 }
 
 
+
 /*
  * declare function
  *
@@ -341,28 +348,30 @@ int countx;
 b=tokens[1];		/* get function name */
 d=functionname;
 
-while(*b != 0) {
+while(*b != 0) {	/* copy until ) */
  if(*b == '(') {
-  d=args;		/* copy to args */
   b++;
+  break;
  }
 
  *d++=*b++;
 }
 
+/* copy remainder in tokens[1] */
+d=args;
 
-for(count=2;count<tc;count++) {
- touppercase(tokens[count]);
+while(*b != 0) {
+//	printf("%c\n",*b);
 
- b=tokens[count];		/* get function name */
- 
- while(*b != 0) *d++=*b++;
+	 if(*b == ')') {		/* copy until ) */
+		*d=0;
+		break;		/* at end of args */
+	 }
 
- if(*d == ')') break;		/* at end of args */
- *d++=' ';
+ *d++=*b++;
 }
 
-if(*d == ')') *d=0;
+count++;
 
 while(count < tc) {
  if(strcmp(tokens[count],"AS") == 0) {		/* array as type */
@@ -391,10 +400,30 @@ while(count < tc) {
  count++;
 }
 
+touppercase(tokens[2]);
+touppercase(tokens[3]);
+
+if((strlen(tokens[2]) > 0) && (strcmp(tokens[2],"RETURNS") != 0)) {			/* not returns */
+  print_error(SYNTAX_ERROR);
+  return;
+}
+
+if(strcmp(tokens[2],"RETURNS") == 0) {			/* return type */
+ vartype=check_var_type(tokens[3]);		/* get variable type */  
+ 
+ if(vartype == -1) {				/* invalid variable type */
+  print_error(BAD_TYPE);
+  return(-1);
+ }
+ else
+ {
+  vartype=VAR_NUMBER;
+ } 
+}
+
 function(functionname,args,vartype);
 return;
-}
- 
+} 
 
 /*
  * display message
@@ -499,7 +528,11 @@ touppercase(tokens[0]);
 
 if((strcmp(tokens[0],"IF") == 0) || (strcmp(tokens[0],"ELSEIF") == 0)) {
   exprtrue=do_condition(tokens,1,tc-1);
- 
+  if(exprtrue == -1) {
+   print_error(BAD_CONDITION);
+   return(-1);
+  }
+
 if(exprtrue == 1) {
 		saveexprtrue=exprtrue;
 
@@ -589,7 +622,8 @@ if(strcmp(tokens[2],"=") != 0) {
 // for count = 1 to 10
 
 for(count=1;count<tc;count++) {
- if(strcmp(tokens[count],"to") == 0) break;		/* found to */
+ touppercase(tokens[count]);
+ if(strcmp(tokens[count],"TO") == 0) break;		/* found to */
 }
 
 if(count == tc) {
@@ -726,7 +760,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	 retval.f=doexpr(tokens,1,tc);	
  }
 
-return_from_function();			/* return */
+//return_from_function();			/* return */
  return;
 }
 
@@ -776,11 +810,19 @@ currentfunction->stat |= WHILE_STATEMENT;
  
 substitute_vars(1,condition_tc,condition_tokens);
 exprtrue=do_condition(condition_tokens,1,condition_tc);			/* do condition */
+if(exprtrue == -1) {
+ print_error(BAD_CONDITION);
+ return(-1);
+}
 
 do {
       currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
       exprtrue=do_condition(condition_tokens,1,condition_tc);			/* do condition */
+      if(exprtrue == -1) {
+       print_error(BAD_CONDITION);
+       return(-1);
+      }
 
       if(exprtrue == 0) {
        while(*currentptr != 0) {
@@ -788,7 +830,8 @@ do {
         currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
         tc=tokenize_line(buf,tokens," \009");
 
-        if(strcmp(tokens[0],"wend") == 0) {
+        touppercase(tokens[0]);
+        if(strcmp(tokens[0],"WEND") == 0) {
          currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 	 return;
         }
@@ -798,7 +841,8 @@ do {
 
       tc=tokenize_line(buf,tokens," \009");
 
-      if(strcmp(tokens[0],"wend") == 0) {
+      touppercase(tokens[0]);
+      if(strcmp(tokens[0],"WEND") == 0) {
        includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
        currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;
        return;
@@ -890,7 +934,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  varsplit split;
- int count;
+ int vartype;
 
  splitvarname(tokens[1],&split);
 
@@ -898,28 +942,19 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  touppercase(tokens[3]);
 
  if(strcmp(tokens[2],"AS") == 0) {		/* array as type */
-  count=0;
-
-  while(vartypenames[count] != NULL) {
-   touppercase(vartypenames[count]);
-    if(strcmp(vartypenames[count],tokens[3]) == 0) break;	/* found type */
-   
-   count++;
-  }
-
-  if(vartypenames[count] == NULL) {		/* invalid type */
+  vartype=check_var_type(tokens[3]);		/* get variable type */  
+ 
+  if(vartype == -1) {				/* invalid variable type */
    print_error(BAD_TYPE);
-   return(BAD_TYPE);
+   return(-1);
   }
  }
  else
  {
-  count=VAR_NUMBER;
+  vartype=VAR_NUMBER;
  }
 
-// printf("count=%d\n",count);
-
- addvar(split.name,count,split.x,split.y);
+ addvar(split.name,vartype,split.x,split.y);
 
 }
 
@@ -941,7 +976,7 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  return(CONTINUE_NO_LOOP);
 }
 
-int as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  print_error(SYNTAX_ERROR);
 }
 
@@ -976,6 +1011,7 @@ while(*token != 0) {
     *d=*token++;
 
     if((*d == '"') || (*d == ')') || (*d == ']') ) {		/* quoted text */
+	
 	break;
     }
 
@@ -983,7 +1019,6 @@ while(*token != 0) {
   }
 
  }
-
 
   s=split;
 
