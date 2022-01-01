@@ -74,20 +74,20 @@ int statementcount;
 
 splitvarname(name,&split);				/* parse variable name */
 
-touppercase(split.name);
-
 statementcount=0;
  
 do {
  if(statements[statementcount].statement == NULL) break;
 
- if(strcmp(statements[statementcount].statement,split.name) == 0) return(BAD_VARNAME);
+ if(strcmpi(statements[statementcount].statement,split.name) == 0) return(BAD_VARNAME);
  
  statementcount++;
 
 } while(statements[statementcount].statement != NULL);
 
- if(currentfunction->vars == NULL) {			/* first entry */
+statementcount=0;
+
+if(currentfunction->vars == NULL) {			/* first entry */
   currentfunction->vars=malloc(sizeof(vars_t));		/* add new item to list */
   if(currentfunction->vars == NULL) return(NO_MEM);	/* can't resize */
 
@@ -132,11 +132,10 @@ varval *varv;
 
 splitvarname(name,&split);
 
-touppercase(split.name);
 next=currentfunction->vars;
 
  while(next != NULL) {
-   if(strcmp(next->varname,split.name) == 0) {		/* already defined */
+   if(strcmpi(next->varname,split.name) == 0) {		/* already defined */
 
     if((x*y) > (next->xsize*next->ysize)) {		/* outside array */
 	print_error(BAD_ARRAY);
@@ -179,15 +178,11 @@ int statementcount;
  
 splitvarname(name,&split);				/* parse variable name */
 
-touppercase(split.name);
-
- next=currentfunction->vars;
+next=currentfunction->vars;
 
  while(next != NULL) {
-   touppercase(next->varname);
-   touppercase(split.name);
 
-   if(strcmp(next->varname,split.name) == 0) {		/* found variable */
+   if(strcmpi(next->varname,split.name) == 0) {		/* found variable */
     if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) return(-1);	/* resize buffer */
    
     next->xsize=x;
@@ -230,10 +225,7 @@ next=currentfunction->vars;
 
 while(next != NULL) {
 
- touppercase(next->varname);		/* to lowercase */
- touppercase(split.name);
-
- if(strcmp(next->varname,split.name) == 0) {
+ if(strcmpi(next->varname,split.name) == 0) {
    switch(next->type) {
       case VAR_NUMBER:
         val->d=next->val[split.x*split.y].d;
@@ -274,16 +266,13 @@ if(*name >= '0' && *name <= '9') return(VAR_NUMBER);
 
 if(*name == '"') return(VAR_STRING);
 
-touppercase(name);		/* to lowercase */
 splitvarname(name,&split);
  
 next=currentfunction->vars;
 
 while(next != NULL) {  
-
- touppercase(next->varname);		/* to lowercase */
   
- if(strcmp(next->varname,split.name) == 0) {
+ if(strcmpi(next->varname,split.name) == 0) {
   return(next->type);
  }
 
@@ -383,15 +372,13 @@ int removevar(char *name) {
  varsplit split;
 
  splitvarname(name,&split);				/* parse variable name */
-
- touppercase(name);		/* to lowercase */
  
  next=currentfunction->vars;						/* point to variables */
  
  while(next != NULL) {
    last=next;
   
-   if(strcmp(next->varname,split.name) == 0) {			/* found variable */
+   if(strcmpi(next->varname,split.name) == 0) {			/* found variable */
      last->next=next->next;				/* point over link */
 
 //    free(next);
@@ -418,15 +405,12 @@ int function(char *name,char *args,int function_return_type) {
  
  if((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT) return(NESTED_FUNCTION);
 
- touppercase(name);		/* to lowercase */
-
  next=funcs;						/* point to variables */
  
  while(next != NULL) {
   last=next;
-  touppercase(next->name);	/* to lowercase */
 
-  if(strcmp(next->name,name) == 0) return(FUNCTION_IN_USE);	/* already defined */
+  if(strcmpi(next->name,name) == 0) return(FUNCTION_IN_USE);	/* already defined */
 
   next=next->next;
  }
@@ -449,9 +433,7 @@ int function(char *name,char *args,int function_return_type) {
   currentptr=readlinefrombuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
   tokenize_line(linebuf,tokens," ");			/* copy args */
 
-  touppercase(tokens[0]);
-
-  if(strcmp(tokens[0],"ENDFUNCTION") == 0) break;  
+  if(strcmpi(tokens[0],"ENDFUNCTION") == 0) break;  
 }    while(*currentptr != 0); 			/* until end */
 
  return;
@@ -464,11 +446,8 @@ next=funcs;						/* point to variables */
 
 /* find function name */
 
-touppercase(name);
-
 while(next != NULL) {
- touppercase(next->name);
- if(strcmp(next->name,name) == 0) return(0);		/* found name */   
+ if(strcmpi(next->name,name) == 0) return(0);		/* found name */   
 
  next=next->next;
 }
@@ -501,12 +480,8 @@ next=funcs;						/* point to variables */
 
 /* find function name */
 
-touppercase(name);		/* to lowercase */
-
 while(next != NULL) {
- touppercase(next->name);		/* to lowercase */
-
- if(strcmp(next->name,name) == 0) break;		/* found name */   
+ if(strcmpi(next->name,name) == 0) break;		/* found name */   
 
  next=next->next;
 }
@@ -525,8 +500,6 @@ callstack[callpos].funcptr=next;
 currentfunction=next;
 currentptr=next->funcstart;
 
-printf("currentfunction->return_type=%d\n",currentfunction->return_type);
-
 currentfunction->stat |= FUNCTION_STATEMENT;
 
 //if(tc < next->funcargcount) return(TOO_FEW_ARGS);	/* too few arguments */
@@ -538,15 +511,11 @@ for(count=0;count < tc;count++) {
   parttc=tokenize_line(next->argvars[count],parttokens," ");		/* split token again */
 
   /* check if declaring variable with type */
-  touppercase(parttokens[1]);
-
-  if(strcmp(parttokens[1],"AS") == 0) {		/* variable type */
+  if(strcmpi(parttokens[1],"AS") == 0) {		/* variable type */
  	  typecount=0;
 
-	 touppercase(parttokens[2]);
-
  	 while(vartypenames[typecount] != NULL) {
-	   if(strcmp(vartypenames[typecount],parttokens[2]) == 0) break;	/* found type */
+	   if(strcmpi(vartypenames[typecount],parttokens[2]) == 0) break;	/* found type */
   
 	   typecount++;
 	 }
@@ -593,9 +562,7 @@ while(*currentptr != 0) {
 
  tc=tokenize_line(buf,argbuf," \009"); 
 
- touppercase(argbuf[0]);
-
- if(strcmp(argbuf[0],"ENDFUNCTION") == 0) break;
+ if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
  doline(buf);
 
@@ -825,7 +792,7 @@ d=val->s;				/* copy token */
 
 b=tokens[start];			/* point to first token */
 if(*b == '"') {
- *d++='"';
+// *d++='"';
  b++;			/* skip over quote */
 }
 
@@ -838,7 +805,7 @@ while(*b != 0) {
 
 for(count=start+1;count<end;count++) {
 
- if(strcmp(tokens[count],"+") == 0) { 
+ if(strcmpi(tokens[count],"+") == 0) { 
 
     b=tokens[count+1];
     if(*b == '"') b++;			/* skip over quote */
@@ -854,17 +821,16 @@ for(count=start+1;count<end;count++) {
    }
   }
 
-*d++='"';
+*d++=0;
+//*d++='"';
  return;
 }
 
 int check_var_type(char *typename) {
  int typecount=0;
 
- touppercase(typename);
-
  while(vartypenames[typecount] != NULL) {
-   if(strcmp(vartypenames[typecount],typename) == 0) break;	/* found type */
+   if(strcmpi(vartypenames[typecount],typename) == 0) break;	/* found type */
   
    typecount++;
  }

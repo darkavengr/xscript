@@ -71,6 +71,10 @@ statement statements[] = { { "IF",&if_statement },\
       { "STEP",&bad_keyword_as_statement },\
       { "THEN",&bad_keyword_as_statement },\
       { "RETURNS",&bad_keyword_as_statement },\
+      { "DOUBLE",&bad_keyword_as_statement },\
+      { "STRING",&bad_keyword_as_statement },\
+      { "INTEGER",&bad_keyword_as_statement },\
+      { "SINGLE",&bad_keyword_as_statement },\
       { NULL,NULL } };
 
 extern functions *currentfunction;
@@ -213,11 +217,10 @@ statementcount=0;
 
 do {
  if(statements[statementcount].statement == NULL) break;
- touppercase(tokens[0]);
 
 // printf("%s %s\n",statements[statementcount].statement,tokens[0]);
 
- if(strcmp(statements[statementcount].statement,tokens[0]) == 0) {  
+ if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  
   if(statements[statementcount].call_statement(tc,tokens) == -1) exit(-1);		/* call statement and exit if error */
   statementcount=0;
 
@@ -258,7 +261,7 @@ if(check_function(functionname) != -1) {	/* user function */
  */
 for(count=1;count<tc;count++) {
 
- if(strcmp(tokens[count],"=") == 0) {
+ if(strcmpi(tokens[count],"=") == 0) {
 
 	 splitvarname(tokens[count-1],&split);			/* split variable */
 
@@ -374,12 +377,11 @@ while(*b != 0) {
 count++;
 
 while(count < tc) {
- if(strcmp(tokens[count],"AS") == 0) {		/* array as type */
+ if(strcmpi(tokens[count],"AS") == 0) {		/* array as type */
   vartype=0;
 
   while(vartypenames[vartype] != NULL) {
-   touppercase(vartypenames[vartype]);
-    if(strcmp(vartypenames[vartype],tokens[3]) == 0) break;	/* found type */
+    if(strcmpi(vartypenames[vartype],tokens[3]) == 0) break;	/* found type */
    
    vartype++;
   }
@@ -400,15 +402,12 @@ while(count < tc) {
  count++;
 }
 
-touppercase(tokens[2]);
-touppercase(tokens[3]);
-
-if((strlen(tokens[2]) > 0) && (strcmp(tokens[2],"RETURNS") != 0)) {			/* not returns */
+if((strlen(tokens[2]) > 0) && (strcmpi(tokens[2],"RETURNS") != 0)) {			/* not returns */
   print_error(SYNTAX_ERROR);
   return;
 }
 
-if(strcmp(tokens[2],"RETURNS") == 0) {			/* return type */
+if(strcmpi(tokens[2],"RETURNS") == 0) {			/* return type */
  vartype=check_var_type(tokens[3]);		/* get variable type */  
 
  if(vartype == -1) {				/* invalid variable type */
@@ -530,9 +529,7 @@ currentfunction->stat |= IF_STATEMENT;
 
 while(*currentptr != 0) {
 
-touppercase(tokens[0]);
-
-if((strcmp(tokens[0],"IF") == 0) || (strcmp(tokens[0],"ELSEIF") == 0)) {
+if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {
   exprtrue=do_condition(tokens,1,tc-1);
   if(exprtrue == -1) {
    print_error(BAD_CONDITION);
@@ -548,18 +545,16 @@ if(exprtrue == 1) {
 
 		tokenize_line(buf,tokens," \009");			/* tokenize line */
 
-		touppercase(tokens[0]);
-
-		if(strcmp(tokens[0],"ENDIF") == 0) {
+		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
 			return;
 		}
 
-	  } while((strcmp(tokens[0],"ENDIF") != 0) && (strcmp(tokens[0],"ELSEIF") != 0)  && (strcmp(tokens[0],"ELSE") != 0));
+	  } while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF") != 0)  && (strcmpi(tokens[0],"ELSE") != 0));
   }
 }
 
- if((strcmp(tokens[0],"ELSE") == 0)) {
+ if((strcmpi(tokens[0],"ELSE") == 0)) {
 
   if(saveexprtrue == 0) {
 	    do {
@@ -569,14 +564,12 @@ if(exprtrue == 1) {
 
 		tokenize_line(buf,tokens," \009");			/* tokenize line */
 
-		touppercase(tokens[0]);
-
-		if(strcmp(tokens[0],"ENDIF") == 0) {
+		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
 			return;
 		}
 
-	  } while((strcmp(tokens[0],"ENDIF") != 0) && (strcmp(tokens[0],"ELSEIF")) != 0);
+	  } while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF")) != 0);
  }
 }
 
@@ -619,7 +612,7 @@ if(tc < 4) {						/* Not enough parameters */
 
 currentfunction->stat |= FOR_STATEMENT;
 
-if(strcmp(tokens[2],"=") != 0) {
+if(strcmpi(tokens[2],"=") != 0) {
  print_error(SYNTAX_ERROR);
  return(SYNTAX_ERROR);
 }
@@ -628,8 +621,7 @@ if(strcmp(tokens[2],"=") != 0) {
 // for count = 1 to 10
 
 for(count=1;count<tc;count++) {
- touppercase(tokens[count]);
- if(strcmp(tokens[count],"TO") == 0) break;		/* found to */
+ if(strcmpi(tokens[count],"TO") == 0) break;		/* found to */
 }
 
 if(count == tc) {
@@ -638,7 +630,7 @@ if(count == tc) {
 }
 
 for(countx=1;countx<tc;countx++) {
- if(strcmp(tokens[countx],"step") == 0) break;		/* found step */
+ if(strcmpi(tokens[countx],"step") == 0) break;		/* found step */
 }
 
 if(countx == tc) {
@@ -707,9 +699,7 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
 
  	     tokenize_line(buf,tokens," \009");			/* tokenize line */
 
-             touppercase(tokens[0]);
-
-  	     if(strcmp(tokens[0],"NEXT") == 0) {
+  	     if(strcmpi(tokens[0],"NEXT") == 0) {
 
 	      includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
 
@@ -867,8 +857,7 @@ do {
         currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
         tc=tokenize_line(buf,tokens," \009");
 
-        touppercase(tokens[0]);
-        if(strcmp(tokens[0],"WEND") == 0) {
+        if(strcmpi(tokens[0],"WEND") == 0) {
          currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 	 return;
         }
@@ -878,8 +867,7 @@ do {
 
       tc=tokenize_line(buf,tokens," \009");
 
-      touppercase(tokens[0]);
-      if(strcmp(tokens[0],"WEND") == 0) {
+      if(strcmpi(tokens[0],"WEND") == 0) {
        includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
        currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;
        return;
@@ -957,10 +945,9 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
    tokenize_line(buf,tokens," \009");
 
-   touppercase(tokens[0]);           
-   if((strcmp(tokens[0],"WEND") == 0) || (strcmp(tokens[0],"NEXT") == 0)) {
-    if((strcmp(tokens[0],"WEND") == 0)) currentfunction->stat &= WHILE_STATEMENT;
-    if((strcmp(tokens[0],"NEXT") == 0)) currentfunction->stat &= FOR_STATEMENT;
+   if((strcmpi(tokens[0],"WEND") == 0) || (strcmpi(tokens[0],"NEXT") == 0)) {
+    if((strcmpi(tokens[0],"WEND") == 0)) currentfunction->stat &= WHILE_STATEMENT;
+    if((strcmpi(tokens[0],"NEXT") == 0)) currentfunction->stat &= FOR_STATEMENT;
   
     currentptr=readlinefrombuffer(currentptr,buf,MAX_SIZE);			/* get data */
     return;
@@ -975,10 +962,7 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  splitvarname(tokens[1],&split);
 
- touppercase(tokens[2]);
- touppercase(tokens[3]);
-
- if(strcmp(tokens[2],"AS") == 0) {		/* array as type */
+ if(strcmpi(tokens[2],"AS") == 0) {		/* array as type */
   vartype=check_var_type(tokens[3]);		/* get variable type */  
  
   if(vartype == -1) {				/* invalid variable type */
@@ -1136,3 +1120,16 @@ int print_error(int llcerr) {
  }
 }
 
+int strcmpi(char *source,char *dest) {
+ char a,b;
+ char *sourcetemp[MAX_SIZE];
+ char *desttemp[MAX_SIZE];
+
+ strcpy(sourcetemp,source);
+ strcpy(desttemp,dest);
+
+ touppercase(sourcetemp);
+ touppercase(desttemp);
+
+ return(strcmp(sourcetemp,desttemp));
+}
