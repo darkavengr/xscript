@@ -19,7 +19,7 @@ char *llcerrs[] = { "No error","File not found","No parameters for statement","B
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
 		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments",\
 		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
-		    "Invalid condition","Invalid type" };
+		    "Invalid condition","Invalid type in declaration" };
 
 char *readlinefrombuffer(char *buf,char *linebuf,int size);
 
@@ -250,7 +250,7 @@ if(*d == ')') *d=' ';	// no )
 
 
 if(check_function(functionname) != -1) {	/* user function */
- callfunc(functionname,args);
+ if(callfunc(functionname,args) == -1) exit(-1);
 } 
 
 
@@ -323,10 +323,10 @@ for(count=1;count<tc;count++) {
 	 updatevar(split.name,&val,split.x,split.y);
 
 	 return;
-	} 
+  } 
 
- return;
 }
+
 print_error(INVALID_STATEMENT);
 
 return;

@@ -99,6 +99,8 @@ if(currentfunction->vars == NULL) {			/* first entry */
 
   while(next != NULL) {
    last=next;
+
+   if(strcmpi(next->varname,split.name) == 0) return(-1);		/* variable exists */
    next=next->next;
   }
 
@@ -226,6 +228,12 @@ next=currentfunction->vars;
 while(next != NULL) {
 
  if(strcmpi(next->varname,split.name) == 0) {
+
+    if((split.x*split.y) > (next->xsize*next->ysize)) {		/* outside array */
+	print_error(BAD_ARRAY);
+	return;
+    }
+
    switch(next->type) {
       case VAR_NUMBER:
         val->d=next->val[split.x*split.y].d;
@@ -502,11 +510,15 @@ currentptr=next->funcstart;
 
 currentfunction->stat |= FUNCTION_STATEMENT;
 
-//if(tc < next->funcargcount) return(TOO_FEW_ARGS);	/* too few arguments */
-
 /* add variables from args */
 
 tc=tokenize_line(args,varbuf,",");
+
+if(tc < next->funcargcount) {			/* too few arguments */
+ print_error(TOO_FEW_ARGS);
+ return(-1);	/* too few arguments */
+}
+
 for(count=0;count < tc;count++) {
   parttc=tokenize_line(next->argvars[count],parttokens," ");		/* split token again */
 
@@ -716,10 +728,9 @@ for(count=start;count<end;count++) {
    *d++=*b++;
   }
 
-  callfunc(buf,functionargs);
+  if(callfunc(buf,functionargs) == -1) exit(-1);	/* error calling function */
 
   if(retval.type == VAR_STRING) {		/* returning string */   
-   printf("subst=%s\n",retval.s);
    strcpy(tokens[count],retval.s);
   }
   else if(retval.type == VAR_INTEGER) {		/* returning integer */
