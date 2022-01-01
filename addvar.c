@@ -31,8 +31,6 @@ char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
 extern char *currentptr;
 extern statement statements[];
 
-int returnvalue=0;
-
 struct {
  char *callptr;
  functions *funcptr;
@@ -498,6 +496,8 @@ if(next == NULL) return(INVALID_STATEMENT);
 
 next->vars=NULL;		/* no vars to begin with */
 
+printf("currentptr=%s\n",currentptr);
+
 callstack[callpos].callptr=currentptr;	/* save information aboutn the calling function */
 callstack[callpos].funcptr=currentfunction;
 callpos++;
@@ -605,7 +605,8 @@ int return_from_function(void) {
 if(callpos-1 >= 0) {
  callpos--;
  currentfunction=callstack[callpos].funcptr;  
- currentptr=callstack[callpos].callptr;	/* restore information aboutn the calling function */
+ currentptr=callstack[callpos].callptr;	/* restore information about the calling function */
+
 }
 }
 

@@ -8,7 +8,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
-#include <dlfcn.h>
 
 #include "define.h"
 #include "defs.h"
@@ -145,8 +144,8 @@ int dofile(char *filename) {
  includefiles[ic].lc=0;
  
  if(loadfile(filename) == -1) {
-  print_error(MISSING_FILE);
-  return(MISSING_FILE);
+  print_error(FILE_NOT_FOUND);
+  return(FILE_NOT_FOUND);
 }
 
 do {
@@ -464,15 +463,14 @@ return;
 
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;
-void *dlhandle;
 MODULES *next;
 MODULES *last;
+int handle;
 
-dlhandle=dlopen(tokens[1],RTLD_LAZY);			/* open library */
-
-if(dlhandle == -1) {			/* can't open */
- print_error(MISSING_FILE);
- return(MISSING_FILE);
+handle=open_module(tokens[1]);
+if(handle == -1) {	/* can't open module */
+ print_error(FILE_NOT_FOUND);
+ return(-1);
 }
 
 if(modules == NULL) {			/* first in list */
@@ -502,9 +500,7 @@ else
 
  next=last->next;
  strcpy(next->modulename,tokens[1]);
- next->dladdr=dlsym(dlhandle,tokens[1]);		/* get address of library function */
- next->dlhandle=dlhandle;
-
+ next->dlhandle=handle;
 return;
 }
 
@@ -582,7 +578,7 @@ if(exprtrue == 1) {
 }
 
 int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- print_error(ENDIF_NOIF);
+ if((currentfunction->stat & IF_STATEMENT) == 0) print_error(ENDIF_NOIF);
 }
 
 /*
@@ -773,8 +769,6 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  if(currentfunction->return_type == VAR_STRING) {		/* returning string */
   conatecate_strings(1,tc,tokens,&retval);		/* get strings */
-
-  printf("retval.s=%s\n",retval.s);
   return;
  }
  else if(currentfunction->return_type == VAR_INTEGER) {		/* returning integer */
@@ -787,7 +781,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	 retval.f=doexpr(tokens,1,tc);	
  }
 
-//return_from_function();			/* return */
+return_from_function();			/* return */
  return;
 }
 
@@ -912,8 +906,8 @@ return;
 
 int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(loadfile(tokens[1]) == -1) {
- print_error(MISSING_FILE);
- return(MISSING_FILE);
+ print_error(FILE_NOT_FOUND);
+ return(FILE_NOT_FOUND);
 }
  
 }
@@ -981,8 +975,8 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(dofile(tokens[1]) == -1) {
-  print_error(MISSING_FILE);
-  return(MISSING_FILE);
+  print_error(FILE_NOT_FOUND);
+  return(FILE_NOT_FOUND);
  }
 
 }

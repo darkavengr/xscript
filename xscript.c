@@ -17,7 +17,7 @@ varval cmdargs;
 
 init_funcs();
 
-/* intialized command-line arguments */
+/* intialize command-line arguments */
 
 addvar("argc",VAR_INTEGER,argc,0);
 cmdargs.i=argc;

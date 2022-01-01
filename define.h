@@ -4,7 +4,7 @@
 #define MAX_SIZE 256
 
 #define NO_ERROR	    0
-#define MISSING_FILE	    1
+#define FILE_NOT_FOUND	    1
 #define NO_PARAMS	    2
 #define BAD_EXPRESSION	    3
 #define IF_NO_ENDIF	    4
