@@ -246,7 +246,7 @@ d--;
 if(*d == ')') *d=' ';	// no )
 
 
-if(check_function(functionname) == 0) {	/* user function */
+if(check_function(functionname) != -1) {	/* user function */
  callfunc(functionname,args);
 } 
 
@@ -435,15 +435,19 @@ double exprone;
 char c;
 varval val;
 int countx;
-varsplit splitname;
+varsplit split;
 
-splitvarname(tokens[1],&splitname);
+splitvarname(tokens[1],&split);
 
 
 c=*tokens[1];
 
-if((c == '"') || (getvartype(tokens[1]) == VAR_STRING) ) {		/* if it's a string or string variable */
+/* if string literal, string variable or function returning string */
+
+if((c == '"') || (getvartype(tokens[1]) == VAR_STRING) || (check_function(split.name) == VAR_STRING) ) {	/* user function */ 
  conatecate_strings(1,tc,tokens,&val);					/* join all the strings on the line */
+ 
+ printf("%s\n",val.s);
  return;
 }
 
