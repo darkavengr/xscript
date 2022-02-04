@@ -481,7 +481,11 @@ varval val;
 int parttc;
 int typecount;
 int countx;
-
+char *modulename[MAX_SIZE];
+char *functionname[MAX_SIZE];
+char *b;
+char *d;
+ 
 next=funcs;						/* point to variables */
 
 /* find function name */
@@ -495,8 +499,6 @@ while(next != NULL) {
 if(next == NULL) return(INVALID_STATEMENT);
 
 next->vars=NULL;		/* no vars to begin with */
-
-printf("currentptr=%s\n",currentptr);
 
 callstack[callpos].callptr=currentptr;	/* save information aboutn the calling function */
 callstack[callpos].funcptr=currentfunction;
@@ -729,7 +731,10 @@ for(count=start;count<end;count++) {
    *d++=*b++;
   }
 
-  if(callfunc(buf,functionargs) == -1) exit(-1);	/* error calling function */
+  if(callfunc(buf,functionargs) == -1) {
+   print_error(INVALID_STATEMENT);
+   exit(-1);	/* error calling function */
+  }
 
   if(retval.type == VAR_STRING) {		/* returning string */   
    strcpy(tokens[count],retval.s);

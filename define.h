@@ -33,6 +33,9 @@
 #define ELSEIF_NOIF	    27
 #define BAD_CONDITION	    28
 #define BAD_TYPE	    29
+#define MODULE_NOT_FOUND    30
+#define FUNCTION_NOT_FOUND  31
+#define NO_MODULE_PATH      32
 
 #define TRUE 0
 #define FALSE 1
