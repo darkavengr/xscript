@@ -2,6 +2,9 @@
 
 MODULES *modules=NULL;
 
+/*
+ * Add module
+ */
 int add_module(char *modulename) {
 MODULES *next;
 MODULES *last;
@@ -64,9 +67,14 @@ for(count=0;count<tc;count++) {			/* loop through path array */
 return;
 }
 
+/*
+ * get module handle
+ */
 int module_get_handle(char *module) {
 MODULES *next;
 next=modules;
+
+/* search through linked list */
 
 while(next != NULL) {
  if(strcmpi(next->modulename,module) == 0) return(next->dlhandle);		/* found module */
