@@ -17,9 +17,10 @@ int count;
 
 modpath=getenv("XSCRIPT_MODULE_PATH");				/* get module path */
 
-if(modpath == NULL) {				/* no module path */
- print_error(NO_MODULE_PATH);
- return(-1);
+if(modpath == NULL)  {
+ print_error(NO_MODULE_PATH);	/* no module path warning */
+
+ strcpy(modpath,".");		/* use currnet directory */
 }
 
 tc=tokenize_line(modpath,moddirs,":");			/* tokenize line */
