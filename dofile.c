@@ -18,7 +18,7 @@ char *llcerrs[] = { "No error","File not found","No parameters for statement","B
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
 		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments",\
 		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
-		    "Invalid condition","Invalid type in declaration","Module not found","Function not found","Module path not found" };
+		    "Invalid condition","Invalid type in declaration" };
 
 char *readlinefrombuffer(char *buf,char *linebuf,int size);
 
@@ -86,6 +86,7 @@ char *readbuf=NULL;
 int bufsize=0;
 int ic=0;
 
+MODULES *modules=NULL;
 include includefiles[MAX_INCLUDE];
 
 int loadfile(char *filename) {
@@ -183,7 +184,6 @@ int doline(char *lbuf) {
  int vartype;
  int count;
  int countx;
- char *modulename[MAX_SIZE];
  char *functionname[MAX_SIZE];
  char *args[MAX_SIZE];
  char *b;
@@ -233,37 +233,7 @@ do {
 /* call user function */
 
 b=tokens[0];		/* get function name */
-
-if(strpbrk(tokens[0],".")) {			/* module name */
- d=modulename;			/* copy from modulename */
-
- while(*b != 0) {
-  if(*b == '(')  {
-   d=args;		/* copy to args */
-   b++;
-  }
-
-  if(*b == '.') {
-   d=functionname;		/* copy to functionanme */
-   b++;
-  }
-	
-  *d++=*b++;
- }
-
- count=module_call_function(modulename,functionname,args);		/* call module function */
-
-// if(count != 0) {
-//  print_error(count);
-//  return(-1);
-// }
- 
-// return;
-}
-else
-{
- d=functionname;
-}
+d=functionname;
 
 while(*b != 0) {
  if(*b == '(') {
@@ -277,7 +247,11 @@ while(*b != 0) {
 d--;
 if(*d == ')') *d=' ';	// no )
 
-if(callfunc(functionname,args) == -1) exit(-1);
+
+if(check_function(functionname) != -1) {	/* user function */
+ if(callfunc(functionname,args) == -1) exit(-1);
+} 
+
 
 /*
  *
@@ -488,12 +462,47 @@ return;
  */
 
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(add_module(tokens[1]) == -1) {
- print_error(MODULE_NOT_FOUND);
+int count;
+MODULES *next;
+MODULES *last;
+int handle;
+
+handle=open_module(tokens[1]);
+if(handle == -1) {	/* can't open module */
+ print_error(FILE_NOT_FOUND);
  return(-1);
 }
+
+if(modules == NULL) {			/* first in list */
+ modules=malloc(sizeof(MODULES));
+ if(modules == NULL) {
+  print_error(NO_MEM);
+  return(-1);
+ }
+
+ last=modules;
+}
+else
+{
+ next=modules;
+
+ while(next != NULL) {
+  last=next;
+  next=next->next;
+ }
 }
 
+ last->next=malloc(sizeof(MODULES));
+ if(modules == NULL) {
+  print_error(NO_MEM);
+  return(-1);
+ }
+
+ next=last->next;
+ strcpy(next->modulename,tokens[1]);
+ next->dlhandle=handle;
+return;
+}
 
 /*
  * IF statement
@@ -772,7 +781,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	 retval.f=doexpr(tokens,1,tc);	
  }
 
-//return_from_function();			/* return */
+return_from_function();			/* return */
  return;
 }
 
@@ -815,22 +824,18 @@ if(tc < 1) {						/* Not enough parameters */
 currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
 currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
-memcpy(condition_tokens,tokens,(tc*(MAX_SIZE*MAX_SIZE)));		/* save copy of condition */
+memcpy(condition_tokens,tokens,(tc*MAX_SIZE)*MAX_SIZE);		/* save copy of condition */
 condition_tc=tc;
 
 currentfunction->stat |= WHILE_STATEMENT;
  
-substitute_vars(1,condition_tc,condition_tokens);
-exprtrue=do_condition(condition_tokens,1,condition_tc);			/* do condition */
-if(exprtrue == -1) {
- print_error(BAD_CONDITION);
- return(-1);
-}
-
 do {
       currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
       exprtrue=do_condition(condition_tokens,1,condition_tc);			/* do condition */
+
+      //printf("exprtrue=%d\n",exprtrue);
+
       if(exprtrue == -1) {
        print_error(BAD_CONDITION);
        return(-1);
@@ -855,10 +860,9 @@ do {
       if(strcmpi(tokens[0],"WEND") == 0) {
        includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
        currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;
-       return;
       }
 
-       doline(buf);
+     doline(buf);
   } while(exprtrue == 1);
   
 
