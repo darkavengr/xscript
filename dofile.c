@@ -345,6 +345,7 @@ char *d;
 int count;
 int vartype;
 int countx;
+char *buf[MAX_SIZE];
 
 b=tokens[1];		/* get function name */
 d=functionname;
@@ -419,6 +420,7 @@ else
 }
 
 function(functionname,args,vartype);
+
 return;
 } 
 
@@ -492,7 +494,7 @@ currentfunction->stat |= IF_STATEMENT;
 while(*currentptr != 0) {
 
 if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {
-  exprtrue=do_condition(tokens,1,tc-1);
+  exprtrue=do_condition(tokens,1,tc);
   if(exprtrue == -1) {
    print_error(BAD_CONDITION);
    return(-1);
@@ -503,6 +505,9 @@ if(exprtrue == 1) {
 
 		do {
     		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+
+		if(*currentptr == 0) return;
+
 		doline(buf);
 
 		tokenize_line(buf,tokens," \009");			/* tokenize line */
@@ -521,6 +526,7 @@ if(exprtrue == 1) {
   if(saveexprtrue == 0) {
 	    do {
     		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+		if(*currentptr == 0) return;
 
 		doline(buf);
 
@@ -1069,6 +1075,9 @@ int print_error(int llcerr) {
  }
  else
  {
+//  printf("line=%lX\n",currentptr);
+//  asm("int $3");
+
   printf("%s %d: %s %s\n",includefiles[ic].filename,includefiles[ic].lc,currentfunction->name,llcerrs[llcerr]);
  }
 }

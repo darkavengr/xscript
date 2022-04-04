@@ -437,10 +437,12 @@ int function(char *name,char *args,int function_return_type) {
 
  do {
   currentptr=readlinefrombuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
-  tokenize_line(linebuf,tokens," ");			/* copy args */
+  tokenize_line(linebuf,tokens," \009");			/* copy args */
 
-  if(strcmpi(tokens[0],"ENDFUNCTION") == 0) break;  
+  if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
 }    while(*currentptr != 0); 			/* until end */
+
+print_error(FUNCTION_NO_ENDFUNCTION);
 
  return;
 }
@@ -576,12 +578,11 @@ while(*currentptr != 0) {
 
  if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
- printf("buf=%s\n",buf);
  doline(buf);
 
-}
+ if(strcmpi(argbuf[0],"RETURN") == 0) break;
 
-currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+}
 
 currentfunction->stat &= FUNCTION_STATEMENT;
 
@@ -598,6 +599,7 @@ while(vars != NULL) {
 }
 
 return_from_function();			/* return */
+
 return;
 }
 
@@ -748,6 +750,7 @@ for(count=start;count<end;count++) {
 	 sprintf(tokens[count],"%f",retval.f);
   }
 
+  continue;
  }
 
  if(getvarval(split.name,&val) != -1) {		/* is variable */
