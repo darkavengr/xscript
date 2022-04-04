@@ -1069,7 +1069,7 @@ int print_error(int llcerr) {
  }
  else
  {
-  printf("%s %d: %s\n",includefiles[ic].filename,includefiles[ic].lc,llcerrs[llcerr]);
+  printf("%s %d: %s %s\n",includefiles[ic].filename,includefiles[ic].lc,currentfunction->name,llcerrs[llcerr]);
  }
 }
 

@@ -496,7 +496,7 @@ if(next == NULL) return(INVALID_STATEMENT);
 
 next->vars=NULL;		/* no vars to begin with */
 
-printf("currentptr=%s\n",currentptr);
+//printf("currentptr=%s\n",currentptr);
 
 callstack[callpos].callptr=currentptr;	/* save information aboutn the calling function */
 callstack[callpos].funcptr=currentfunction;
@@ -576,6 +576,7 @@ while(*currentptr != 0) {
 
  if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
+ printf("buf=%s\n",buf);
  doline(buf);
 
 }
@@ -606,6 +607,9 @@ if(callpos-1 >= 0) {
  callpos--;
  currentfunction=callstack[callpos].funcptr;  
  currentptr=callstack[callpos].callptr;	/* restore information about the calling function */
+
+// printf("currentptr=%lX\n",currentptr);
+// asm("int $3");
 
 }
 }
