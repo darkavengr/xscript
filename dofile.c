@@ -1065,7 +1065,7 @@ return(buf);			/* return new position */
 
 int print_error(int llcerr) {
  if(*includefiles[ic].filename == 0) {			/* if in interactive mode */
-  printf("%s\n",llcerrs[llcerr]);
+  printf("%s %s\n",currentfunction->name,llcerrs[llcerr]);
  }
  else
  {
