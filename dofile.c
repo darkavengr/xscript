@@ -18,7 +18,7 @@ char *llcerrs[] = { "No error","File not found","No parameters for statement","B
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
 		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments",\
 		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
-		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH" };
+		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH","Type already exists" };
 
 char *readlinefrombuffer(char *buf,char *linebuf,int size);
 
@@ -41,6 +41,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 int saveexprtrue=0;
@@ -69,7 +70,7 @@ statement statements[] = { { "IF",&if_statement },\
       { "TO",&bad_keyword_as_statement },\
       { "STEP",&bad_keyword_as_statement },\
       { "THEN",&bad_keyword_as_statement },\
-      { "RETURNS",&bad_keyword_as_statement },\
+      { "AS",&bad_keyword_as_statement },\
       { "DOUBLE",&bad_keyword_as_statement },\
       { "STRING",&bad_keyword_as_statement },\
       { "INTEGER",&bad_keyword_as_statement },\
@@ -152,7 +153,7 @@ do {
 
  currentptr=readlinefrombuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
- currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;;
+ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
  if(*currentptr == 0) return; 
 
@@ -359,6 +360,8 @@ while(*b != 0) {	/* copy until ) */
  *d++=*b++;
 }
 
+*d=0;
+
 /* copy remainder in tokens[1] */
 d=args;
 
@@ -401,12 +404,12 @@ while(count < tc) {
  count++;
 }
 
-if((strlen(tokens[2]) > 0) && (strcmpi(tokens[2],"RETURNS") != 0)) {			/* not returns */
+if((strlen(tokens[2]) > 0) && (strcmpi(tokens[2],"AS") != 0)) {			/* not as */
   print_error(SYNTAX_ERROR);
   return;
 }
 
-if(strcmpi(tokens[2],"RETURNS") == 0) {			/* return type */
+if(strcmpi(tokens[2],"AS") == 0) {			/* return type */
  vartype=check_var_type(tokens[3]);		/* get variable type */  
 
  if(vartype == -1) {				/* invalid variable type */
@@ -436,8 +439,9 @@ varval val;
 int countx;
 varsplit split;
 
-splitvarname(tokens[1],&split);
+substitute_vars(1,tc,tokens);
 
+splitvarname(tokens[1],&split);
 
 c=*tokens[1];
 

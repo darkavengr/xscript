@@ -33,7 +33,8 @@
 #define ELSEIF_NOIF	    27
 #define BAD_CONDITION	    28
 #define BAD_TYPE	    29
-#define NO_MODULE_PATH 30
+#define NO_MODULE_PATH 	    30
+#define TYPE_EXISTS	    31
 
 #define TRUE 0
 #define FALSE 1
@@ -56,6 +57,7 @@
 #define VAR_STRING  1
 #define VAR_INTEGER 2
 #define VAR_SINGLE  3
+#define VAR_CUSTOM  4
 
 #define MAX_NEST_COUNT 256
 
@@ -65,11 +67,23 @@
 #include <stdio.h>
 
 typedef struct {
-  double d;
-  char *s[MAX_SIZE];
-  int i;
-  float f;
-  int type;
+ char *type[MAX_SIZE];
+ char *name[MAX_SIZE];
+ struct typeentry *next;
+} typeentry;
+
+typedef struct {
+ char *typename[MAX_SIZE];
+ typeentry *entries;
+} vartype;
+
+typedef struct {
+ double d;
+ char *s[MAX_SIZE];
+ int i;
+ float f;
+ int type;
+ vartype custom;
 } varval;
 
 typedef struct {

@@ -129,6 +129,7 @@ vars_t *next;
 char *o;
 varsplit split;
 varval *varv;
+vartype customtype;
 
 splitvarname(name,&split);
 
@@ -158,7 +159,6 @@ next=currentfunction->vars;
      case VAR_SINGLE:	     
        next->val[x*y].f=val->f;
        break;
-
     }
  
     return(0);
@@ -738,7 +738,9 @@ for(count=start;count<end;count++) {
   if(callfunc(buf,functionargs) == -1) exit(-1);	/* error calling function */
 
   if(retval.type == VAR_STRING) {		/* returning string */   
-   strcpy(tokens[count],retval.s);
+   strcpy(tokens[count],"\"");
+   strcat(tokens[count],retval.s);
+   strcat(tokens[count],"\"");
   }
   else if(retval.type == VAR_INTEGER) {		/* returning integer */
 	 sprintf(tokens[count],"%d",retval.i);
