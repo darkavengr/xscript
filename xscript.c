@@ -8,6 +8,16 @@
 #include "define.h"
 #include "defs.h"
 
+/*
+ * Main function
+ *
+ * In: int argc		Number of arguments
+ *     char **argv	Arguments
+ *
+ * Returns: Nothing
+ *
+ */
+
 int main(int argc, char **argv) {
 int count;
 char *args[MAX_SIZE];

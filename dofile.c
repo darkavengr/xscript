@@ -1,5 +1,5 @@
 /*
- * do file
+ * File and statement processing functions 
  *
  */
 
@@ -48,6 +48,8 @@ int saveexprtrue=0;
 extern int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
 varval retval;
 
+/* statements */
+			  
 statement statements[] = { { "IF",&if_statement },\
       { "ELSE",&else_statement },\
       { "ENDIF",&endif_statement },\
@@ -81,14 +83,22 @@ extern functions *currentfunction;
 extern functions *funcs;
 extern char *vartypenames[];
 
-char *currentptr=NULL;
-char *endptr=NULL;
-char *readbuf=NULL;
-int bufsize=0;
-int ic=0;
+char *currentptr=NULL;		/* current pointer in buffer */
+char *endptr=NULL;		/* end of buffer */
+char *readbuf=NULL;		/* buffer */
+int bufsize=0;			/* size of buffer */
+int ic=0;			/* number of included files */
 
-include includefiles[MAX_INCLUDE];
+include includefiles[MAX_INCLUDE];	/* included files */
 
+/*
+ * Load file
+ *
+ * In: char *filename		Filename of file to load
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int loadfile(char *filename) {
  FILE *handle; 
  int filesize;
@@ -136,6 +146,14 @@ int loadfile(char *filename) {
 
 }
 
+/*
+ * Load and execute file
+ *
+ * In: char *filename		Filename of file to load
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 int dofile(char *filename) {
  char *linebuf[MAX_SIZE];
 
@@ -155,7 +173,7 @@ do {
 
  currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
- if(*currentptr == 0) return; 
+ if(*currentptr == 0) return(NO_ERROR);
 
  doline(linebuf);
 
@@ -164,12 +182,16 @@ do {
  includefiles[ic].lc++;
 }    while(*currentptr != 0); 			/* until end */
 
- return;
+ return(NO_ERROR);
 }	
 
-/* 
+/*
  * Process line
-*
+ *
+ * In: char *lbuf		Line to process
+ *
+ * Returns -1 on error or 0 on success
+ *
  */
 
 int doline(char *lbuf) {
@@ -223,7 +245,7 @@ do {
   if(statements[statementcount].call_statement(tc,tokens) == -1) exit(-1);		/* call statement and exit if error */
   statementcount=0;
 
-  return;
+  return(0);
  }
  
  statementcount++;
@@ -331,12 +353,16 @@ print_error(INVALID_STATEMENT);
 return;
 }
 
-
-
 /*
- * declare function
+ * Declare function statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
  *
  */
+
 int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *valptr;
 char *functionname[MAX_SIZE];
@@ -428,7 +454,12 @@ return;
 } 
 
 /*
- * display message
+ * Print statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
  *
  */
 
@@ -462,8 +493,13 @@ return;
 }
 
 /*
+ * Import statement
  *
- * import library
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
  */
 
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -477,7 +513,12 @@ return;
 }
 
 /*
- * IF statement
+ * If statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
  *
  */
 
@@ -553,15 +594,29 @@ if(exprtrue == 1) {
 //print_error(ENDIF_NOIF);
 }
 
+/*
+ * Endif statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
+
 int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if((currentfunction->stat & IF_STATEMENT) == 0) print_error(ENDIF_NOIF);
 }
 
 /*
- * loop statement
+ * For statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
  *
  */
-
 
 int for_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;
@@ -701,7 +756,13 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
  }
 
 /*
- * return from call
+ * Return statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
  */
 
 extern int callpos;
@@ -777,8 +838,13 @@ int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  }
 }
 
-/* 
- * WHILE statement
+/*
+ * While statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
  *
  */
 
@@ -842,15 +908,27 @@ do {
 
 }
 
-/* end program */
-	
+/*
+ * End statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
+
 int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  return(atoi(tokens[1]));
 }
 
 /*
+ * Else statement
  *
- * else
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
  *
  */
 
@@ -863,6 +941,16 @@ int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 return;
 }
 
+/*
+ * Endfunction statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
+
 int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if((currentfunction->stat & FUNCTION_STATEMENT) != FUNCTION_STATEMENT) {
  print_error(ENDFUNCTION_NO_FUNCTION);
@@ -873,6 +961,16 @@ currentfunction->stat|= FUNCTION_STATEMENT;
 return;
 }
 
+/*
+ * Include statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
+
 int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(loadfile(tokens[1]) == -1) {
  print_error(FILE_NOT_FOUND);
@@ -880,6 +978,16 @@ int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 }
  
 }
+
+/*
+ * Break statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 
 int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  char *buf[MAX_SIZE];
@@ -919,6 +1027,16 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  } 
 }
 
+/*
+ * Declare statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
+
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  varsplit split;
  int vartype;
@@ -942,6 +1060,16 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 }
 
+/*
+ * Run statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
+
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(dofile(tokens[1]) == -1) {
   print_error(FILE_NOT_FOUND);
@@ -949,6 +1077,16 @@ int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  }
 
 }
+
+/*
+ * Continue statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(((currentfunction->stat & FOR_STATEMENT)) || ((currentfunction->stat & WHILE_STATEMENT))) {
@@ -960,9 +1098,29 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  return(CONTINUE_NO_LOOP);
 }
 
+/*
+ * Non-statement keyword as statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
+
 int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  print_error(SYNTAX_ERROR);
 }
+
+/*
+ * Declare function statement
+ *
+ * In: char *linebuf			Line to tokenize
+       char *tokens[MAX_SIZE][MAX_SIZE]	Token array output
+ *
+ * Returns -1 on error or token count on success
+ *
+ */
 
 int tokenize_line(char *linebuf,char *tokens[][MAX_SIZE],char *split) {
 char *token;
@@ -1027,6 +1185,15 @@ while(*token != 0) {
 return(tc+1);
 }
 
+/*
+ * Convert to uppercase
+ *
+ * In: char *token	String to convert
+	 *
+ * Returns -1 on error or 0 on success
+ *
+ */
+
 int touppercase(char *token) {
  char *z;
  char c;
@@ -1043,6 +1210,17 @@ int touppercase(char *token) {
 
 return;
 }
+
+/*
+ * Read line from buffer
+ *
+ * In: char *buf	Buffer to read from
+       char *linebuf	Buffer to store line
+       int size		Maximum size of line
+ *
+ * Returns -1 on error or address of next address in buffer for success
+ *
+ */
 
 char *readlinefrombuffer(char *buf,char *linebuf,int size) {
 int count=0;
@@ -1073,6 +1251,15 @@ b--;
 return(buf);			/* return new position */
 }
 
+/*
+ * Display error
+ *
+ * In: int llcerr			Error number
+ *
+ * Returns: Nothing
+ *
+ */
+
 int print_error(int llcerr) {
  if(*includefiles[ic].filename == 0) {			/* if in interactive mode */
   printf("%s %s\n",currentfunction->name,llcerrs[llcerr]);
@@ -1086,6 +1273,15 @@ int print_error(int llcerr) {
  }
 }
 
+/*
+ * Compare string case insensitively
+ *
+ * In: char *source		First string
+       char *dest		Second string
+ *
+ * Returns: Nothing
+ *
+ */
 int strcmpi(char *source,char *dest) {
  char a,b;
  char *sourcetemp[MAX_SIZE];

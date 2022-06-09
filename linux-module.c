@@ -1,5 +1,13 @@
 #include <dlfcn.h>
 
+/*
+ * Open Linux module
+ *
+ * In: char *filename	Filename to open
+ * Returns -1 on error or module handle
+ *
+ */
+
 int open_module(char *filename) {
 int dlhandle;
 

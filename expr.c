@@ -1,8 +1,3 @@
-/*
- *
- * do expression
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -13,6 +8,17 @@
 #include "define.h"
 #include "defs.h"
 
+
+/*
+ * Evaluate expression
+ *
+ * In: char *tokens[][MAX_SIZE]		Tokens array containing expression
+ *     int start			Start in array
+       int end				End in array
+	
+ * Returns error number on error or result on success
+ *
+ */
 double doexpr(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
 double x;
@@ -48,13 +54,13 @@ for(count=start;count<end;count++) {
 
 if(bracketcount != -1) {				/* mismatched brackets */
  print_error(SYNTAX_ERROR);
- return;
+ return(-1);
 }
 
 for(count=start;count<end;count++) {
  if((getvartype(temp[count]) == VAR_STRING) && (getvartype(temp[count+1]) != VAR_STRING)) {
   print_error(TYPE_ERROR);
-  return;
+  return(-1);
  }
 }
 
@@ -208,9 +214,14 @@ int deletefromarray(char *arr[255][255],int n,int end) {
 return;
 }
 
-
 /*
- * do condition and return true or false
+ * Evalue condition
+ *
+ * In: char *tokens[][MAX_SIZE]		Tokens array containing expression
+ *     int start			Start in array
+       int end				End in array
+
+ * Returns true or false
  *
  */
 

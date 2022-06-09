@@ -1,10 +1,21 @@
 #include "define.h"
 
+/*
+ * Module functions
+ *
+ */
+
 MODULES *modules=NULL;
 
 /*
- * Add module
+ * Load module
+ *
+ * In: char *modulename	Filename of module to load
+ * Returns error number on error or result on success
+ *
+ * Returns -1 on error or 0 on success
  */
+
 int add_module(char *modulename) {
 MODULES *next;
 MODULES *last;
@@ -65,12 +76,18 @@ for(count=0;count<tc;count++) {			/* loop through path array */
  next->dlhandle=handle;
 }
 
-return;
+return(0);
 }
 
 /*
- * get module handle
+ * Get module handle
+ *
+ * In: char *module	Module name
+ *	
+ * Returns -1 on error or module handle
+ *
  */
+
 int module_get_handle(char *module) {
 MODULES *next;
 next=modules;

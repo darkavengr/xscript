@@ -1,3 +1,8 @@
+/*
+ * Variables and functions
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -9,7 +14,7 @@
 #include "defs.h"
 
 int init_funcs(void);
-int free_funcs(void);
+void free_funcs(void);
 int addvar(char *name,int type,int xsize,int ysize);
 int updatevar(char *name,varval *val,int x,int y);
 int resizearray(char *name,int x,int y);
@@ -39,6 +44,15 @@ struct {
 
 int callpos=0;
 
+/*
+ * Initalize function list
+ *
+ * In: Nothing
+ *
+ * Returns: -1 On error or 0 on success
+ *
+ */
+
 int init_funcs(void) {
 funcs=malloc(sizeof(funcs));		/* functions */
 if(funcs == NULL) {
@@ -52,11 +66,36 @@ currentfunction=funcs;
 
 callstack[0].funcptr=funcs;
 strcpy(currentfunction->name,"main");		/* set function name */
+
+return(0);
 }
 
-int free_funcs(void) {
+/*
+ * Free function list
+ *
+ * In: Nothing
+ *
+ * Returns: Nothing
+ *
+ */
+
+void free_funcs(void) {
  free(funcs);
+
+ return;
 }
+
+/*
+ * Add variable
+ *
+ * In: char *name	Variable name
+       int type		Variable type
+       int xsize	Size of X subscript
+       int ysize	Size of Y subscript
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 
 int addvar(char *name,int type,int xsize,int ysize) {
 vars_t *next;
@@ -72,6 +111,8 @@ int statementcount;
 
 splitvarname(name,&split);				/* parse variable name */
 
+/* Check if variable name is a reserved name */
+
 statementcount=0;
  
 do {
@@ -84,6 +125,8 @@ do {
 } while(statements[statementcount].statement != NULL);
 
 statementcount=0;
+
+/* Add entry to variable list */
 
 if(currentfunction->vars == NULL) {			/* first entry */
   currentfunction->vars=malloc(sizeof(vars_t));		/* add new item to list */
@@ -108,6 +151,8 @@ if(currentfunction->vars == NULL) {			/* first entry */
   next=last->next;
  }
 
+/* add to end */
+
  next->val=malloc(sizeof(varval)*(xsize*ysize));
  if(next->val == NULL) {
   free(next);
@@ -121,9 +166,20 @@ if(currentfunction->vars == NULL) {			/* first entry */
  strcpy(next->varname,split.name);		/* set name */
  next->next=NULL;
 
- return;
+ return(0);
 }
-	
+
+/*
+ * Update variable
+ *
+ * In: char *name	Variable name
+       varval *val	Variable value
+       int x		X subscript
+       int y		Y subscript
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */	
 int updatevar(char *name,varval *val,int x,int y) {
 vars_t *next;
 char *o;
@@ -132,6 +188,8 @@ varval *varv;
 vartype customtype;
 
 splitvarname(name,&split);
+
+/* Find variable */
 
 next=currentfunction->vars;
 
@@ -143,8 +201,10 @@ next=currentfunction->vars;
 	return;
     }
 
+/* update variable */
+
     switch(next->type) {
-     case VAR_NUMBER:			
+     case VAR_NUMBER:				/* double precision */			
        next->val[x*y].d=val->d;
        break;
 
@@ -152,11 +212,11 @@ next=currentfunction->vars;
        strcpy(next->val[x*y].s,val->s);
        break;
 
-     case VAR_INTEGER:	 
+     case VAR_INTEGER:	 			/* integer */
        next->val[x*y].i=val->i;
        break;
 
-     case VAR_SINGLE:	     
+     case VAR_SINGLE:				/* single */	     
        next->val[x*y].f=val->f;
        break;
     }
@@ -169,7 +229,17 @@ next=currentfunction->vars;
 
  return(-1);
 }
-								
+
+/*
+ * Resize array
+ *
+ * In: char *name	Variable name
+       int x		X subscript
+       int y		Y subscript
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */								
 int resizearray(char *name,int x,int y) {
 vars_t *next;
 char *o;
@@ -178,6 +248,8 @@ int statementcount;
  
 splitvarname(name,&split);				/* parse variable name */
 
+/* Find variable */
+
 next=currentfunction->vars;
 
  while(next != NULL) {
@@ -185,8 +257,8 @@ next=currentfunction->vars;
    if(strcmpi(next->varname,split.name) == 0) {		/* found variable */
     if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) return(-1);	/* resize buffer */
    
-    next->xsize=x;
-    next->ysize=y;
+    next->xsize=x;		/* update x subscript */
+    next->ysize=y;		/* update y subscript */
     return(0);
   }
 
@@ -196,6 +268,15 @@ next=currentfunction->vars;
  return(-1);
 }
 
+/*
+ * Get variable value
+ *
+ * In: char *name	Variable name
+       varname *val	Variable value
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 int getvarval(char *name,varval *val) {
 vars_t *next;
 varsplit split;
@@ -211,7 +292,7 @@ c=*name;
 
 if(c >= '0' && c <= '9') {
  val->d=atof(name);
- return;
+ return(0);
 }
 
 if(c == '"') {
@@ -220,6 +301,8 @@ if(c == '"') {
 }
 
 splitvarname(name,&split);
+
+/* Find variable */
 
 next=currentfunction->vars;
 
@@ -233,7 +316,7 @@ while(next != NULL) {
     }
 
    switch(next->type) {
-      case VAR_NUMBER:
+      case VAR_NUMBER:				/* Double precision */
         val->d=next->val[split.x*split.y].d;
         return(0);
 
@@ -241,15 +324,15 @@ while(next != NULL) {
         strcpy(val->s,next->val[split.x*split.y].s);
         return(0);
 
-       case VAR_INTEGER:
+       case VAR_INTEGER:			/* Integer */
         val->i=next->val[split.x*split.y].i;
 	return(0);
 
-       case VAR_SINGLE:
+       case VAR_SINGLE:				/* Single precision */
         next->val[split.x*split.y].f=val->f;
 	return(0);
 
-       default:
+       default:					/* Default type */
         val->d=next->val[split.x*split.y].d;
         return(0);
     }
@@ -262,23 +345,34 @@ while(next != NULL) {
 return(-1);
 }
 
+/*
+ * Get variable type
+ *
+ * In: char *name	Variable name
+ *
+ * Returns -1 on error or variable type on success
+ *
+ */
+
 int getvartype(char *name) {
 vars_t *next;
 varsplit split;
 
-if(name == NULL) return(-1);
+if(name == NULL) return(-1);				/* Variable does not exist */
 
-if(*name >= '0' && *name <= '9') return(VAR_NUMBER);
+if(*name >= '0' && *name <= '9') return(VAR_NUMBER);	/* Literal number */
 
-if(*name == '"') return(VAR_STRING);
+if(*name == '"') return(VAR_STRING);			/* Literal string */
 
 splitvarname(name,&split);
  
+/* Find variable name */
+
 next=currentfunction->vars;
 
 while(next != NULL) {  
   
- if(strcmpi(next->varname,split.name) == 0) {
+ if(strcmpi(next->varname,split.name) == 0) {		/* Found variable */
   return(next->type);
  }
 
@@ -288,6 +382,15 @@ while(next != NULL) {
 return(-1);
 }
 
+/*
+ * Split variable into name and subscripts
+ *
+ * In: char *name	Variable name
+       varsplit *split	Variable split object
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 int splitvarname(char *name,varsplit *split) {
 char *arrpos;
 char *arrx[MAX_SIZE];
@@ -324,6 +427,8 @@ while(*o != 0) {
 
  *b++=*o++;
 }
+
+/* Get subscripts */
 
 commapos=strpbrk(name,",");	/* find comma position */
 if(commapos == NULL) {			/* 2d array */
@@ -370,8 +475,14 @@ o++;
  }
 }
 
-/* remove variable */
-
+/*
+ * Remove variable
+ *
+ * In: char *name	Variable name
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 int removevar(char *name) {
  vars_t *next;
  vars_t *last;
@@ -396,11 +507,15 @@ int removevar(char *name) {
 }
 
 /*
- * declare function
+ * Declare function
+ *
+ * In: char *name		Function name
+       char *args		Comma-separated function arguments
+       int function_return_type	Function return type
+ *
+ * Returns -1 on error or 0 on success
  *
  */
-
-
 int function(char *name,char *args,int function_return_type) {
  functions *next;
  functions *last;
@@ -410,6 +525,8 @@ int function(char *name,char *args,int function_return_type) {
  int count;
  
  if((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT) return(NESTED_FUNCTION);
+
+/* Check if function already exists */
 
  next=funcs;						/* point to variables */
  
@@ -464,7 +581,12 @@ return(-1);
 
 
 /*
- * call function
+ * Call function
+ *
+ * In: char *name		Function name
+       char *args		Comma-separated function arguments
+ *
+ * Returns -1 on error or 0 on success
  *
  */
 
@@ -616,6 +738,15 @@ if(callpos-1 >= 0) {
 }
 }
 
+/*
+ * Convert char * to int using base
+ *
+ * In: char *hex		char representation of number
+       int base			Base
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 int atoi_base(char *hex,int base) {
 int num=0;
 char *b;
@@ -669,6 +800,16 @@ while(count > 0) {
 return(num);
 }
 
+/*
+ * Substitute variable names with values
+ *
+ * In: int start		Start of variables in tokens array
+       int end			End of variables in tokens array
+       char *tokens[][MAX_SIZE] Tokens array
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 
 int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]) {
 int count;
@@ -800,6 +941,17 @@ for(count=start;count<end;count++) {
   }
 }
 
+/*
+ * Conatecate strings
+ *
+ * In: int start		Start of variables in tokens array
+       int end			End of variables in tokens array
+       char *tokens[][MAX_SIZE] Tokens array
+       varval *val 		Variable value to return conatecated strings
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
 int conatecate_strings(int start,int end,char *tokens[][MAX_SIZE],varval *val) {
 int count;
 char *b;
@@ -844,9 +996,17 @@ for(count=start+1;count<end;count++) {
 
 *d++=0;
 //*d++='"';
- return;
+ return(0);
 }
 
+/*
+ * Check variable type
+ *
+ * In: char *typename		Variable type as string
+ *
+ * Returns -1 on error or variable type on success
+ *
+ */
 int check_var_type(char *typename) {
  int typecount=0;
 
