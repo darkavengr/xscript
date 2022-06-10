@@ -1,3 +1,22 @@
+/*  XScript Version 0.0.1
+    (C) Matthew Boote 2020
+
+    This file is part of XScript.
+
+    XScript is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    XScript is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "define.h"
 
 /*
@@ -16,7 +35,7 @@ MODULES *modules=NULL;
  * Returns -1 on error or 0 on success
  */
 
-int add_module(char *modulename) {
+int AddModule(char *modulename) {
 MODULES *next;
 MODULES *last;
 int handle;
@@ -29,27 +48,27 @@ int count;
 modpath=getenv("XSCRIPT_MODULE_PATH");				/* get module path */
 
 if(modpath == NULL)  {
- print_error(NO_MODULE_PATH);	/* no module path warning */
+ PrintError(NO_MODULE_PATH);	/* no module path warning */
 
  strcpy(modpath,".");		/* use currnet directory */
 }
 
-tc=tokenize_line(modpath,moddirs,":");			/* tokenize line */
+tc=TokenizeLine(modpath,moddirs,":");			/* tokenize line */
 
 for(count=0;count<tc;count++) {			/* loop through path array */
 
 /* get module filename without extension
-   open_module adds the extension for portability reasons */
+   LoadModule adds the extension for portability reasons */
 
  sprintf(modulename,"%s\\%s",moddirs[count],filename);	
 
- handle=open_module(filename);
+ handle=LoadModule(filename);
  if(handle == -1) continue;			/* can't open module */
 
  if(modules == NULL) {			/* first in list */
   modules=malloc(sizeof(MODULES));
   if(modules == NULL) {
-   print_error(NO_MEM);
+   PrintError(NO_MEM);
    return(-1);
   }
 
@@ -67,7 +86,7 @@ for(count=0;count<tc;count++) {			/* loop through path array */
 
  last->next=malloc(sizeof(MODULES));
  if(modules == NULL) {
-  print_error(NO_MEM);
+  PrintError(NO_MEM);
   return(-1);
  }
 
@@ -88,7 +107,7 @@ return(0);
  *
  */
 
-int module_get_handle(char *module) {
+intGetModuleHandle(char *module) {
 MODULES *next;
 next=modules;
 

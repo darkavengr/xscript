@@ -1,3 +1,22 @@
+
+/*  XScript Version 0.0.1
+    (C) Matthew Boote 2020
+
+    This file is part of XScript.
+
+    XScript is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    XScript is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+*/
 #define LINE_SIZE 98
 #define INITIAL_BUFFERSIZE 1024
 #define MAX_INCLUDE 10
@@ -57,7 +76,6 @@
 #define VAR_STRING  1
 #define VAR_INTEGER 2
 #define VAR_SINGLE  3
-#define VAR_CUSTOM  4
 
 #define MAX_NEST_COUNT 256
 
@@ -67,23 +85,11 @@
 #include <stdio.h>
 
 typedef struct {
- char *type[MAX_SIZE];
- char *name[MAX_SIZE];
- struct typeentry *next;
-} typeentry;
-
-typedef struct {
- char *typename[MAX_SIZE];
- typeentry *entries;
-} vartype;
-
-typedef struct {
  double d;
  char *s[MAX_SIZE];
  int i;
  float f;
  int type;
- vartype custom;
 } varval;
 
 typedef struct {

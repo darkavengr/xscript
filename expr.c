@@ -1,3 +1,22 @@
+/*  XScript Version 0.0.1
+    (C) Matthew Boote 2020
+
+    This file is part of XScript.
+
+    XScript is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    XScript is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -6,8 +25,6 @@
 #include <dlfcn.h>
 
 #include "define.h"
-#include "defs.h"
-
 
 /*
  * Evaluate expression
@@ -16,9 +33,10 @@
  *     int start			Start in array
        int end				End in array
 	
- * Returns error number on error or result on success
+ * Returns error message -1 on error or result on success
  *
  */
+
 double doexpr(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
 double x;
@@ -41,7 +59,7 @@ for(count=start;count<end;count++) {
  strcpy(temp[count],tokens[count]);
 }
 
-substitute_vars(start,end,temp);
+SubstituteVariables(start,end,temp);
 
 /* do syntax checking on expression */
 
@@ -53,13 +71,13 @@ for(count=start;count<end;count++) {
 }
 
 if(bracketcount != -1) {				/* mismatched brackets */
- print_error(SYNTAX_ERROR);
+ PrintError(SYNTAX_ERROR);
  return(-1);
 }
 
 for(count=start;count<end;count++) {
- if((getvartype(temp[count]) == VAR_STRING) && (getvartype(temp[count+1]) != VAR_STRING)) {
-  print_error(TYPE_ERROR);
+ if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
+  PrintError(TYPE_ERROR);
   return(-1);
  }
 }
@@ -99,9 +117,9 @@ for(count=start;count<end;count++) {
 for(count=start;count<end;count++) {
 
  if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {
-  sprintf(temp[count-1],"%d",do_condition(temp,count-1,count+2));
+  sprintf(temp[count-1],"%d",EvaluateCondition(temp,count-1,count+2));
   
-//  deletefromarray(temp,count+1,2);		/* remove rest */
+//  DeleteFromArray(temp,count+1,2);		/* remove rest */
  } 
 
 }
@@ -113,7 +131,7 @@ for(count=start;count<end;count++) {
 
  if(strcmp(temp[count],"/") == 0) {
   val.d /= atof(temp[count+1]);
-  deletefromarray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,2);		/* remove rest */
 
   count++;
  } 
@@ -124,7 +142,7 @@ for(count=start;count<end;count++) {
 
   val.d *= atof(temp[count+1]);
 
-  deletefromarray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,2);		/* remove rest */
   count++;
 	
  } 
@@ -133,8 +151,10 @@ for(count=start;count<end;count++) {
 for(count=start;count<end;count++) {
 
  if(strcmp(temp[count],"+") == 0) { 
+
   val.d += atof(temp[count+1]);
-  deletefromarray(temp,count,2);		/* remove rest */
+
+  DeleteFromArray(temp,count,2);		/* remove rest */
 
   count++;
  } 
@@ -144,7 +164,7 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"-") == 0) {
 
   val.d -= atof(temp[count+1]);
-  deletefromarray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,2);		/* remove rest */
  } 
 
   count++;
@@ -155,7 +175,7 @@ for(count=start;count<end;count++) {
 
   val.d += !atof(temp[count+1]);
  
-  deletefromarray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,2);		/* remove rest */
  } 
 
    count++;
@@ -166,7 +186,7 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"&") == 0) {
   val.d += atof(temp[count+1]);
 
-  deletefromarray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,2);		/* remove rest */
  } 
 
   count++;
@@ -176,7 +196,7 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"|") == 0) {
   val.d += atof(temp[count+1]);
 
-  deletefromarray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,2);		/* remove rest */
  } 
 
   count++;
@@ -186,16 +206,17 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"^") == 0) {
   val.d += atof(temp[count+1]);
 
-  deletefromarray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,2);		/* remove rest */
  } 
 
  count++;
 }
 
+printf("return=%.6g\n",val.d);
 return(val.d);
 }
 
-int deletefromarray(char *arr[255][255],int n,int end) {
+int DeleteFromArray(char *arr[255][255],int n,int end) {
  int count;
  char *temp[10][255];
  int oc=0;
@@ -225,7 +246,7 @@ return;
  *
  */
 
-int do_condition(char *tokens[][MAX_SIZE],int start,int end) {
+int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end) {
 int inverse;
 double exprone;
 double exprtwo;
@@ -243,9 +264,9 @@ varval val;
  exprtwo=0;
 
  for(exprpos=start;exprpos<end;exprpos++) {
-	  if((getvartype(tokens[exprpos-1]) != -1) && (getvartype(tokens[exprpos-1]) != -1)) {
-		if( getvartype(tokens[exprpos-1]) != getvartype(tokens[exprpos+1])) {
-		   print_error(TYPE_ERROR);
+	  if((GetVariableType(tokens[exprpos-1]) != -1) && (GetVariableType(tokens[exprpos-1]) != -1)) {
+		if( GetVariableType(tokens[exprpos-1]) != GetVariableType(tokens[exprpos+1])) {
+		   PrintError(TYPE_ERROR);
 		   return(-1);
         	  }
 	  }
@@ -278,9 +299,9 @@ varval val;
 
 	if(ifexpr == -1) return(-1);
 
-	if(getvartype(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	 conatecate_strings(start,exprpos,tokens,&val);					/* join all the strings on the line */
-	 conatecate_strings(exprpos+1,end,tokens,&val);					/* join all the strings on the line */
+	if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
+	 ConatecateStrings(start,exprpos,tokens,&val);					/* join all the strings on the line */
+	 ConatecateStrings(exprpos+1,end,tokens,&val);					/* join all the strings on the line */
 
 	 return(!strcmp(tokens[exprpos-1],tokens[exprpos+1]));
 	}

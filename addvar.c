@@ -1,3 +1,22 @@
+/*  XScript Version 0.0.1
+    (C) Matthew Boote 2020
+
+    This file is part of XScript.
+
+    XScript is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    XScript is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 /*
  * Variables and functions
  *
@@ -11,21 +30,20 @@
 #include <dlfcn.h>
 
 #include "define.h"
-#include "defs.h"
 
-int init_funcs(void);
-void free_funcs(void);
-int addvar(char *name,int type,int xsize,int ysize);
-int updatevar(char *name,varval *val,int x,int y);
-int resizearray(char *name,int x,int y);
-int getvarval(char *name,varval *val);
-int getvartype(char *name);
-int splitvarname(char *name,varsplit *split);
-int removevar(char *name);
-int function(char *name,char *args,int function_return_type);
-int check_function(char *name);
+int InitializeFunctions(void);
+void FreeFunctions(void);
+int CreateVariable(char *name,int type,int xsize,int ysize);
+int UpdateVariable(char *name,varval *val,int x,int y);
+int ResizeArray(char *name,int x,int y);
+int GetVariableValue(char *name,varval *val);
+int GetVariableType(char *name);
+int ParseVariableName(char *name,varsplit *split);
+int RemoveVariable(char *name);
+int DeclareFunction(char *name,char *args,int function_return_type);
+int CheckFunctionExists(char *name);
 int atoi_base(char *hex,int base);
-int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
+int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]);
 
 extern varval retval;
 functions *funcs=NULL;
@@ -53,10 +71,10 @@ int callpos=0;
  *
  */
 
-int init_funcs(void) {
+int InitializeFunctions(void) {
 funcs=malloc(sizeof(funcs));		/* functions */
 if(funcs == NULL) {
- print_error(NO_MEM);
+ PrintError(NO_MEM);
  return(-1);
 }
 
@@ -79,7 +97,7 @@ return(0);
  *
  */
 
-void free_funcs(void) {
+void FreeFunctions(void) {
  free(funcs);
 
  return;
@@ -97,7 +115,7 @@ void free_funcs(void) {
  *
  */
 
-int addvar(char *name,int type,int xsize,int ysize) {
+int CreateVariable(char *name,int type,int xsize,int ysize) {
 vars_t *next;
 vars_t *last;
 void *o;
@@ -109,7 +127,7 @@ varsplit split;
 functions *funcnext;
 int statementcount;
 
-splitvarname(name,&split);				/* parse variable name */
+ParseVariableName(name,&split);				/* parse variable name */
 
 /* Check if variable name is a reserved name */
 
@@ -180,14 +198,13 @@ if(currentfunction->vars == NULL) {			/* first entry */
  * Returns -1 on error or 0 on success
  *
  */	
-int updatevar(char *name,varval *val,int x,int y) {
+int UpdateVariable(char *name,varval *val,int x,int y) {
 vars_t *next;
 char *o;
 varsplit split;
 varval *varv;
-vartype customtype;
 
-splitvarname(name,&split);
+ParseVariableName(name,&split);
 
 /* Find variable */
 
@@ -197,7 +214,7 @@ next=currentfunction->vars;
    if(strcmpi(next->varname,split.name) == 0) {		/* already defined */
 
     if((x*y) > (next->xsize*next->ysize)) {		/* outside array */
-	print_error(BAD_ARRAY);
+	PrintError(BAD_ARRAY);
 	return;
     }
 
@@ -240,13 +257,13 @@ next=currentfunction->vars;
  * Returns -1 on error or 0 on success
  *
  */								
-int resizearray(char *name,int x,int y) {
+int ResizeArray(char *name,int x,int y) {
 vars_t *next;
 char *o;
 varsplit split;
 int statementcount;
  
-splitvarname(name,&split);				/* parse variable name */
+ParseVariableName(name,&split);				/* parse variable name */
 
 /* Find variable */
 
@@ -277,7 +294,7 @@ next=currentfunction->vars;
  * Returns -1 on error or 0 on success
  *
  */
-int getvarval(char *name,varval *val) {
+int GetVariableValue(char *name,varval *val) {
 vars_t *next;
 varsplit split;
 char *token;
@@ -300,7 +317,7 @@ if(c == '"') {
  return(0);
 }
 
-splitvarname(name,&split);
+ParseVariableName(name,&split);
 
 /* Find variable */
 
@@ -311,7 +328,7 @@ while(next != NULL) {
  if(strcmpi(next->varname,split.name) == 0) {
 
     if((split.x*split.y) > (next->xsize*next->ysize)) {		/* outside array */
-	print_error(BAD_ARRAY);
+	PrintError(BAD_ARRAY);
 	return;
     }
 
@@ -354,7 +371,7 @@ return(-1);
  *
  */
 
-int getvartype(char *name) {
+int GetVariableType(char *name) {
 vars_t *next;
 varsplit split;
 
@@ -364,7 +381,7 @@ if(*name >= '0' && *name <= '9') return(VAR_NUMBER);	/* Literal number */
 
 if(*name == '"') return(VAR_STRING);			/* Literal string */
 
-splitvarname(name,&split);
+ParseVariableName(name,&split);
  
 /* Find variable name */
 
@@ -391,7 +408,7 @@ return(-1);
  * Returns -1 on error or 0 on success
  *
  */
-int splitvarname(char *name,varsplit *split) {
+int ParseVariableName(char *name,varsplit *split) {
 char *arrpos;
 char *arrx[MAX_SIZE];
 char *arry[MAX_SIZE];
@@ -440,7 +457,7 @@ if(commapos == NULL) {			/* 2d array */
   *b++=*o++;
  }
 
- tc=tokenize_line(arrx,tokens," ");			/* tokenize line */
+ tc=TokenizeLine(arrx,tokens," ");			/* tokenize line */
 
  split->x=doexpr(tokens,0,tc);		/* get x pos */
  split->y=1;
@@ -466,10 +483,10 @@ o++;
   *b++=*o++;
  }
 
- tc=tokenize_line(arrx,tokens," ");			/* tokenize line */
+ tc=TokenizeLine(arrx,tokens," ");			/* tokenize line */
  split->x=doexpr(tokens,0,tc);		/* get x pos */
 
- tc=tokenize_line(arry,tokens," ");			/* tokenize line */
+ tc=TokenizeLine(arry,tokens," ");			/* tokenize line */
  split->y=doexpr(tokens,0,tc);		/* get x pos */
  return;
  }
@@ -483,12 +500,12 @@ o++;
  * Returns -1 on error or 0 on success
  *
  */
-int removevar(char *name) {
+int RemoveVariable(char *name) {
  vars_t *next;
  vars_t *last;
  varsplit split;
 
- splitvarname(name,&split);				/* parse variable name */
+ ParseVariableName(name,&split);				/* parse variable name */
  
  next=currentfunction->vars;						/* point to variables */
  
@@ -516,7 +533,7 @@ int removevar(char *name) {
  * Returns -1 on error or 0 on success
  *
  */
-int function(char *name,char *args,int function_return_type) {
+int DeclareFunction(char *name,char *args,int function_return_type) {
  functions *next;
  functions *last;
  char *linebuf[MAX_SIZE];
@@ -544,7 +561,7 @@ int function(char *name,char *args,int function_return_type) {
  next=last->next;
 
  strcpy(next->name,name);				/* copy name */
- next->funcargcount=tokenize_line(args,next->argvars,",");			/* copy args */
+ next->funcargcount=TokenizeLine(args,next->argvars,",");			/* copy args */
 
  next->vars=NULL;
  next->funcstart=currentptr;
@@ -553,18 +570,18 @@ int function(char *name,char *args,int function_return_type) {
 /* find end of function */
 
  do {
-  currentptr=readlinefrombuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
-  tokenize_line(linebuf,tokens," \009");			/* copy args */
+  currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
+  TokenizeLine(linebuf,tokens," \009");			/* copy args */
 
   if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
 }    while(*currentptr != 0); 			/* until end */
 
-print_error(FUNCTION_NO_ENDFUNCTION);
+PrintError(FUNCTION_NO_ENDFUNCTION);
 
  return;
 }
 
-int check_function(char *name) {
+int CheckFunctionExists(char *name) {
 functions *next;
 
 next=funcs;						/* point to variables */
@@ -590,7 +607,7 @@ return(-1);
  *
  */
 
-double callfunc(char *name,char *args) {
+double CallFunction(char *name,char *args) {
 functions *next;
 char *argbuf[10][MAX_SIZE];
 char *varbuf[10][MAX_SIZE];
@@ -636,15 +653,15 @@ currentfunction->stat |= FUNCTION_STATEMENT;
 
 /* add variables from args */
 
-tc=tokenize_line(args,varbuf,",");
+tc=TokenizeLine(args,varbuf,",");
 
 if(tc < next->funcargcount) {			/* too few arguments */
- print_error(TOO_FEW_ARGS);
+ PrintError(TOO_FEW_ARGS);
  return(-1);	/* too few arguments */
 }
 
 for(count=0;count < tc;count++) {
-  parttc=tokenize_line(next->argvars[count],parttokens," ");		/* split token again */
+  parttc=TokenizeLine(next->argvars[count],parttokens," ");		/* split token again */
 
   /* check if declaring variable with type */
   if(strcmpi(parttokens[1],"AS") == 0) {		/* variable type */
@@ -657,7 +674,7 @@ for(count=0;count < tc;count++) {
 	 }
 
 	 if(vartypenames[typecount] == NULL) {		/* invalid type */
-	   print_error(BAD_TYPE);
+	   PrintError(BAD_TYPE);
 	   return(-1);
 	}
  }
@@ -667,7 +684,7 @@ for(count=0;count < tc;count++) {
  }
 
 
-  splitvarname(parttokens[0],&split);		/* get name and subscripts */
+  ParseVariableName(parttokens[0],&split);		/* get name and subscripts */
 
   switch(typecount) {
     case VAR_NUMBER:				/* number */
@@ -687,20 +704,20 @@ for(count=0;count < tc;count++) {
 	break;
   }
 
-   addvar(split.name,typecount,split.x,split.y);
-   updatevar(split.name,&val,split.x,split.y);   
+   CreateVariable(split.name,typecount,split.x,split.y);
+   UpdateVariable(split.name,&val,split.x,split.y);   
 }
 
 /* do function */
 	
 while(*currentptr != 0) {	
- currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+ currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
- tc=tokenize_line(buf,argbuf," \009"); 
+ tc=TokenizeLine(buf,argbuf," \009"); 
 
  if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
- doline(buf);
+ ExecuteLine(buf);
 
  if(strcmpi(argbuf[0],"RETURN") == 0) break;
 
@@ -716,16 +733,16 @@ count=0;
 vars=currentfunction->vars;
 
 while(vars != NULL) {
-  removevar(vars->varname);
+  RemoveVariable(vars->varname);
   vars=vars->next;
 }
 
-return_from_function();			/* return */
+ReturnFromFunction();			/* return */
 
 return;
 }
 
-int return_from_function(void) {
+int ReturnFromFunction(void) {
 
 if(callpos-1 >= 0) {
  callpos--;
@@ -811,7 +828,7 @@ return(num);
  *
  */
 
-int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]) {
+int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]) {
 int count;
 varsplit split;
 char *valptr;
@@ -854,9 +871,9 @@ varval val;
 /* replace variables with values */
 
 for(count=start;count<end;count++) { 
- splitvarname(tokens[count],&split);
+ ParseVariableName(tokens[count],&split);
 
- if(check_function(split.name) == 0) {			/* is function */
+ if(CheckFunctionExists(split.name) == 0) {			/* is function */
   b=tokens[count];
   d=buf;
 
@@ -876,7 +893,7 @@ for(count=start;count<end;count++) {
    *d++=*b++;
   }
 
-  if(callfunc(buf,functionargs) == -1) exit(-1);	/* error calling function */
+  if(CallFunction(buf,functionargs) == -1) exit(-1);	/* error calling function */
 
   if(retval.type == VAR_STRING) {		/* returning string */   
    strcpy(tokens[count],"\"");
@@ -896,9 +913,9 @@ for(count=start;count<end;count++) {
   continue;
  }
 
- if(getvarval(split.name,&val) != -1) {		/* is variable */
+ if(GetVariableValue(split.name,&val) != -1) {		/* is variable */
 
-   switch(getvartype(tokens[count])) {
+   switch(GetVariableType(tokens[count])) {
 	case VAR_STRING:
 	    if(split.arraytype == ARRAY_SLICE) {		/* part of string */
 		b=&val.s;			/* get start */
@@ -952,12 +969,12 @@ for(count=start;count<end;count++) {
  * Returns -1 on error or 0 on success
  *
  */
-int conatecate_strings(int start,int end,char *tokens[][MAX_SIZE],varval *val) {
+int ConatecateStrings(int start,int end,char *tokens[][MAX_SIZE],varval *val) {
 int count;
 char *b;
 char *d;
 
-substitute_vars(start,end,tokens);
+SubstituteVariables(start,end,tokens);
 
 val->type=VAR_STRING;
 
@@ -1007,7 +1024,7 @@ for(count=start+1;count<end;count++) {
  * Returns -1 on error or variable type on success
  *
  */
-int check_var_type(char *typename) {
+int CheckVariableType(char *typename) {
  int typecount=0;
 
  while(vartypenames[typecount] != NULL) {

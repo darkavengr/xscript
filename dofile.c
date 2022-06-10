@@ -1,3 +1,22 @@
+/*  XScript Version 0.0.1
+    (C) Matthew Boote 2020
+
+    This file is part of XScript.
+
+    XScript is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    XScript is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 /*
  * File and statement processing functions 
  *
@@ -10,7 +29,7 @@
 #include <ctype.h>
 
 #include "define.h"
-#include "defs.h"
+
 char *llcerrs[] = { "No error","File not found","No parameters for statement","Bad expression",\
 		    "IF statement without ELSEIF or ENDIF","FOR statement without NEXT",\
 		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
@@ -18,9 +37,9 @@ char *llcerrs[] = { "No error","File not found","No parameters for statement","B
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
 		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments",\
 		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
-		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH","Type already exists" };
+		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH" };
 
-char *readlinefrombuffer(char *buf,char *linebuf,int size);
+char *ReadLineFromBuffer(char *buf,char *linebuf,int size);
 
 int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
@@ -45,7 +64,7 @@ int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 int saveexprtrue=0;
-extern int substitute_vars(int start,int end,char *tokens[][MAX_SIZE]);
+extern int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]);
 varval retval;
 
 /* statements */
@@ -99,7 +118,7 @@ include includefiles[MAX_INCLUDE];	/* included files */
  * Returns error number on error or 0 on success
  *
  */
-int loadfile(char *filename) {
+int LoadFile(char *filename) {
  FILE *handle; 
  int filesize;
  
@@ -115,14 +134,14 @@ int loadfile(char *filename) {
   readbuf=malloc(filesize+1);		/* allocate buffer */
 
   if(readbuf == NULL) {
-   print_error(NO_MEM);
+   PrintError(NO_MEM);
    return(NO_MEM);
   }
  }
  else
  {
   if(realloc(readbuf,bufsize+filesize) == NULL) {
-   print_error(NO_MEM);
+   PrintError(NO_MEM);
    return(NO_MEM);
   }
  }
@@ -134,7 +153,7 @@ int loadfile(char *filename) {
  currentptr=readbuf;
 
  if(fread(readbuf,filesize,1,handle) != 1) {		/* read to buffer */
-  print_error(READ_ERROR);
+  PrintError(READ_ERROR);
   return(READ_ERROR);
  }
 
@@ -154,28 +173,30 @@ int loadfile(char *filename) {
  * Returns -1 on error or 0 on success
  *
  */
-int dofile(char *filename) {
+int ExecuteFile(char *filename) {
  char *linebuf[MAX_SIZE];
 
  //printf("debug\n");
 
  includefiles[ic].lc=0;
  
- if(loadfile(filename) == -1) {
-  print_error(FILE_NOT_FOUND);
+ if(LoadFile(filename) == -1) {
+  PrintError(FILE_NOT_FOUND);
   return(FILE_NOT_FOUND);
 }
+
+/* loop through lines and execute */
 
 do {
  currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
 
- currentptr=readlinefrombuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
+ currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
  currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
  if(*currentptr == 0) return(NO_ERROR);
 
- doline(linebuf);
+ ExecuteLine(linebuf);
 
  memset(linebuf,0,MAX_SIZE);
 
@@ -186,7 +207,7 @@ do {
 }	
 
 /*
- * Process line
+ * Execute line
  *
  * In: char *lbuf		Line to process
  *
@@ -194,7 +215,7 @@ do {
  *
  */
 
-int doline(char *lbuf) {
+int ExecuteLine(char *lbuf) {
  char *tokens[MAX_SIZE][MAX_SIZE];
  char *eviltokens[MAX_SIZE][MAX_SIZE];
  double exprone;
@@ -230,7 +251,7 @@ if(memcmp(lbuf,"//",2) == 0) return;		/* skip comments */
 
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
-tc=tokenize_line(lbuf,tokens," \009");			/* tokenize line */
+tc=TokenizeLine(lbuf,tokens," \009");			/* tokenize line */
 
 /* do statement */
 
@@ -270,8 +291,8 @@ d--;
 if(*d == ')') *d=' ';	// no )
 
 
-if(check_function(functionname) != -1) {	/* user function */
- if(callfunc(functionname,args) == -1) exit(-1);
+if(CheckFunctionExists(functionname) != -1) {	/* user function */
+ if(CallFunction(functionname,args) == -1) exit(-1);
 } 
 
 
@@ -284,25 +305,25 @@ for(count=1;count<tc;count++) {
 
  if(strcmpi(tokens[count],"=") == 0) {
 
-	 splitvarname(tokens[count-1],&split);			/* split variable */
+	 ParseVariableName(tokens[count-1],&split);			/* split variable */
 
-	 vartype=getvartype(split.name);
+	 vartype=GetVariableType(split.name);
 
 	 c=*tokens[count+1];
 
-	 if((c == '"') || getvartype(split.name) == VAR_STRING) {			/* string */  
+	 if((c == '"') || GetVariableType(split.name) == VAR_STRING) {			/* string */  
 	  if(vartype == -1) {
-		addvar(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
+		CreateVariable(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
 	  }
 	  else
 	  {  
-	   print_error(TYPE_ERROR);
+	   PrintError(TYPE_ERROR);
 	   return(TYPE_ERROR);
 	  }
 
-	  conatecate_strings(count+1,tc,tokens,&val);					/* join all the strings on the line */
+	  ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
 
-	  updatevar(split.name,&val,split.x,split.y);		/* set variable */
+	  UpdateVariable(split.name,&val,split.x,split.y);		/* set variable */
 
 	  return;
 	 }
@@ -310,7 +331,7 @@ for(count=1;count<tc;count++) {
 	/* number otherwise */
 
 	 if(vartype == VAR_STRING) {		/* not string */
-	  print_error(TYPE_ERROR);
+	  PrintError(TYPE_ERROR);
 	  return(TYPE_ERROR);
 	 }
 
@@ -320,7 +341,7 @@ for(count=1;count<tc;count++) {
 	  val.d=exprone;
 	 }
  	 else if(vartype == VAR_STRING) {
-	  substitute_vars(count+1,count+1,tokens); 
+	  SubstituteVariables(count+1,count+1,tokens); 
 	  strcpy(val.s,tokens[count+1]);  
 	 }
 	 else if(vartype == VAR_INTEGER) {
@@ -336,19 +357,19 @@ for(count=1;count<tc;count++) {
 
 
 	 if(vartype == -1) {		/* new variable */ 
-	  addvar(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
-	  updatevar(split.name,&val,split.x,split.y);
+	  CreateVariable(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
+	  UpdateVariable(split.name,&val,split.x,split.y);
 	  return;
 	 }
 
-	 updatevar(split.name,&val,split.x,split.y);
+	 UpdateVariable(split.name,&val,split.x,split.y);
 
 	 return;
   } 
 
 }
 
-print_error(INVALID_STATEMENT);
+PrintError(INVALID_STATEMENT);
 
 return;
 }
@@ -415,7 +436,7 @@ while(count < tc) {
   }
 
   if(vartypenames[vartype] == NULL) {		/* invalid type */
-   print_error(BAD_TYPE);
+   PrintError(BAD_TYPE);
    return(BAD_TYPE);
   }
 
@@ -431,15 +452,15 @@ while(count < tc) {
 }
 
 if((strlen(tokens[2]) > 0) && (strcmpi(tokens[2],"AS") != 0)) {			/* not as */
-  print_error(SYNTAX_ERROR);
+  PrintError(SYNTAX_ERROR);
   return;
 }
 
 if(strcmpi(tokens[2],"AS") == 0) {			/* return type */
- vartype=check_var_type(tokens[3]);		/* get variable type */  
+ vartype=CheckVariableType(tokens[3]);		/* get variable type */  
 
  if(vartype == -1) {				/* invalid variable type */
-  print_error(BAD_TYPE);
+  PrintError(BAD_TYPE);
   return(-1);
  }
 }
@@ -448,7 +469,7 @@ else
  vartype=VAR_NUMBER;
 }
 
-function(functionname,args,vartype);
+DeclareFunction(functionname,args,vartype);
 
 return;
 } 
@@ -464,31 +485,34 @@ return;
  */
 
 int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-double exprone;
 char c;
 varval val;
 int countx;
 varsplit split;
+double exprone;
 
-substitute_vars(1,tc,tokens);
+SubstituteVariables(1,tc,tokens);
 
-splitvarname(tokens[1],&split);
+ParseVariableName(tokens[1],&split);
 
 c=*tokens[1];
 
 /* if string literal, string variable or function returning string */
 
-if((c == '"') || (getvartype(tokens[1]) == VAR_STRING) || (check_function(split.name) == VAR_STRING) ) {	/* user function */ 
- conatecate_strings(1,tc,tokens,&val);					/* join all the strings on the line */
+if((c == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExists(split.name) == VAR_STRING) ) {	/* user function */ 
+ ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
  
  printf("%s\n",val.s);
  return;
 }
 
-exprone=doexpr(tokens,1,tc);
-printf("%.6g ",exprone);
+for(countx=1;countx<tc;countx++) {
+ printf("%s\n",tokens[countx]);
+}
 
-printf("\n");
+exprone=doexpr(tokens,1,tc);
+printf("z=%.6g\n",exprone);
+
 return;
 }
 
@@ -503,10 +527,10 @@ return;
  */
 
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-int retval=add_module(tokens[1]);
+int retval=AddModule(tokens[1]);
 
 if(retval > 0) {		/* load module */
- print_error(retval);
+ PrintError(retval);
 }
 
 return;
@@ -530,7 +554,7 @@ char *d;
 int exprtrue;
 
 if(tc < 1) {						/* not enough parameters */
- print_error(SYNTAX_ERROR);
+ PrintError(SYNTAX_ERROR);
  return(SYNTAX_ERROR);
 }
 
@@ -539,9 +563,9 @@ currentfunction->stat |= IF_STATEMENT;
 while(*currentptr != 0) {
 
 if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {
-  exprtrue=do_condition(tokens,1,tc);
+  exprtrue=EvaluateCondition(tokens,1,tc);
   if(exprtrue == -1) {
-   print_error(BAD_CONDITION);
+   PrintError(BAD_CONDITION);
    return(-1);
   }
 
@@ -549,13 +573,13 @@ if(exprtrue == 1) {
 		saveexprtrue=exprtrue;
 
 		do {
-    		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+    		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
 		if(*currentptr == 0) return;
 
-		doline(buf);
+		ExecuteLine(buf);
 
-		tokenize_line(buf,tokens," \009");			/* tokenize line */
+		TokenizeLine(buf,tokens," \009");			/* tokenize line */
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
@@ -570,12 +594,12 @@ if(exprtrue == 1) {
 
   if(saveexprtrue == 0) {
 	    do {
-    		currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+    		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 		if(*currentptr == 0) return;
 
-		doline(buf);
+		ExecuteLine(buf);
 
-		tokenize_line(buf,tokens," \009");			/* tokenize line */
+		TokenizeLine(buf,tokens," \009");			/* tokenize line */
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
@@ -586,12 +610,12 @@ if(exprtrue == 1) {
  }
 }
 
- currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
- tokenize_line(buf,tokens," \009");			/* tokenize line */
+ currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+ TokenizeLine(buf,tokens," \009");			/* tokenize line */
 
 }
 
-//print_error(ENDIF_NOIF);
+//PrintError(ENDIF_NOIF);
 }
 
 /*
@@ -605,7 +629,7 @@ if(exprtrue == 1) {
  */
 
 int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- if((currentfunction->stat & IF_STATEMENT) == 0) print_error(ENDIF_NOIF);
+ if((currentfunction->stat & IF_STATEMENT) == 0) PrintError(ENDIF_NOIF);
 }
 
 /*
@@ -633,14 +657,14 @@ int vartype;
 varsplit split;
 
 if(tc < 4) {						/* Not enough parameters */
- print_error(NO_PARAMS);
+ PrintError(NO_PARAMS);
  return(NO_PARAMS);
 }
 
 currentfunction->stat |= FOR_STATEMENT;
 
 if(strcmpi(tokens[2],"=") != 0) {
- print_error(SYNTAX_ERROR);
+ PrintError(SYNTAX_ERROR);
  return(SYNTAX_ERROR);
 }
 
@@ -652,7 +676,7 @@ for(count=1;count<tc;count++) {
 }
 
 if(count == tc) {
- print_error(SYNTAX_ERROR);
+ PrintError(SYNTAX_ERROR);
  return(SYNTAX_ERROR);
 }
 
@@ -668,7 +692,7 @@ else
  steppos=doexpr(tokens,countx+1,tc);
 }
 
-splitvarname(tokens[1],&split);
+ParseVariableName(tokens[1],&split);
 
 //  0   1    2 3 4  5
 // for count = 1 to 10
@@ -676,15 +700,15 @@ splitvarname(tokens[1],&split);
 exprone=doexpr(tokens,3,count);			/* start value */
 exprtwo=doexpr(tokens,count+1,countx);			/* end value */
 
-if(getvarval(split.name,&loopx) == -1) {		/* new variable */  
- addvar(split.name,VAR_NUMBER,split.x,split.y);
+if(GetVariableValue(split.name,&loopx) == -1) {		/* new variable */  
+ CreateVariable(split.name,VAR_NUMBER,split.x,split.y);
 }
 
-vartype=getvartype(split.name);			/* check if string */
+vartype=GetVariableType(split.name);			/* check if string */
 
 switch(vartype) {
  case VAR_STRING: 
-  print_error(TYPE_ERROR);
+  PrintError(TYPE_ERROR);
   return(TYPE_ERROR);
 
  case VAR_NUMBER:
@@ -700,7 +724,7 @@ switch(vartype) {
   break;
  }
 
-updatevar(split.name,&loopcount,split.x,split.y);			/* set loop variable to next */	
+UpdateVariable(split.name,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
 if(exprone >= exprtwo) {
  ifexpr=1;
@@ -716,15 +740,15 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
 // printf("startptr=%lX\n",currentptr);
 
  while((ifexpr == 1 && loopcount.d > exprtwo) || (ifexpr == 0 && loopcount.d < exprtwo)) {
-	    currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */	
+	    currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
 
-	    doline(buf);
+	    ExecuteLine(buf);
 
 	     d=*buf+(strlen(buf)-1);
              if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
              if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
- 	     tokenize_line(buf,tokens," \009");			/* tokenize line */
+ 	     TokenizeLine(buf,tokens," \009");			/* tokenize line */
 
   	     if(strcmpi(tokens[0],"NEXT") == 0) {
 
@@ -736,13 +760,13 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
 	      if(ifexpr == 1) loopcount.d=loopcount.d-steppos;					/* increment or decrement counter */
  	      if(ifexpr == 0) loopcount.d=loopcount.d+steppos;      
 		
-	      updatevar(split.name,&loopcount,split.x,split.y);			/* set loop variable to next */	
+	      UpdateVariable(split.name,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
               if(*currentptr == 0) {
 	          if(currentfunction->nestcount-1 > 0) currentfunction->nestcount--;
                
 	       currentfunction->stat &= FOR_STATEMENT;
-	       print_error(SYNTAX_ERROR);
+	       PrintError(SYNTAX_ERROR);
 	       return(SYNTAX_ERROR);
               }
 
@@ -777,35 +801,35 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  for(count=1;count<tc;count++) {
   if((*tokens[count] >= '0' && *tokens[count] <= '9') && (currentfunction->return_type == VAR_STRING)) {
-   print_error(TYPE_ERROR);
+   PrintError(TYPE_ERROR);
    return(-1);
   }
 
   if((*tokens[count] == '"') && (currentfunction->return_type != VAR_STRING)) {
-   print_error(TYPE_ERROR);
+   PrintError(TYPE_ERROR);
    return(-1);
   }
 
-  vartype=getvartype(tokens[count]);
+  vartype=GetVariableType(tokens[count]);
 
   if(vartype != -1) {
    if((currentfunction->return_type == VAR_STRING) && (vartype != VAR_STRING)) {
-    print_error(TYPE_ERROR);
+    PrintError(TYPE_ERROR);
     return(-1);
    }
 
    if((currentfunction->return_type != VAR_STRING) && (vartype == VAR_STRING)) {
-    print_error(TYPE_ERROR);
+    PrintError(TYPE_ERROR);
     return(-1);
    }
 
  }
 }
 
- retval.type=currentfunction->return_type;
+ retval.type=currentfunction->return_type;		/* get return type */
 
  if(currentfunction->return_type == VAR_STRING) {		/* returning string */
-  conatecate_strings(1,tc,tokens,&retval);		/* get strings */
+  ConatecateStrings(1,tc,tokens,&retval);		/* get strings */
   return;
  }
  else if(currentfunction->return_type == VAR_INTEGER) {		/* returning integer */
@@ -818,7 +842,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	 retval.f=doexpr(tokens,1,tc);	
  }
 
-return_from_function();			/* return */
+ReturnFromFunction();			/* return */
  return;
 }
 
@@ -827,13 +851,13 @@ int get_return_value(varval *val) {
 }
 
 int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- if((currentfunction->stat & WHILE_STATEMENT) == 0) print_error(WEND_NOWHILE);
+ if((currentfunction->stat & WHILE_STATEMENT) == 0) PrintError(WEND_NOWHILE);
  return;
 }
 
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if((currentfunction->stat & FOR_STATEMENT) == 0) {
-  print_error(NEXT_NO_FOR);
+  PrintError(NEXT_NO_FOR);
   return;
  }
 }
@@ -857,7 +881,7 @@ char *condition_tokens[MAX_SIZE][MAX_SIZE];
 int condition_tc;
 
 if(tc < 1) {						/* Not enough parameters */
- print_error(SYNTAX_ERROR);
+ PrintError(SYNTAX_ERROR);
  return(SYNTAX_ERROR);
 }
 
@@ -872,37 +896,37 @@ condition_tc=tc;
 currentfunction->stat |= WHILE_STATEMENT;
  
 do {
-      currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+      currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
-      exprtrue=do_condition(condition_tokens,1,condition_tc);			/* do condition */
+      exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
 
       if(exprtrue == -1) {
-       print_error(BAD_CONDITION);
+       PrintError(BAD_CONDITION);
        return(-1);
       }
 
       if(exprtrue == 0) {
        while(*currentptr != 0) {
 
-        currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
-        tc=tokenize_line(buf,tokens," \009");
+        currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+        tc=TokenizeLine(buf,tokens," \009");
 
         if(strcmpi(tokens[0],"WEND") == 0) {
-         currentptr=readlinefrombuffer(currentptr,buf,LINE_SIZE);			/* get data */
+         currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 	 return;
         }
        }
 
       }
 
-      tc=tokenize_line(buf,tokens," \009");
+      tc=TokenizeLine(buf,tokens," \009");
 
       if(strcmpi(tokens[0],"WEND") == 0) {
        includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
        currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;
       }
 
-     doline(buf);
+     ExecuteLine(buf);
   } while(exprtrue == 1);
   
 
@@ -934,7 +958,7 @@ int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if((currentfunction->stat& IF_STATEMENT) != IF_STATEMENT) {
-  print_error(ELSE_NOIF);
+  PrintError(ELSE_NOIF);
   return(ELSE_NOIF);
  }
 
@@ -953,7 +977,7 @@ return;
 
 int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if((currentfunction->stat & FUNCTION_STATEMENT) != FUNCTION_STATEMENT) {
- print_error(ENDFUNCTION_NO_FUNCTION);
+ PrintError(ENDFUNCTION_NO_FUNCTION);
  return(ENDFUNCTION_NO_FUNCTION);
 }
 
@@ -972,8 +996,8 @@ return;
  */
 
 int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- if(loadfile(tokens[1]) == -1) {
- print_error(FILE_NOT_FOUND);
+ if(LoadFile(tokens[1]) == -1) {
+ PrintError(FILE_NOT_FOUND);
  return(FILE_NOT_FOUND);
 }
  
@@ -994,33 +1018,33 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  char *d;
 
  if(((currentfunction->stat & FOR_STATEMENT) == 0) && ((currentfunction->stat & WHILE_STATEMENT) == 0)) {
-  print_error(INVALID_BREAK);
+  PrintError(INVALID_BREAK);
   return(INVALID_BREAK);
  }
 
  if((currentfunction->stat & FOR_STATEMENT) || (currentfunction->stat & WHILE_STATEMENT)) {
   while(*currentptr != 0) {
-   currentptr=readlinefrombuffer(currentptr,buf,MAX_SIZE);			/* get data */
+   currentptr=ReadLineFromBuffer(currentptr,buf,MAX_SIZE);			/* get data */
    
    if(*currentptr == 0) {			/* at end without next or wend */   
     if((currentfunction->stat & FOR_STATEMENT) == 0) {
-    print_error(FOR_NO_NEXT);
+    PrintError(FOR_NO_NEXT);
     return(FOR_NO_NEXT);
    }
 
     if((currentfunction->stat & WHILE_STATEMENT) == 0) {
-    print_error(WEND_NOWHILE);
+    PrintError(WEND_NOWHILE);
     return(WEND_NOWHILE);
    }
   }
 
-   tokenize_line(buf,tokens," \009");
+   TokenizeLine(buf,tokens," \009");
 
    if((strcmpi(tokens[0],"WEND") == 0) || (strcmpi(tokens[0],"NEXT") == 0)) {
     if((strcmpi(tokens[0],"WEND") == 0)) currentfunction->stat &= WHILE_STATEMENT;
     if((strcmpi(tokens[0],"NEXT") == 0)) currentfunction->stat &= FOR_STATEMENT;
   
-    currentptr=readlinefrombuffer(currentptr,buf,MAX_SIZE);			/* get data */
+    currentptr=ReadLineFromBuffer(currentptr,buf,MAX_SIZE);			/* get data */
     return;
    }
   }
@@ -1041,13 +1065,13 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  varsplit split;
  int vartype;
 
- splitvarname(tokens[1],&split);
+ ParseVariableName(tokens[1],&split);
 
  if(strcmpi(tokens[2],"AS") == 0) {		/* array as type */
-  vartype=check_var_type(tokens[3]);		/* get variable type */  
+  vartype=CheckVariableType(tokens[3]);		/* get variable type */  
  
   if(vartype == -1) {				/* invalid variable type */
-   print_error(BAD_TYPE);
+   PrintError(BAD_TYPE);
    return(-1);
   }
  }
@@ -1056,7 +1080,7 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   vartype=VAR_NUMBER;
  }
 
- addvar(split.name,vartype,split.x,split.y);
+ CreateVariable(split.name,vartype,split.x,split.y);
 
 }
 
@@ -1071,8 +1095,8 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  */
 
 int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- if(dofile(tokens[1]) == -1) {
-  print_error(FILE_NOT_FOUND);
+ if(ExecuteFile(tokens[1]) == -1) {
+  PrintError(FILE_NOT_FOUND);
   return(FILE_NOT_FOUND);
  }
 
@@ -1094,7 +1118,7 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   return;
  }
 
- print_error(CONTINUE_NO_LOOP);
+ PrintError(CONTINUE_NO_LOOP);
  return(CONTINUE_NO_LOOP);
 }
 
@@ -1109,7 +1133,7 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  */
 
 int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- print_error(SYNTAX_ERROR);
+ PrintError(SYNTAX_ERROR);
 }
 
 /*
@@ -1122,7 +1146,7 @@ int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  *
  */
 
-int tokenize_line(char *linebuf,char *tokens[][MAX_SIZE],char *split) {
+int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split) {
 char *token;
 char *tokenx;
 int tc;
@@ -1222,7 +1246,7 @@ return;
  *
  */
 
-char *readlinefrombuffer(char *buf,char *linebuf,int size) {
+char *ReadLineFromBuffer(char *buf,char *linebuf,int size) {
 int count=0;
 char *lineptr=linebuf;
 char *b;
@@ -1260,7 +1284,7 @@ return(buf);			/* return new position */
  *
  */
 
-int print_error(int llcerr) {
+int PrintError(int llcerr) {
  if(*includefiles[ic].filename == 0) {			/* if in interactive mode */
   printf("%s %s\n",currentfunction->name,llcerrs[llcerr]);
  }
