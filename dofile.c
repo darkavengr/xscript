@@ -27,6 +27,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #include "define.h"
 
@@ -62,6 +63,7 @@ int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+double doexpr(char *tokens[][MAX_SIZE],int start,int end);
 
 int saveexprtrue=0;
 extern int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]);
@@ -130,17 +132,17 @@ int LoadFile(char *filename) {
 
  fseek(handle,0,SEEK_SET);			/* seek back to start */
  
- if(readbuf == NULL) {
-  readbuf=malloc(filesize+1);		/* allocate buffer */
+ if(readbuf == NULL) {				/* first time */
+  readbuf=malloc(filesize+1);			/* allocate buffer */
 
-  if(readbuf == NULL) {
+  if(readbuf == NULL) {			/* no memory */
    PrintError(NO_MEM);
    return(NO_MEM);
   }
  }
  else
  {
-  if(realloc(readbuf,bufsize+filesize) == NULL) {
+  if(realloc(readbuf,bufsize+filesize) == NULL) {		/* resize buffer */
    PrintError(NO_MEM);
    return(NO_MEM);
   }
@@ -194,7 +196,7 @@ do {
 
  currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
- if(*currentptr == 0) return(NO_ERROR);
+ if(*currentptr == 0) return(NO_ERROR);		/* if at end of buffer, return */
 
  ExecuteLine(linebuf);
 
@@ -253,14 +255,14 @@ memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
 tc=TokenizeLine(lbuf,tokens," \009");			/* tokenize line */
 
-/* do statement */
+/* check if statement is valid by searching through struct of statements*/
 
 statementcount=0;
 
 do {
  if(statements[statementcount].statement == NULL) break;
 
-// printf("%s %s\n",statements[statementcount].statement,tokens[0]);
+/* found statement */
 
  if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  
   if(statements[statementcount].call_statement(tc,tokens) == -1) exit(-1);		/* call statement and exit if error */
@@ -380,7 +382,7 @@ return;
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -451,11 +453,6 @@ while(count < tc) {
  count++;
 }
 
-if((strlen(tokens[2]) > 0) && (strcmpi(tokens[2],"AS") != 0)) {			/* not as */
-  PrintError(SYNTAX_ERROR);
-  return;
-}
-
 if(strcmpi(tokens[2],"AS") == 0) {			/* return type */
  vartype=CheckVariableType(tokens[3]);		/* get variable type */  
 
@@ -480,18 +477,20 @@ return;
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
 int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+double exprone;
 char c;
 varval val;
 int countx;
 varsplit split;
-double exprone;
-
-SubstituteVariables(1,tc,tokens);
+double x;
+int count;
+int printtc;
+int splittc;
 
 ParseVariableName(tokens[1],&split);
 
@@ -499,19 +498,15 @@ c=*tokens[1];
 
 /* if string literal, string variable or function returning string */
 
-if((c == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExists(split.name) == VAR_STRING) ) {	/* user function */ 
+if((c == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExists(split.name) == VAR_STRING) ) {
  ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
  
  printf("%s\n",val.s);
- return;
 }
-
-for(countx=1;countx<tc;countx++) {
- printf("%s\n",tokens[countx]);
+else
+{
+ printf("%.6g\n",doexpr(tokens,1,tc));
 }
-
-exprone=doexpr(tokens,1,tc);
-printf("z=%.6g\n",exprone);
 
 return;
 }
@@ -522,7 +517,7 @@ return;
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -542,7 +537,7 @@ return;
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -624,7 +619,7 @@ if(exprtrue == 1) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -638,7 +633,7 @@ int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -785,7 +780,7 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -868,7 +863,7 @@ int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -938,7 +933,7 @@ do {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -952,7 +947,7 @@ int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -971,7 +966,7 @@ return;
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -991,7 +986,7 @@ return;
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -1009,7 +1004,7 @@ int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -1057,7 +1052,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -1090,7 +1085,7 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error number on error or 0 on success
  *
  */
 
@@ -1108,14 +1103,14 @@ int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns error on error or 0 on success
  *
  */
 
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(((currentfunction->stat & FOR_STATEMENT)) || ((currentfunction->stat & WHILE_STATEMENT))) {
   currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;
-  return;
+  return(0);
  }
 
  PrintError(CONTINUE_NO_LOOP);
@@ -1128,7 +1123,7 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns -1 on error or 0 on success
+ * Returns nothing
  *
  */
 
@@ -1137,7 +1132,7 @@ int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 }
 
 /*
- * Declare function statement
+ * Tokenize string
  *
  * In: char *linebuf			Line to tokenize
        char *tokens[MAX_SIZE][MAX_SIZE]	Token array output
@@ -1170,16 +1165,15 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
  d=tokens[0];
 
 while(*token != 0) {
- if((*token == '"') || (*token == '(') || (*token == '[') ) {		/* quoted text */
+// if((*token == '"') || (*token == '(') || (*token == '[') ) {		/* quoted text */
+ if((*token == '"') || (*token == '[') ) {		/* quoted text */
    
    *d++=*token++;
    while(*token != 0) {
     *d=*token++;
 
-    if((*d == '"') || (*d == ')') || (*d == ']') ) {		/* quoted text */
-	
-	break;
-    }
+//    if((*d == '"') || (*d == ')') || (*d == ']') ) {		/* quoted text */
+      if((*d == '"') || (*d == ']') ) break;		/* quoted text */	
 
     d++;
   }
@@ -1311,11 +1305,13 @@ int strcmpi(char *source,char *dest) {
  char *sourcetemp[MAX_SIZE];
  char *desttemp[MAX_SIZE];
 
+/* create copies of the string and convert them to uppercase */
+
  strcpy(sourcetemp,source);
  strcpy(desttemp,dest);
 
  touppercase(sourcetemp);
  touppercase(desttemp);
 
- return(strcmp(sourcetemp,desttemp));
+ return(strcmp(sourcetemp,desttemp));		/* return result of string comparison */
 }

@@ -22,7 +22,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
-#include <dlfcn.h>
 
 #include "define.h"
 
@@ -36,43 +35,47 @@
  * Returns error message -1 on error or result on success
  *
  */
+double doexpr(char *tokens[][MAX_SIZE],int start,int end);
 
 double doexpr(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
-double x;
 char *token;
-int countx;
 double exprone;
-char *temp[end-start][MAX_SIZE];
-char *brackettemp[10][MAX_SIZE];
-int countz;
+char *temp[MAX_SIZE][MAX_SIZE];
 int bracketcount=-1;
-char *b;
-char *d;
 varval val;
+int countx;
+int countz;
+int outcount=0;
+
 val.d=0;
 
-memset(temp,0,((end-1)-start)*MAX_SIZE);
-
-/* make a copy */ 
-for(count=start;count<end;count++) {
- strcpy(temp[count],tokens[count]);
-}
-
-SubstituteVariables(start,end,temp);
-
-/* do syntax checking on expression */
+/* do expressions in brackets */
 
 for(count=start;count<end;count++) {
- if(strcmp(temp[count],"(") == 0) bracketcount++;		/* open bracket */
- if(strcmp(temp[count],")") == 0) bracketcount--;		/* close bracket */
+ if(strcmp(tokens[count],"(") == 0) {
 
+  for(countx=count;countx<end;countx++) {
 
-}
+   if(strcmp(tokens[countx],")") == 0) {
+    val.d = atof(temp[count + 1]);
 
-if(bracketcount != -1) {				/* mismatched brackets */
- PrintError(SYNTAX_ERROR);
- return(-1);
+    exprone=doexpr(tokens,count+2,countx);
+
+    printf("expr=%.6g\n",exprone);
+    sprintf(temp[outcount],"%.6g",exprone);		/* do expression */  
+    outcount++;
+
+    break; 
+   }
+  }
+ }
+ else
+ {
+  strcpy(temp[outcount],tokens[count]);
+  outcount++;
+ }
+
 }
 
 for(count=start;count<end;count++) {
@@ -85,34 +88,6 @@ for(count=start;count<end;count++) {
 if(start+1 == end) {
  return(atof(temp[start]));
 }
-
-/* do expressions in brackets */
-
-for(count=start;count<end;count++) {
- if(strcmp(temp[count],"(") == 0) {
-  for(countx=count+1;countx<end;countx++) {
-
-   if(strcmp(temp[countx],")") == 0) {
-
-    sprintf(brackettemp[bracketcount],"%.6g",doexpr(temp,count+1,countx-1));		/* do expression */  
-
-    break;
- 
-   }
-  }
-
-  for(bracketcount=count;bracketcount<countx;bracketcount++) {
-     strcpy(temp[count],brackettemp[bracketcount]);
-  }
-
- }
- else
- {
-     strcpy(brackettemp[bracketcount],temp[count]);
-
- }
-}
-
 
 for(count=start;count<end;count++) {
 
@@ -131,7 +106,7 @@ for(count=start;count<end;count++) {
 
  if(strcmp(temp[count],"/") == 0) {
   val.d /= atof(temp[count+1]);
-  DeleteFromArray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
 
   count++;
  } 
@@ -142,19 +117,18 @@ for(count=start;count<end;count++) {
 
   val.d *= atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
   count++;
 	
  } 
 }
      
 for(count=start;count<end;count++) {
-
  if(strcmp(temp[count],"+") == 0) { 
 
   val.d += atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
 
   count++;
  } 
@@ -164,7 +138,7 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"-") == 0) {
 
   val.d -= atof(temp[count+1]);
-  DeleteFromArray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
   count++;
@@ -175,7 +149,7 @@ for(count=start;count<end;count++) {
 
   val.d += !atof(temp[count+1]);
  
-  DeleteFromArray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
    count++;
@@ -186,7 +160,7 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"&") == 0) {
   val.d += atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
   count++;
@@ -196,7 +170,7 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"|") == 0) {
   val.d += atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
   count++;
@@ -206,34 +180,42 @@ for(count=start;count<end;count++) {
  if(strcmp(temp[count],"^") == 0) {
   val.d += atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,2);		/* remove rest */
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
  count++;
 }
 
-printf("return=%.6g\n",val.d);
 return(val.d);
 }
 
-int DeleteFromArray(char *arr[255][255],int n,int end) {
+int DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend) {
  int count;
  char *temp[10][255];
  int oc=0;
 
- for(count=n;count<end;count++) {
-   strcpy(temp[oc++],arr[count]); 
+// for(count=start;count<end;count++) {
+//    printf("arr[%d]=%s\n",count,arr[count]);
+// }
+
+ for(count=start;count<end;count++) {
+   if((count < deletestart) || (count > deleteend)) {
+    strcpy(temp[oc++],arr[count]); 
+   }
+
  }
 
- for(count=0;count<n;count++) {
+ for(count=0;count<oc;count++) {
    strcpy(arr[count],temp[count]); 
  }
 
- for(count=n;count<end;count++) { 
-  arr[count][0]=NULL;
+ for(count=oc;count<end;count++) {
+  arr[count][0]=NULL; 
  }
+
 return;
 }
+
 
 /*
  * Evalue condition
