@@ -1,13 +1,14 @@
 CC = gcc
-OBJFILES=module.o addvar.o dofile.o expr.o itoa.o xscript.o
-OUTFILE=xscript
+OBJFILES = module.o addvar.o dofile.o expr.o itoa.o xscript.o
+OUTFILE  = xscript
+FLAGS    = -lm
 
 ifeq ($(OS),Windows_NT)
 	OUTFILE += ".exe"
 	OBJFILES += winmodule.o
 else
 	OBJFILES += linux-module.o
-	FLAGS = -ldl
+	FLAGS += -ldl
 endif
 
 xscript: $(OBJFILES)

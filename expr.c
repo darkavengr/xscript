@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "define.h"
 
@@ -36,6 +37,7 @@
  *
  */
 double doexpr(char *tokens[][MAX_SIZE],int start,int end);
+int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end);
 
 double doexpr(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
@@ -44,65 +46,68 @@ double exprone;
 char *temp[MAX_SIZE][MAX_SIZE];
 int bracketcount=-1;
 varval val;
-int countx;
-int countz;
-int outcount=0;
+int endexpr;
+int exprcount;
+int ti;
 
 val.d=0;
 
 /* do expressions in brackets */
 
+exprcount=0;
+
 for(count=start;count<end;count++) {
- if(strcmp(tokens[count],"(") == 0) {
+ if(strcmp(tokens[count],"(") == 0) {				/* start of expression */ 
+		printf("bracket\n");
 
-  for(countx=count;countx<end;countx++) {
+		for(endexpr=count+1;endexpr<end;endexpr++) {
+		 if(strcmp(tokens[endexpr] ,")") == 0) break;
+		}
+				
+		printf("expr=%.6g\n",doexpr(tokens,count+1,endexpr-1));
 
-   if(strcmp(tokens[countx],")") == 0) {
-    val.d = atof(temp[count + 1]);
-
-    exprone=doexpr(tokens,count+2,countx);
-
-    printf("expr=%.6g\n",exprone);
-    sprintf(temp[outcount],"%.6g",exprone);		/* do expression */  
-    outcount++;
-
-    break; 
-   }
-  }
+		sprintf(temp[exprcount++],"%.6g",doexpr(tokens,count+1,endexpr-1));
+		
+//		count=endexpr;
  }
  else
  {
-  strcpy(temp[outcount],tokens[count]);
-  outcount++;
+		strcpy(temp[exprcount++],"+");
+		strcpy(temp[exprcount++],tokens[count]);
  }
 
 }
 
-for(count=start;count<end;count++) {
+
+for(count=0;count<exprcount;count++) {
+ printf("token=%s\n",temp[count]);
+}
+  
+for(count=0;count<exprcount;count++) {
  if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
   PrintError(TYPE_ERROR);
   return(-1);
  }
 }
 
-if(start+1 == end) {
+if(start+1 == exprcount) {
  return(atof(temp[start]));
 }
 
-for(count=start;count<end;count++) {
+for(count=start;count<exprcount;count++) {
 
  if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {
-  sprintf(temp[count-1],"%d",EvaluateCondition(temp,count-1,count+2));
-  
-//  DeleteFromArray(temp,count+1,2);		/* remove rest */
+  sprintf(temp[count],"abc=%d",EvaluateCondition(temp,count-1,count+2));
+
+  //DeleteFromArray(temp,count,2);		/* remove rest */    
  } 
 
 }
 
-val.d = atof(temp[start]);
+val.d = atof(temp[0]);
 
 // BIDMAS
-for(count=start;count<end;count++) {
+for(count=start;count<exprcount;count++) {
 
  if(strcmp(temp[count],"/") == 0) {
   val.d /= atof(temp[count+1]);
@@ -112,7 +117,7 @@ for(count=start;count<end;count++) {
  } 
 }
 
-for(count=start;count<end;count++) {
+for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"*") == 0) {
 
   val.d *= atof(temp[count+1]);
@@ -123,7 +128,7 @@ for(count=start;count<end;count++) {
  } 
 }
      
-for(count=start;count<end;count++) {
+for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"+") == 0) { 
 
   val.d += atof(temp[count+1]);
@@ -134,7 +139,7 @@ for(count=start;count<end;count++) {
  } 
 }
 
-for(count=start;count<end;count++) {
+for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"-") == 0) {
 
   val.d -= atof(temp[count+1]);
@@ -144,8 +149,38 @@ for(count=start;count<end;count++) {
   count++;
 }
 
-for(count=start;count<end;count++) {
- if(strcmp(temp[count],"!") == 0) {
+
+/* power */
+
+for(count=start;count<exprcount;count++) {
+ if(strcmp(temp[count],"**") == 0) {
+
+  val.d += pow(atof(temp[count-1]),atof(temp[count+1]));
+  DeleteFromArray(temp,count,count+3);		/* remove rest */
+ } 
+
+  count++;
+}
+
+
+
+for(count=start;count<exprcount;count++) {
+ if(strcmp(temp[count],"%") == 0) {
+  ti=val.d;
+
+  ti %= (int) atoi(temp[count+1]);
+
+  val.d=(double) ti;
+
+  DeleteFromArray(temp,count,count+2);		/* remove rest */
+ } 
+
+  count++;
+}
+/* bitwise not */
+
+for(count=start;count<exprcount;count++) {
+ if(strcmp(temp[count],"~") == 0) {
 
   val.d += !atof(temp[count+1]);
  
@@ -155,8 +190,9 @@ for(count=start;count<end;count++) {
    count++;
 }
 
+/* bitwise and */
 
-for(count=start;count<end;count++) {
+for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"&") == 0) {
   val.d += atof(temp[count+1]);
 
@@ -166,7 +202,7 @@ for(count=start;count<end;count++) {
   count++;
 }
 
-for(count=start;count<end;count++) {
+for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"|") == 0) {
   val.d += atof(temp[count+1]);
 
@@ -176,7 +212,7 @@ for(count=start;count<end;count++) {
   count++;
 }
 
-for(count=start;count<end;count++) {
+for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"^") == 0) {
   val.d += atof(temp[count+1]);
 
@@ -186,6 +222,7 @@ for(count=start;count<end;count++) {
  count++;
 }
 
+
 return(val.d);
 }
 
@@ -194,7 +231,7 @@ int DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletest
  char *temp[10][255];
  int oc=0;
 
-// for(count=start;count<end;count++) {
+// for(count=start;count<exprcount;count++) {
 //    printf("arr[%d]=%s\n",count,arr[count]);
 // }
 
@@ -289,7 +326,7 @@ varval val;
 	}
 	
 	exprone=doexpr(tokens,start,exprpos);				/* do expression */
-        exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
+        exprtwo=doexpr(tokens,exprpos,end);				/* do expression */
 
         exprtrue=0;
 
@@ -305,6 +342,8 @@ varval val;
 	   return(exprone < exprtwo);
 
           case GTHAN:						/* exprone > exprtwo */
+	   printf("gt=%.6g %.6g %d\n",exprone,exprtwo,(exprone > exprtwo));
+
 	   return(exprone > exprtwo);
 
           case EQLTHAN:	           /* exprone =< exprtwo */
