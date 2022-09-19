@@ -64,6 +64,7 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 double doexpr(char *tokens[][MAX_SIZE],int start,int end);
+int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
 
 int saveexprtrue=0;
 extern int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]);
@@ -395,7 +396,8 @@ char *d;
 int count;
 int vartype;
 int countx;
-char *buf[MAX_SIZE];
+char *argtokens[MAX_SIZE][MAX_SIZE];
+int argtc;
 
 b=tokens[1];		/* get function name */
 d=functionname;
@@ -453,17 +455,24 @@ while(count < tc) {
  count++;
 }
 
-if(strcmpi(tokens[2],"AS") == 0) {			/* return type */
- vartype=CheckVariableType(tokens[3]);		/* get variable type */  
+argtc=TokenizeLine(args,argtokens,",");			/* tokenize line */
 
- if(vartype == -1) {				/* invalid variable type */
-  PrintError(BAD_TYPE);
-  return(-1);
+for(count=0;count<argtc;count++) {
+ 
+ if(strcmpi(tokens[2],"AS") == 0) {			/* return type */
+  vartype=CheckVariableType(tokens[3]);		/* get variable type */  
+
+  printf("vartype=%s\n",tokens[3]);
+
+  if(vartype == -1) {				/* invalid variable type */
+   PrintError(BAD_TYPE);
+   return(-1);
+  }
  }
-}
-else
-{
- vartype=VAR_NUMBER;
+ else
+ {
+  vartype=VAR_NUMBER;
+ }
 }
 
 DeclareFunction(functionname,args,vartype);

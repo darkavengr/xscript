@@ -129,8 +129,9 @@ typedef struct {
  int nestcount;
  int return_type;
  SAVEINFORMATION saveinformation[MAX_NEST_COUNT];
- struct vars_t *vars;
- char *argvars[25][MAX_SIZE];
+ vars_t *vars;
+ vars_t *parameters;
+ vars_t argvars[MAX_SIZE];
  struct functions *next;
 } functions;
 

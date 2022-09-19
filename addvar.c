@@ -539,8 +539,14 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
  char *linebuf[MAX_SIZE];
  char *savepos;
  char *tokens[10][MAX_SIZE];
+ char *tokensplit[10][MAX_SIZE];
  int count;
- 
+ int sc;
+ vars_t *varptr;
+ vars_t *paramsptr;
+ vars_t *paramslast;
+ int typecount=0;
+
  if((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT) return(NESTED_FUNCTION);
 
 /* Check if function already exists */
@@ -562,6 +568,52 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
 
  strcpy(next->name,name);				/* copy name */
  next->funcargcount=TokenizeLine(args,next->argvars,",");			/* copy args */
+
+/* split each variable into name and type */
+
+ for(count=0;count<next->funcargcount;count++) {
+  sc=TokenizeLine(next->argvars[count],tokensplit,",");			/* copy args */
+
+   if(strcmpi(tokensplit[1] == "AS") == 0) {		/* type */
+     /* check if declaring variable with type */
+ 	  typecount=0;
+
+ 	 while(vartypenames[typecount] != NULL) {
+	   if(strcmpi(vartypenames[typecount],tokensplit[2]) == 0) break;	/* found type */
+  
+	   typecount++;
+	 }
+
+	 if(vartypenames[typecount] == NULL) {		/* invalid type */
+	   PrintError(BAD_TYPE);
+	   return(-1);
+	 }
+  }
+  else
+  {
+	typecount=0;
+  }
+ }
+
+/* add parameter */
+ paramsptr=next->parameters;
+
+ while(paramsptr != NULL) {
+  paramslast=paramsptr;
+
+  paramsptr=paramsptr->next;
+ }
+
+ paramslast->next=malloc(sizeof(vars_t));		/* add to end */
+
+ paramsptr=paramslast->next;
+
+/* add function parameters */
+ strcmp(paramsptr->varname,tokensplit[0]);
+ paramsptr->type=typecount;
+ paramsptr->xsize=0;
+ paramsptr->ysize=0;
+ paramsptr->val=NULL;
 
  next->vars=NULL;
  next->funcstart=currentptr;
@@ -610,18 +662,14 @@ return(-1);
 double CallFunction(char *name,char *args) {
 functions *next;
 char *argbuf[10][MAX_SIZE];
-char *varbuf[10][MAX_SIZE];
-char *parttokens[10][MAX_SIZE];
 int count;
 int tc;
 char *buf[MAX_SIZE];
 varsplit split;
 vars_t *vars;
-char c;
 varval val;
-int parttc;
-int typecount;
-int countx;
+vars_t *parameters;
+int varstc;
 
 next=funcs;						/* point to variables */
 
@@ -651,61 +699,38 @@ currentptr=next->funcstart;
 
 currentfunction->stat |= FUNCTION_STATEMENT;
 
-/* add variables from args */
 
-tc=TokenizeLine(args,varbuf,",");
+varstc=TokenizeLine(args,argbuf,", \009");			/* tokenize line */
+SubstituteVariables(0,varstc,argbuf);				/* substitute variables */
 
-if(tc < next->funcargcount) {			/* too few arguments */
- PrintError(TOO_FEW_ARGS);
- return(-1);	/* too few arguments */
-}
+/* add variables from parameters */
 
-for(count=0;count < tc;count++) {
-  parttc=TokenizeLine(next->argvars[count],parttokens," ");		/* split token again */
+parameters=next->parameters;
 
-  /* check if declaring variable with type */
-  if(strcmpi(parttokens[1],"AS") == 0) {		/* variable type */
- 	  typecount=0;
+while(parameters != NULL) {
+  ParseVariableName(parameters->varname,&split);
 
- 	 while(vartypenames[typecount] != NULL) {
-	   if(strcmpi(vartypenames[typecount],parttokens[2]) == 0) break;	/* found type */
-  
-	   typecount++;
-	 }
-
-	 if(vartypenames[typecount] == NULL) {		/* invalid type */
-	   PrintError(BAD_TYPE);
-	   return(-1);
-	}
- }
- else
- {
-	typecount=0;
- }
-
-
-  ParseVariableName(parttokens[0],&split);		/* get name and subscripts */
-
-  switch(typecount) {
+  CreateVariable(parameters->varname,parameters->type,split.x,split.y);
+ 
+  switch(parameters->type) {
     case VAR_NUMBER:				/* number */
-	val.d=atof(varbuf[count]);
+	val.d=atof(argbuf[count]);
 	break;
 
     case VAR_STRING:				/* string */
-	strcpy(val.s,varbuf[count]);
+	strcpy(val.s,argbuf[count]);
 	break;
 
     case VAR_INTEGER:				/* integer */
-	val.i=atoi(varbuf[count]);
+	val.i=atoi(argbuf[count]);
 	break;
 
     case VAR_SINGLE:				/* single */
-	val.f=atof(next->argvars[count]);
+	val.f=atof(argbuf[count]);
 	break;
   }
 
-   CreateVariable(split.name,typecount,split.x,split.y);
-   UpdateVariable(split.name,&val,split.x,split.y);   
+   UpdateVariable(parameters->varname,&val,split.x,split.y);   
 }
 
 /* do function */
