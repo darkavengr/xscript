@@ -131,7 +131,6 @@ typedef struct {
  SAVEINFORMATION saveinformation[MAX_NEST_COUNT];
  vars_t *vars;
  vars_t *parameters;
- vars_t argvars[MAX_SIZE];
  struct functions *next;
 } functions;
 

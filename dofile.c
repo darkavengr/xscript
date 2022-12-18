@@ -30,6 +30,7 @@
 #include <stdbool.h>
 
 #include "define.h"
+#include "dofile.h"
 
 char *llcerrs[] = { "No error","File not found","No parameters for statement","Bad expression",\
 		    "IF statement without ELSEIF or ENDIF","FOR statement without NEXT",\
@@ -40,34 +41,7 @@ char *llcerrs[] = { "No error","File not found","No parameters for statement","B
 		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
 		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH" };
 
-char *ReadLineFromBuffer(char *buf,char *linebuf,int size);
-
-int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int if_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int for_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int while_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-double doexpr(char *tokens[][MAX_SIZE],int start,int end);
-int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
-
 int saveexprtrue=0;
-extern int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]);
 varval retval;
 
 /* statements */
@@ -275,8 +249,10 @@ do {
  statementcount++;
 
 } while(statements[statementcount].statement != NULL);
-	
+
 /* call user function */
+
+memset(functionname,0,MAX_SIZE);
 
 b=tokens[0];		/* get function name */
 d=functionname;
@@ -293,9 +269,8 @@ while(*b != 0) {
 d--;
 if(*d == ')') *d=' ';	// no )
 
-
 if(CheckFunctionExists(functionname) != -1) {	/* user function */
- if(CallFunction(functionname,args) == -1) exit(-1);
+ CallFunction(functionname,args);
 } 
 
 
@@ -402,6 +377,7 @@ int argtc;
 b=tokens[1];		/* get function name */
 d=functionname;
 
+
 while(*b != 0) {	/* copy until ) */
  if(*b == '(') {
   b++;
@@ -416,15 +392,15 @@ while(*b != 0) {	/* copy until ) */
 /* copy remainder in tokens[1] */
 d=args;
 
-while(*b != 0) {
-//	printf("%c\n",*b);
+for(count=1;count<tc;count++) {
+ while(*b != 0) {	/* copy until ) */
+  if(*b == ')') {
+   b++;
+   break;
+  }
 
-	 if(*b == ')') {		/* copy until ) */
-		*d=0;
-		break;		/* at end of args */
-	 }
-
- *d++=*b++;
+  *d++=*b++;
+ }
 }
 
 count++;
@@ -453,26 +429,6 @@ while(count < tc) {
  }
 
  count++;
-}
-
-argtc=TokenizeLine(args,argtokens,",");			/* tokenize line */
-
-for(count=0;count<argtc;count++) {
- 
- if(strcmpi(tokens[2],"AS") == 0) {			/* return type */
-  vartype=CheckVariableType(tokens[3]);		/* get variable type */  
-
-  printf("vartype=%s\n",tokens[3]);
-
-  if(vartype == -1) {				/* invalid variable type */
-   PrintError(BAD_TYPE);
-   return(-1);
-  }
- }
- else
- {
-  vartype=VAR_NUMBER;
- }
 }
 
 DeclareFunction(functionname,args,vartype);
@@ -514,7 +470,7 @@ if((c == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExi
 }
 else
 {
- printf("%.6g\n",doexpr(tokens,1,tc));
+ printf("%.6g\n",doexpr(tokens,0,tc));
 }
 
 return;
@@ -837,12 +793,18 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   return;
  }
  else if(currentfunction->return_type == VAR_INTEGER) {		/* returning integer */
+
+	 SubstituteVariables(1,tc,tokens);
 	 retval.i=doexpr(tokens,1,tc);
  }
  else if(currentfunction->return_type == VAR_NUMBER) {		/* returning double */
-	 retval.d=doexpr(tokens,1,tc);
+
+	 SubstituteVariables(1,tc,tokens);
+
+	 retval.d=doexpr(tokens,0,tc);
  }
  else if(currentfunction->return_type == VAR_SINGLE) {		/* returning single */
+	 SubstituteVariables(1,tc,tokens);
 	 retval.f=doexpr(tokens,1,tc);	
  }
 
@@ -1232,7 +1194,7 @@ int touppercase(char *token) {
    *z -= 32;
   }
 
-   z++;
+  z++;
  }
 
 return;
@@ -1253,17 +1215,21 @@ char *ReadLineFromBuffer(char *buf,char *linebuf,int size) {
 int count=0;
 char *lineptr=linebuf;
 char *b;
+char *z;
+char *l;
 
 memset(linebuf,0,size);
+
+l=linebuf;
 
 do {
  if(count++ == size) break;
 
-  *lineptr++=*buf++;
+  *l++=*buf++;
   b=buf;
   b--;
 
-//  if(*b == 0) break;
+  if(*b == 0) break;
   if(*b == '\n' || *b == '\r') break;
 
 } while(*b != 0);		/* until end of line */
@@ -1316,6 +1282,9 @@ int strcmpi(char *source,char *dest) {
 
 /* create copies of the string and convert them to uppercase */
 
+ memset(sourcetemp,0,MAX_SIZE);
+ memset(desttemp,0,MAX_SIZE);
+
  strcpy(sourcetemp,source);
  strcpy(desttemp,dest);
 
@@ -1323,4 +1292,12 @@ int strcmpi(char *source,char *dest) {
  touppercase(desttemp);
 
  return(strcmp(sourcetemp,desttemp));		/* return result of string comparison */
+}
+
+char *GetCurrentBufferAddress(void) {
+ return(currentptr);
+}
+
+char *SetCurrentBufferAddress(char *addr) {
+ currentptr=addr;
 }

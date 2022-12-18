@@ -30,20 +30,8 @@
 #include <dlfcn.h>
 
 #include "define.h"
-
-int InitializeFunctions(void);
-void FreeFunctions(void);
-int CreateVariable(char *name,int type,int xsize,int ysize);
-int UpdateVariable(char *name,varval *val,int x,int y);
-int ResizeArray(char *name,int x,int y);
-int GetVariableValue(char *name,varval *val);
-int GetVariableType(char *name);
-int ParseVariableName(char *name,varsplit *split);
-int RemoveVariable(char *name);
-int DeclareFunction(char *name,char *args,int function_return_type);
-int CheckFunctionExists(char *name);
-int atoi_base(char *hex,int base);
-int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]);
+#include "addvar.h"
+#include "dofile.h"
 
 extern varval retval;
 functions *funcs=NULL;
@@ -84,7 +72,6 @@ currentfunction=funcs;
 
 callstack[0].funcptr=funcs;
 strcpy(currentfunction->name,"main");		/* set function name */
-
 return(0);
 }
 
@@ -449,47 +436,50 @@ while(*o != 0) {
 
 commapos=strpbrk(name,",");	/* find comma position */
 if(commapos == NULL) {			/* 2d array */
- o++;				/* copy subscript */
- b=arrx;
+ 	o++;				/* copy subscript */
+	 b=arrx;
 
- while(*o != 0) {
-  if(*o == ']' || o == ')') break;
-  *b++=*o++;
- }
+	 while(*o != 0) {
+  		if(*o == ']' || *o == ')') break;
+		*b++=*o++;
+		 }
 
- tc=TokenizeLine(arrx,tokens," ");			/* tokenize line */
+ 	o--;
+ 	//*o=0;	
 
- split->x=doexpr(tokens,0,tc);		/* get x pos */
- split->y=1;
+	 tc=TokenizeLine(arrx,tokens," ");			/* tokenize line */
 
- return;
+	 split->x=doexpr(tokens,0,tc);		/* get x pos */
+	 split->y=1;
+
+	 return;
 } 
 else
 {				/* 3d array */
 
- o++;				/* copy subscript */
- b=arrx;
+	 o++;				/* copy subscript */
+ 	b=arrx;
 
- while(*o != 0) {
-  if(*o == ',') break;
-  *b++=*o++;
- }
+	 while(*o != 0) {
+	  if(*o == ',') break;
+	  *b++=*o++;
+	 }
 
-o++;
- b=arry;
+	o++;
+	 b=arry;
 
- while(*o != 0) {
-  if(*o == ']' || o == ')') break;
-  *b++=*o++;
- }
+	 while(*o != 0) {
+		  if((*o == ']') || (*o == ')')) break;
+		  *b++=*o++;
+	 }
 
- tc=TokenizeLine(arrx,tokens," ");			/* tokenize line */
- split->x=doexpr(tokens,0,tc);		/* get x pos */
+	 tc=TokenizeLine(arrx,tokens," ");			/* tokenize line */
+	 split->x=doexpr(tokens,0,tc);		/* get x pos */
 
- tc=TokenizeLine(arry,tokens," ");			/* tokenize line */
- split->y=doexpr(tokens,0,tc);		/* get x pos */
- return;
- }
+	 tc=TokenizeLine(arry,tokens," ");			/* tokenize line */
+	 split->y=doexpr(tokens,0,tc);		/* get x pos */
+	 return;
+ 	}
 }
 
 /*
@@ -538,7 +528,7 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
  functions *last;
  char *linebuf[MAX_SIZE];
  char *savepos;
- char *tokens[10][MAX_SIZE];
+ char *tokens[MAX_SIZE][MAX_SIZE];
  char *tokensplit[10][MAX_SIZE];
  int count;
  int sc;
@@ -548,33 +538,39 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
  int typecount=0;
 
  if((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT) return(NESTED_FUNCTION);
-
 /* Check if function already exists */
 
- next=funcs;						/* point to variables */
+ if(funcs == NULL) {
+  funcs=malloc(sizeof(functions));		/* add new item to list */
+  next=funcs;
+ }
+ else
+ {
+  next=funcs;						/* point to variables */
  
- while(next != NULL) {
-  last=next;
+  while(next != NULL) {
+   last=next;
 
-  if(strcmpi(next->name,name) == 0) return(FUNCTION_IN_USE);	/* already defined */
+   if(strcmpi(next->name,name) == 0) return(FUNCTION_IN_USE);	/* already defined */
 
-  next=next->next;
+   next=next->next;
+  }
+
+  last->next=malloc(sizeof(functions));		/* add new item to list */
+  if(last->next == NULL) return(NO_MEM);		/* can't resize */
+
+  next=last->next;
  }
 
- last->next=malloc(sizeof(functions));		/* add new item to list */
- if(last->next == NULL) return(NO_MEM);		/* can't resize */
-
- next=last->next;
-
  strcpy(next->name,name);				/* copy name */
- next->funcargcount=TokenizeLine(args,next->argvars,",");			/* copy args */
 
 /* split each variable into name and type */
+ next->funcargcount=TokenizeLine(args,tokens,",");			/* copy args */
 
  for(count=0;count<next->funcargcount;count++) {
-  sc=TokenizeLine(next->argvars[count],tokensplit,",");			/* copy args */
+  sc=TokenizeLine(tokens[count],tokensplit," ");			/* copy args */
 
-   if(strcmpi(tokensplit[1] == "AS") == 0) {		/* type */
+   if(strcmpi(tokensplit[1], "AS") == 0) {		/* type */
      /* check if declaring variable with type */
  	  typecount=0;
 
@@ -596,20 +592,27 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
  }
 
 /* add parameter */
- paramsptr=next->parameters;
 
- while(paramsptr != NULL) {
-  paramslast=paramsptr;
-
-  paramsptr=paramsptr->next;
+ if(next->parameters == NULL) {
+  next->parameters=malloc(sizeof(vars_t));
+  paramsptr=next->parameters;
  }
+ else
+ {
+  paramsptr=next->parameters;
 
- paramslast->next=malloc(sizeof(vars_t));		/* add to end */
+  while(paramsptr != NULL) {
+   paramslast=paramsptr;
 
- paramsptr=paramslast->next;
-
+   paramsptr=paramsptr->next;
+  }
+ 
+  paramslast->next=malloc(sizeof(vars_t));		/* add to end */
+  paramsptr=paramslast->next;
+ }
+	
 /* add function parameters */
- strcmp(paramsptr->varname,tokensplit[0]);
+ strcpy(paramsptr->varname,tokensplit[0]);
  paramsptr->type=typecount;
  paramsptr->xsize=0;
  paramsptr->ysize=0;
@@ -618,18 +621,19 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
  next->vars=NULL;
  next->funcstart=currentptr;
  next->return_type=function_return_type;
-
+ 
 /* find end of function */
 
  do {
   currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
+
   TokenizeLine(linebuf,tokens," \009");			/* copy args */
 
   if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
+ 
 }    while(*currentptr != 0); 			/* until end */
 
 PrintError(FUNCTION_NO_ENDFUNCTION);
-
  return;
 }
 
@@ -645,6 +649,7 @@ while(next != NULL) {
 
  next=next->next;
 }
+
 return(-1);
 }
 
@@ -685,7 +690,9 @@ if(next == NULL) return(INVALID_STATEMENT);
 
 next->vars=NULL;		/* no vars to begin with */
 
-//printf("currentptr=%s\n",currentptr);
+varstc=TokenizeLine(args,argbuf,",");			/* tokenize line */
+
+SubstituteVariables(0,varstc,argbuf);				/* substitute variables */
 
 callstack[callpos].callptr=currentptr;	/* save information aboutn the calling function */
 callstack[callpos].funcptr=currentfunction;
@@ -699,9 +706,6 @@ currentptr=next->funcstart;
 
 currentfunction->stat |= FUNCTION_STATEMENT;
 
-
-varstc=TokenizeLine(args,argbuf,", \009");			/* tokenize line */
-SubstituteVariables(0,varstc,argbuf);				/* substitute variables */
 
 /* add variables from parameters */
 
@@ -730,11 +734,13 @@ while(parameters != NULL) {
 	break;
   }
 
-   UpdateVariable(parameters->varname,&val,split.x,split.y);   
+   UpdateVariable(parameters->varname,&val,split.x,split.y);
+
+   parameters=parameters->next;   
 }
 
 /* do function */
-	
+
 while(*currentptr != 0) {	
  currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
@@ -866,6 +872,7 @@ char *d;
 int countx;
 double ret;
 varval val;
+int foundfunc=FALSE;
 
 /* replace non-decimal numbers with decimal equivalents */
  for(count=start;count<end;count++) {
@@ -896,47 +903,55 @@ varval val;
 /* replace variables with values */
 
 for(count=start;count<end;count++) { 
- ParseVariableName(tokens[count],&split);
 
- if(CheckFunctionExists(split.name) == 0) {			/* is function */
+  
   b=tokens[count];
   d=buf;
 
 /* get function name */
 
+ memset(buf,0,MAX_SIZE);
+
   while(*b != 0) {
-   if(*b == '(') break;
+   if(*b == '(') {		/* is function? */
+	foundfunc=TRUE;
+	break;
+   }
+
    *d++=*b++;
   }
 
-  d=functionargs;
-  b++;
-
+  if(foundfunc == TRUE) {
+	  d=functionargs;
+	  b++;
+	
 /* get function args */
 
-  while(*b != 0) {
-   *d++=*b++;
+	  while(*b != 0) {
+	  	if(*b == ')') break;
+
+   		*d++=*b++;
+	  }
+
+	  if(CallFunction(buf,functionargs) == -1) exit(-1);	/* error calling function */
+
+	  if(retval.type == VAR_STRING) {		/* returning string */   
+	   sprintf(tokens[count],"\"%s\"",retval.s);
+	  }
+	  else if(retval.type == VAR_INTEGER) {		/* returning integer */
+		 sprintf(tokens[count],"%d",retval.i);
+  	  }
+	  else if(retval.type == VAR_NUMBER) {		/* returning double */
+		 sprintf(tokens[count],"%.6g",retval.d);
+	  }
+	  else if(retval.type == VAR_SINGLE) {		/* returning single */
+		 sprintf(tokens[count],"%f",retval.f);
+	  }
+
+	  continue;
   }
 
-  if(CallFunction(buf,functionargs) == -1) exit(-1);	/* error calling function */
-
-  if(retval.type == VAR_STRING) {		/* returning string */   
-   strcpy(tokens[count],"\"");
-   strcat(tokens[count],retval.s);
-   strcat(tokens[count],"\"");
-  }
-  else if(retval.type == VAR_INTEGER) {		/* returning integer */
-	 sprintf(tokens[count],"%d",retval.i);
-  }
-  else if(retval.type == VAR_NUMBER) {		/* returning double */
-	 sprintf(tokens[count],"%.6g",retval.d);
-  }
-  else if(retval.type == VAR_SINGLE) {		/* returning single */
-	 sprintf(tokens[count],"%f",retval.f);
-  }
-
-  continue;
- }
+ ParseVariableName(tokens[count],&split);
 
  if(GetVariableValue(split.name,&val) != -1) {		/* is variable */
 

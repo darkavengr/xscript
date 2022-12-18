@@ -25,6 +25,7 @@
 #include <math.h>
 
 #include "define.h"
+#include "expr.h"
 
 /*
  * Evaluate expression
@@ -36,8 +37,6 @@
  * Returns error message -1 on error or result on success
  *
  */
-double doexpr(char *tokens[][MAX_SIZE],int start,int end);
-int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end);
 
 double doexpr(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
@@ -50,7 +49,9 @@ int endexpr;
 int exprcount;
 int ti;
 
-val.d=0;
+SubstituteVariables(start,end,tokens);
+
+val.d=atof(tokens[start]);
 
 /* do expressions in brackets */
 
@@ -58,13 +59,11 @@ exprcount=0;
 
 for(count=start;count<end;count++) {
  if(strcmp(tokens[count],"(") == 0) {				/* start of expression */ 
-		printf("bracket\n");
+		bracketcount++;
 
 		for(endexpr=count+1;endexpr<end;endexpr++) {
 		 if(strcmp(tokens[endexpr] ,")") == 0) break;
 		}
-				
-		printf("expr=%.6g\n",doexpr(tokens,count+1,endexpr-1));
 
 		sprintf(temp[exprcount++],"%.6g",doexpr(tokens,count+1,endexpr-1));
 		
@@ -78,11 +77,8 @@ for(count=start;count<end;count++) {
 
 }
 
+if(bracketcount == 0) exprcount=end;		/* no brackets, so go from start to end */
 
-for(count=0;count<exprcount;count++) {
- printf("token=%s\n",temp[count]);
-}
-  
 for(count=0;count<exprcount;count++) {
  if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
   PrintError(TYPE_ERROR);
@@ -97,7 +93,7 @@ if(start+1 == exprcount) {
 for(count=start;count<exprcount;count++) {
 
  if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {
-  sprintf(temp[count],"abc=%d",EvaluateCondition(temp,count-1,count+2));
+  sprintf(temp[count],"%d",EvaluateCondition(temp,count-1,count+2));
 
   //DeleteFromArray(temp,count,2);		/* remove rest */    
  } 
@@ -127,15 +123,17 @@ for(count=start;count<exprcount;count++) {
 	
  } 
 }
-     
+
 for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"+") == 0) { 
 
   val.d += atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
+//  DeleteFromArray(temp,count,count+2);		/* remove rest */
 
-  count++;
+//  count++;
+//  continue;
+
  } 
 }
 
