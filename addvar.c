@@ -584,12 +584,11 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
 	   PrintError(BAD_TYPE);
 	   return(-1);
 	 }
-  }
-  else
-  {
+   }
+   else
+   {
 	typecount=0;
   }
- }
 
 /* add parameter */
 
@@ -621,7 +620,8 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
  next->vars=NULL;
  next->funcstart=currentptr;
  next->return_type=function_return_type;
- 
+}
+
 /* find end of function */
 
  do {
@@ -710,8 +710,10 @@ currentfunction->stat |= FUNCTION_STATEMENT;
 /* add variables from parameters */
 
 parameters=next->parameters;
+count=0;
 
 while(parameters != NULL) {
+
   ParseVariableName(parameters->varname,&split);
 
   CreateVariable(parameters->varname,parameters->type,split.x,split.y);
@@ -737,6 +739,7 @@ while(parameters != NULL) {
    UpdateVariable(parameters->varname,&val,split.x,split.y);
 
    parameters=parameters->next;   
+   count++;
 }
 
 /* do function */

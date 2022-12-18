@@ -377,8 +377,7 @@ int argtc;
 b=tokens[1];		/* get function name */
 d=functionname;
 
-
-while(*b != 0) {	/* copy until ) */
+while(*b != 0) {	/* copy until ( */
  if(*b == '(') {
   b++;
   break;
@@ -392,16 +391,38 @@ while(*b != 0) {	/* copy until ) */
 /* copy remainder in tokens[1] */
 d=args;
 
-for(count=1;count<tc;count++) {
- while(*b != 0) {	/* copy until ) */
-  if(*b == ')') {
-   b++;
+while(*b != 0) {	/* copy until ) */
+ if(*b == ')') {
+  b++;
+  break;
+ }
+
+ *d++=*b++;
+}
+
+if(*b != ')') {
+ *d++=' ';
+
+ for(count=2;count<tc;count++) {
+  strcat(d,tokens[count]);
+  
+  if(count <= tc-1) strcat(d," ");
+
+ }
+}
+
+/* remove ) at the end */
+
+ d=args;
+
+ while(*d != 0) {
+  if(*d == ')') {
+   *d=0;
    break;
   }
 
-  *d++=*b++;
+  d++;
  }
-}
 
 count++;
 
@@ -795,7 +816,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  else if(currentfunction->return_type == VAR_INTEGER) {		/* returning integer */
 
 	 SubstituteVariables(1,tc,tokens);
-	 retval.i=doexpr(tokens,1,tc);
+	 retval.i=doexpr(tokens,0,tc);
  }
  else if(currentfunction->return_type == VAR_NUMBER) {		/* returning double */
 
@@ -805,7 +826,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  }
  else if(currentfunction->return_type == VAR_SINGLE) {		/* returning single */
 	 SubstituteVariables(1,tc,tokens);
-	 retval.f=doexpr(tokens,1,tc);	
+	 retval.f=doexpr(tokens,0,tc);	
  }
 
 ReturnFromFunction();			/* return */
