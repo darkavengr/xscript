@@ -100,8 +100,6 @@ for(count=start;count<exprcount;count++) {
 
 }
 
-val.d = atof(temp[0]);
-
 // BIDMAS
 for(count=start;count<exprcount;count++) {
 
@@ -253,7 +251,7 @@ return;
 
 
 /*
- * Evalue condition
+ * Evalue a single condition
  *
  * In: char *tokens[][MAX_SIZE]		Tokens array containing expression
  *     int start			Start in array
@@ -263,7 +261,7 @@ return;
  *
  */
 
-int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end) {
+int EvaluateSingleCondition(char *tokens[][MAX_SIZE],int start,int end) {
 int inverse;
 double exprone;
 double exprtwo;
@@ -281,13 +279,6 @@ varval val;
  exprtwo=0;
 
  for(exprpos=start;exprpos<end;exprpos++) {
-	  if((GetVariableType(tokens[exprpos-1]) != -1) && (GetVariableType(tokens[exprpos-1]) != -1)) {
-		if( GetVariableType(tokens[exprpos-1]) != GetVariableType(tokens[exprpos+1])) {
-		   PrintError(TYPE_ERROR);
-		   return(-1);
-        	  }
-	  }
-
 	  if(strcmp(tokens[exprpos],"=") == 0) {
 	   ifexpr=EQUAL;
 	   break;
@@ -322,9 +313,9 @@ varval val;
 
 	 return(!strcmp(tokens[exprpos-1],tokens[exprpos+1]));
 	}
-	
-	exprone=doexpr(tokens,start,exprpos);				/* do expression */
-        exprtwo=doexpr(tokens,exprpos,end);				/* do expression */
+
+	exprone=doexpr(tokens,start,exprpos-1);				/* do expression */
+        exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
 
         exprtrue=0;
 
@@ -340,8 +331,6 @@ varval val;
 	   return(exprone < exprtwo);
 
           case GTHAN:						/* exprone > exprtwo */
-	   printf("gt=%.6g %.6g %d\n",exprone,exprtwo,(exprone > exprtwo));
-
 	   return(exprone > exprtwo);
 
           case EQLTHAN:	           /* exprone =< exprtwo */
@@ -353,3 +342,69 @@ varval val;
 
 	
 }
+
+int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end) {
+int startcount;
+int endcount;
+int resultcount=0;
+int count;
+int overallresult=0;
+int countx;
+
+struct {
+ int result;
+ int and_or;
+} results[MAX_SIZE];
+
+//456 > 123 and 124 > 666 and 999 > 888
+//456 > 123
+//124 > 666
+//999 > 888
+
+// Evaluate sub-conditions
+
+startcount=1;
+
+count=start;
+
+while(count < end) {
+  if(strcmpi(tokens[count],"THEN") == 0) break;
+  
+  if((strcmpi(tokens[count],"AND") == 0) || (strcmpi(tokens[count],"OR") == 0)) {
+	  if(strcmpi(tokens[count],"AND") == 0) { 
+		results[resultcount].result=EvaluateSingleCondition(tokens,startcount,count);
+		results[resultcount++].and_or=CONDITION_AND;
+	  }
+
+
+	startcount=(count+1);
+	count++;
+  }
+  else
+  {
+	count++;
+  }
+}
+
+// If there are no sub conditions, use whole expression
+
+if(resultcount == 0) return(EvaluateSingleCondition(tokens,start,end));
+
+count=0;
+overallresult=0;
+
+while(count < resultcount) {
+ if(results[count].and_or == CONDITION_AND) {		// and
+
+   overallresult = (results[count].result == results[count+1].result);
+   count += 2;
+ }
+ else if(results[count].and_or == CONDITION_OR) {		// or
+   overallresult = (results[count].result || results[count+1].result);
+   count += 2;
+  }
+ }
+
+ return(overallresult);
+}
+
