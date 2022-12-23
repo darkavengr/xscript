@@ -63,6 +63,7 @@ for(count=0;count<argc;count++) {
 if(argc == 1) {					/* no arguments */ 
  while(1) {
   fgets(buffer,MAX_SIZE,stdin);			/* read line */
+  
   ExecuteLine(buffer);				/* execute line */
  }
 

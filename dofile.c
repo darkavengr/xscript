@@ -228,7 +228,11 @@ if(memcmp(lbuf,"//",2) == 0) return;		/* skip comments */
 
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
-tc=TokenizeLine(lbuf,tokens," \009");			/* tokenize line */
+tc=TokenizeLine(lbuf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+
+for(count=0;count<tc;count++) {
+ printf("token=%s\n",tokens[count]);
+}
 
 /* check if statement is valid by searching through struct of statements*/
 
@@ -560,7 +564,7 @@ if(exprtrue == 1) {
 
 		ExecuteLine(buf);
 
-		TokenizeLine(buf,tokens," \009");			/* tokenize line */
+		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
@@ -580,7 +584,7 @@ if(exprtrue == 1) {
 
 		ExecuteLine(buf);
 
-		TokenizeLine(buf,tokens," \009");			/* tokenize line */
+		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
@@ -592,7 +596,7 @@ if(exprtrue == 1) {
 }
 
  currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
- TokenizeLine(buf,tokens," \009");			/* tokenize line */
+ tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
 
 }
 
@@ -729,7 +733,7 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
              if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
              if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
- 	     TokenizeLine(buf,tokens," \009");			/* tokenize line */
+ 	     tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
 
   	     if(strcmpi(tokens[0],"NEXT") == 0) {
 
@@ -896,7 +900,7 @@ do {
        while(*currentptr != 0) {
 
         currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-        tc=TokenizeLine(buf,tokens," \009");
+	tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
 
         if(strcmpi(tokens[0],"WEND") == 0) {
          currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -906,7 +910,7 @@ do {
 
       }
 
-      tc=TokenizeLine(buf,tokens," \009");
+      tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
 
       if(strcmpi(tokens[0],"WEND") == 0) {
        includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
@@ -1025,7 +1029,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
    }
   }
 
-   TokenizeLine(buf,tokens," \009");
+   tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
 
    if((strcmpi(tokens[0],"WEND") == 0) || (strcmpi(tokens[0],"NEXT") == 0)) {
     if((strcmpi(tokens[0],"WEND") == 0)) currentfunction->stat &= WHILE_STATEMENT;
@@ -1109,6 +1113,10 @@ int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  return(CONTINUE_NO_LOOP);
 }
 
+int record_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+
+}
+
 /*
  * Non-statement keyword as statement
  *
@@ -1157,14 +1165,12 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
  d=tokens[0];
 
 while(*token != 0) {
-// if((*token == '"') || (*token == '(') || (*token == '[') ) {		/* quoted text */
  if((*token == '"') || (*token == '[') ) {		/* quoted text */
    
    *d++=*token++;
    while(*token != 0) {
     *d=*token++;
 
-//    if((*d == '"') || (*d == ')') || (*d == ']') ) {		/* quoted text */
       if((*d == '"') || (*d == ']') ) break;		/* quoted text */	
 
     d++;
@@ -1177,19 +1183,25 @@ while(*token != 0) {
   while(*s != 0) {
  
    if((*token == *s)) {		/* token found */
+    if(*token == ' ') {
+      d=tokens[++tc]; 		/* new token */
+      token++;
+      break;
+    }
 
-    tc++;
-    d=tokens[tc]; 		/* new token */
-   }
-   else
-   {
-    *d++=*token;
-   }
+    d=tokens[++tc]; 		/* new token */
+    *d++=*token++;
+    d=tokens[++tc]; 		/* new token */
+   
+    break;
+
+  }
 
    s++;
  }
 
- token++;
+ *d++=*token++;
+
 }
 
 return(tc+1);

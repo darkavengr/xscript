@@ -100,6 +100,11 @@ typedef struct {
  int type;
  struct vars_t *next;
 } vars_t;
+
+typedef struct {
+ char *recordname[MAX_SIZE];
+ vars_t rdata[MAX_SIZE];
+} record;
  
 typedef struct {
  char *filename[MAX_SIZE];

@@ -36,6 +36,7 @@
 extern varval retval;
 functions *funcs=NULL;
 functions *currentfunction=NULL;
+record *records=NULL;
 
 char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
 
@@ -447,7 +448,7 @@ if(commapos == NULL) {			/* 2d array */
  	o--;
  	//*o=0;	
 
-	 tc=TokenizeLine(arrx,tokens," ");			/* tokenize line */
+         tc=TokenizeLine(arrx,tokens,"+-*/<>=!%~|&");			/* tokenize line */
 
 	 split->x=doexpr(tokens,0,tc);		/* get x pos */
 	 split->y=1;
@@ -473,10 +474,10 @@ else
 		  *b++=*o++;
 	 }
 
-	 tc=TokenizeLine(arrx,tokens," ");			/* tokenize line */
+         tc=TokenizeLine(arrx,tokens,"+-*/<>=!%~|&");			/* tokenize line */
 	 split->x=doexpr(tokens,0,tc);		/* get x pos */
 
-	 tc=TokenizeLine(arry,tokens," ");			/* tokenize line */
+    	 tc=TokenizeLine(arry,tokens,"+-*/<>=!%~|&");			/* tokenize line */
 	 split->y=doexpr(tokens,0,tc);		/* get x pos */
 	 return;
  	}
@@ -627,7 +628,7 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
  do {
   currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
-  TokenizeLine(linebuf,tokens," \009");			/* copy args */
+  TokenizeLine(linebuf,tokens,"+-*/<>=!%~|&");			/* tokenize line */
 
   if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
  
@@ -747,7 +748,7 @@ while(parameters != NULL) {
 while(*currentptr != 0) {	
  currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
- tc=TokenizeLine(buf,argbuf," \009"); 
+ tc=TokenizeLine(buf,argbuf,"+-*/<>=!%~|&");			/* tokenize line */
 
  if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
