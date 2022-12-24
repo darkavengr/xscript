@@ -517,20 +517,17 @@ int RemoveVariable(char *name) {
 /*
  * Declare function
  *
- * In: char *name		Function name
-       char *args		Comma-separated function arguments
-       int function_return_type	Function return type
+ * In: char *tokens[MAX_SIZE][MAX_SIZE] function name and args
+       int funcargcount			number of tokens
  *
  * Returns -1 on error or 0 on success
  *
  */
-int DeclareFunction(char *name,char *args,int function_return_type) {
+int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount) {
  functions *next;
  functions *last;
  char *linebuf[MAX_SIZE];
  char *savepos;
- char *tokens[MAX_SIZE][MAX_SIZE];
- char *tokensplit[10][MAX_SIZE];
  int count;
  int sc;
  vars_t *varptr;
@@ -552,7 +549,7 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
   while(next != NULL) {
    last=next;
 
-   if(strcmpi(next->name,name) == 0) return(FUNCTION_IN_USE);	/* already defined */
+   if(strcmpi(next->name,tokens[0]) == 0) return(FUNCTION_IN_USE);	/* already defined */
 
    next=next->next;
   }
@@ -563,20 +560,17 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
   next=last->next;
  }
 
- strcpy(next->name,name);				/* copy name */
+ strcpy(next->name,tokens[0]);				/* copy name */
+ next->funcargcount=funcargcount;
 
-/* split each variable into name and type */
- next->funcargcount=TokenizeLine(args,tokens,",");			/* copy args */
+ for(count=1;count<next->funcargcount;count++) {
 
- for(count=0;count<next->funcargcount;count++) {
-  sc=TokenizeLine(tokens[count],tokensplit," ");			/* copy args */
-
-   if(strcmpi(tokensplit[1], "AS") == 0) {		/* type */
+   if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
      /* check if declaring variable with type */
  	  typecount=0;
 
  	 while(vartypenames[typecount] != NULL) {
-	   if(strcmpi(vartypenames[typecount],tokensplit[2]) == 0) break;	/* found type */
+	   if(strcmpi(vartypenames[typecount],tokens[count+2]) == 0) break;	/* found type */
   
 	   typecount++;
 	 }
@@ -612,7 +606,7 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
  }
 	
 /* add function parameters */
- strcpy(paramsptr->varname,tokensplit[0]);
+ strcpy(paramsptr->varname,tokens[count]);
  paramsptr->type=typecount;
  paramsptr->xsize=0;
  paramsptr->ysize=0;
@@ -620,22 +614,40 @@ int DeclareFunction(char *name,char *args,int function_return_type) {
 
  next->vars=NULL;
  next->funcstart=currentptr;
- next->return_type=function_return_type;
+ if(strcmpi(tokens[count+1], "AS") == 0) count += 3;		/* skip as and type */
+
 }
+
+/* get function return type */
+
+if(strcmpi(tokens[funcargcount-1], "AS") == 0) {		/* type */
+ typecount=0;
+
+ while(vartypenames[typecount] != NULL) {
+   if(strcmpi(vartypenames[typecount],tokens[count+1]) == 0) break;	/* found type */
+
+   typecount++;
+ }
+
+
+ if(vartypenames[typecount] == NULL)  typecount=0;
+}
+
+next->return_type=typecount;
 
 /* find end of function */
 
  do {
   currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
-  TokenizeLine(linebuf,tokens,"+-*/<>=!%~|&");			/* tokenize line */
+  TokenizeLine(linebuf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
   if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
  
 }    while(*currentptr != 0); 			/* until end */
 
 PrintError(FUNCTION_NO_ENDFUNCTION);
- return;
+return;
 }
 
 int CheckFunctionExists(char *name) {
@@ -658,18 +670,18 @@ return(-1);
 /*
  * Call function
  *
- * In: char *name		Function name
-       char *args		Comma-separated function arguments
+ * In: char *tokens[MAX_SIZE][MAX_SIZE] function name and args
+       int funcargcount			number of tokens
  *
  * Returns -1 on error or 0 on success
  *
  */
 
-double CallFunction(char *name,char *args) {
+double CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end) {
 functions *next;
-char *argbuf[10][MAX_SIZE];
 int count;
 int tc;
+char *argbuf[MAX_SIZE][MAX_SIZE];
 char *buf[MAX_SIZE];
 varsplit split;
 vars_t *vars;
@@ -677,12 +689,14 @@ varval val;
 vars_t *parameters;
 int varstc;
 
+printf("CALL FUNCTION=%s\n",tokens[0]);
+
 next=funcs;						/* point to variables */
 
 /* find function name */
 
 while(next != NULL) {
- if(strcmpi(next->name,name) == 0) break;		/* found name */   
+ if(strcmpi(next->name,tokens[0]) == 0) break;		/* found name */   
 
  next=next->next;
 }
@@ -691,9 +705,7 @@ if(next == NULL) return(INVALID_STATEMENT);
 
 next->vars=NULL;		/* no vars to begin with */
 
-varstc=TokenizeLine(args,argbuf,",");			/* tokenize line */
-
-SubstituteVariables(0,varstc,argbuf);				/* substitute variables */
+SubstituteVariables(start,end,tokens);			/* substitute variables */
 
 callstack[callpos].callptr=currentptr;	/* save information aboutn the calling function */
 callstack[callpos].funcptr=currentfunction;
@@ -711,7 +723,7 @@ currentfunction->stat |= FUNCTION_STATEMENT;
 /* add variables from parameters */
 
 parameters=next->parameters;
-count=0;
+count=1;
 
 while(parameters != NULL) {
 
@@ -721,19 +733,19 @@ while(parameters != NULL) {
  
   switch(parameters->type) {
     case VAR_NUMBER:				/* number */
-	val.d=atof(argbuf[count]);
+	val.d=atof(tokens[count]);
 	break;
 
     case VAR_STRING:				/* string */
-	strcpy(val.s,argbuf[count]);
+	strcpy(val.s,tokens[count]);
 	break;
 
     case VAR_INTEGER:				/* integer */
-	val.i=atoi(argbuf[count]);
+	val.i=atoi(tokens[count]);
 	break;
 
     case VAR_SINGLE:				/* single */
-	val.f=atof(argbuf[count]);
+	val.f=atof(tokens[count]);
 	break;
   }
 
@@ -748,7 +760,7 @@ while(parameters != NULL) {
 while(*currentptr != 0) {	
  currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
- tc=TokenizeLine(buf,argbuf,"+-*/<>=!%~|&");			/* tokenize line */
+ tc=TokenizeLine(buf,argbuf,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
  if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
@@ -908,36 +920,15 @@ int foundfunc=FALSE;
 
 for(count=start;count<end;count++) { 
 
-  
-  b=tokens[count];
-  d=buf;
+ if(CheckFunctionExists(tokens[count]) != -1) {	/* user function */
 
-/* get function name */
+ 	  count++;		/* skip ( */
 
- memset(buf,0,MAX_SIZE);
-
-  while(*b != 0) {
-   if(*b == '(') {		/* is function? */
-	foundfunc=TRUE;
-	break;
-   }
-
-   *d++=*b++;
-  }
-
-  if(foundfunc == TRUE) {
-	  d=functionargs;
-	  b++;
-	
-/* get function args */
-
-	  while(*b != 0) {
-	  	if(*b == ')') break;
-
-   		*d++=*b++;
+	  for(countx=count;countx<end;countx++) {		/* find end of function call */
+		if(strcmp(tokens[countx],")") == 0) break;
 	  }
-
-	  if(CallFunction(buf,functionargs) == -1) exit(-1);	/* error calling function */
+ 
+	  if(CallFunction(tokens,count,countx) == -1) exit(-1);	/* error calling function */
 
 	  if(retval.type == VAR_STRING) {		/* returning string */   
 	   sprintf(tokens[count],"\"%s\"",retval.s);

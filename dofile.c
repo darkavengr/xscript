@@ -228,7 +228,7 @@ if(memcmp(lbuf,"//",2) == 0) return;		/* skip comments */
 
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
-tc=TokenizeLine(lbuf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+tc=TokenizeLine(lbuf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
 for(count=0;count<tc;count++) {
  printf("token=%s\n",tokens[count]);
@@ -256,25 +256,11 @@ do {
 
 /* call user function */
 
-memset(functionname,0,MAX_SIZE);
 
-b=tokens[0];		/* get function name */
-d=functionname;
 
-while(*b != 0) {
- if(*b == '(') {
-  d=args;		/* copy to args */
-  b++;
- }
-
- *d++=*b++;
-}
-
-d--;
-if(*d == ')') *d=' ';	// no )
-
-if(CheckFunctionExists(functionname) != -1) {	/* user function */
- CallFunction(functionname,args);
+if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
+ CallFunction(tokens,0,tc);
+ return;
 } 
 
 
@@ -367,96 +353,8 @@ return;
  */
 
 int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-char *valptr;
-char *functionname[MAX_SIZE];
-char *args[MAX_SIZE];
-char *b;
-char *d;
-int count;
-int vartype;
-int countx;
-char *argtokens[MAX_SIZE][MAX_SIZE];
-int argtc;
 
-b=tokens[1];		/* get function name */
-d=functionname;
-
-while(*b != 0) {	/* copy until ( */
- if(*b == '(') {
-  b++;
-  break;
- }
-
- *d++=*b++;
-}
-
-*d=0;
-
-/* copy remainder in tokens[1] */
-d=args;
-
-while(*b != 0) {	/* copy until ) */
- if(*b == ')') {
-  b++;
-  break;
- }
-
- *d++=*b++;
-}
-
-if(*b != ')') {
- *d++=' ';
-
- for(count=2;count<tc;count++) {
-  strcat(d,tokens[count]);
-  
-  if(count <= tc-1) strcat(d," ");
-
- }
-}
-
-/* remove ) at the end */
-
- d=args;
-
- while(*d != 0) {
-  if(*d == ')') {
-   *d=0;
-   break;
-  }
-
-  d++;
- }
-
-count++;
-
-while(count < tc) {
- if(strcmpi(tokens[count],"AS") == 0) {		/* array as type */
-  vartype=0;
-
-  while(vartypenames[vartype] != NULL) {
-    if(strcmpi(vartypenames[vartype],tokens[3]) == 0) break;	/* found type */
-   
-   vartype++;
-  }
-
-  if(vartypenames[vartype] == NULL) {		/* invalid type */
-   PrintError(BAD_TYPE);
-   return(BAD_TYPE);
-  }
-
-  break;
- }
- else
- {
-  vartype=VAR_NUMBER;
-  break;
- }
-
- count++;
-}
-
-DeclareFunction(functionname,args,vartype);
+DeclareFunction(tokens,tc);
 
 return;
 } 
@@ -564,7 +462,7 @@ if(exprtrue == 1) {
 
 		ExecuteLine(buf);
 
-		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
@@ -584,7 +482,7 @@ if(exprtrue == 1) {
 
 		ExecuteLine(buf);
 
-		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
@@ -596,7 +494,7 @@ if(exprtrue == 1) {
 }
 
  currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
- tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+ tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
 }
 
@@ -733,7 +631,7 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
              if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
              if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
- 	     tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+ 	     tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
   	     if(strcmpi(tokens[0],"NEXT") == 0) {
 
@@ -900,7 +798,7 @@ do {
        while(*currentptr != 0) {
 
         currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-	tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+	tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
         if(strcmpi(tokens[0],"WEND") == 0) {
          currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -910,7 +808,7 @@ do {
 
       }
 
-      tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+      tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
       if(strcmpi(tokens[0],"WEND") == 0) {
        includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
@@ -1029,7 +927,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
    }
   }
 
-   tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t");			/* tokenize line */
+   tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
 
    if((strcmpi(tokens[0],"WEND") == 0) || (strcmpi(tokens[0],"NEXT") == 0)) {
     if((strcmpi(tokens[0],"WEND") == 0)) currentfunction->stat &= WHILE_STATEMENT;
