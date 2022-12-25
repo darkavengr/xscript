@@ -229,6 +229,10 @@ if(memcmp(lbuf,"//",2) == 0) return;		/* skip comments */
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
 tc=TokenizeLine(lbuf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+if(tc == -1) {
+ PrintError(SYNTAX_ERROR);
+ return(-1);
+}
 
 for(count=0;count<tc;count++) {
  printf("token=%s\n",tokens[count]);
@@ -393,7 +397,7 @@ if((c == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExi
 }
 else
 {
- printf("%.6g\n",doexpr(tokens,0,tc));
+ printf("%.6g\n",doexpr(tokens,1,tc));
 }
 
 return;
@@ -463,6 +467,10 @@ if(exprtrue == 1) {
 		ExecuteLine(buf);
 
 		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+		if(tc == -1) {
+		 PrintError(SYNTAX_ERROR);
+		 return(-1);
+		}
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
@@ -483,6 +491,10 @@ if(exprtrue == 1) {
 		ExecuteLine(buf);
 
 		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+		if(tc == -1) {
+		 PrintError(SYNTAX_ERROR);
+		 return(-1);
+		}
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
@@ -495,6 +507,11 @@ if(exprtrue == 1) {
 
  currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
  tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+
+ if(tc == -1) {
+  PrintError(SYNTAX_ERROR);
+  return(-1);
+ }
 
 }
 
@@ -632,6 +649,10 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
              if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
  	     tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+	     if(tc == -1) {
+		 PrintError(SYNTAX_ERROR);
+		 return(-1);
+	     }
 
   	     if(strcmpi(tokens[0],"NEXT") == 0) {
 
@@ -799,6 +820,10 @@ do {
 
         currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 	tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+	if(tc == -1) {
+	 PrintError(SYNTAX_ERROR);
+	 return(-1);
+	}
 
         if(strcmpi(tokens[0],"WEND") == 0) {
          currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -809,6 +834,10 @@ do {
       }
 
       tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+       if(tc == -1) {
+	 PrintError(SYNTAX_ERROR);
+	 return(-1);
+     }
 
       if(strcmpi(tokens[0],"WEND") == 0) {
        includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
@@ -928,6 +957,10 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   }
 
    tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+   if(tc == -1) {
+    PrintError(SYNTAX_ERROR);
+    return(-1);
+   }
 
    if((strcmpi(tokens[0],"WEND") == 0) || (strcmpi(tokens[0],"NEXT") == 0)) {
     if((strcmpi(tokens[0],"WEND") == 0)) currentfunction->stat &= WHILE_STATEMENT;
@@ -1041,14 +1074,13 @@ int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split) {
 char *token;
-char *tokenx;
 int tc;
 int count;
-char c;
 char *d;
-int x;
-char *z;
 char *s;
+char *ns;
+char *nextns;
+char *nexttoken;
 tc=0;
 
 token=linebuf;
@@ -1075,12 +1107,30 @@ while(*token != 0) {
   }
 
  }
-
   s=split;
 
   while(*s != 0) {
  
    if((*token == *s)) {		/* token found */
+
+    if(*s != ' ') {
+
+    /* check if next token is a seperator 
+     is should not be a seperator*/
+
+     nexttoken=token;
+     nexttoken++;
+
+     ns=split;
+     while(*ns != 0) {
+	if(*ns == *nexttoken) return(-1);	/* syntax error */
+	
+	ns++;
+     }
+   }
+
+/* non-seperator character */
+
     if(*token == ' ') {
       d=tokens[++tc]; 		/* new token */
       token++;
@@ -1090,9 +1140,7 @@ while(*token != 0) {
     d=tokens[++tc]; 		/* new token */
     *d++=*token++;
     d=tokens[++tc]; 		/* new token */
-   
-    break;
-
+ 
   }
 
    s++;
@@ -1186,7 +1234,7 @@ return(buf);			/* return new position */
 
 int PrintError(int llcerr) {
  if(*includefiles[ic].filename == 0) {			/* if in interactive mode */
-  printf("%s %s\n",currentfunction->name,llcerrs[llcerr]);
+  printf("Error in function %s: %s\n",currentfunction->name,llcerrs[llcerr]);
  }
  else
  {

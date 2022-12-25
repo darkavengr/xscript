@@ -449,6 +449,10 @@ if(commapos == NULL) {			/* 2d array */
  	//*o=0;	
 
          tc=TokenizeLine(arrx,tokens,"+-*/<>=!%~|&");			/* tokenize line */
+	 if(tc == -1) {
+	  PrintError(SYNTAX_ERROR);
+	  return(-1);
+	 }
 
 	 split->x=doexpr(tokens,0,tc);		/* get x pos */
 	 split->y=1;
@@ -475,9 +479,19 @@ else
 	 }
 
          tc=TokenizeLine(arrx,tokens,"+-*/<>=!%~|&");			/* tokenize line */
+	 if(tc == -1) {
+	  PrintError(SYNTAX_ERROR);
+	  return(-1);
+	 }
+
 	 split->x=doexpr(tokens,0,tc);		/* get x pos */
 
     	 tc=TokenizeLine(arry,tokens,"+-*/<>=!%~|&");			/* tokenize line */
+	 if(tc == -1) {
+	  PrintError(SYNTAX_ERROR);
+	  return(-1);
+	 }
+
 	 split->y=doexpr(tokens,0,tc);		/* get x pos */
 	 return;
  	}
@@ -640,7 +654,10 @@ next->return_type=typecount;
  do {
   currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
-  TokenizeLine(linebuf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+  if(TokenizeLine(linebuf,tokens,"+-*/<>=!%~|& \t(),") == -1) {			/* tokenize line */
+   PrintError(SYNTAX_ERROR);
+   return(-1);
+  }
 
   if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
  
@@ -761,6 +778,10 @@ while(*currentptr != 0) {
  currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
  tc=TokenizeLine(buf,argbuf,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+ if(tc == -1) {
+  PrintError(SYNTAX_ERROR);
+  return(-1);
+ }
 
  if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 

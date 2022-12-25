@@ -65,13 +65,12 @@ for(count=start;count<end;count++) {
 		 if(strcmp(tokens[endexpr] ,")") == 0) break;
 		}
 
-		sprintf(temp[exprcount++],"%.6g",doexpr(tokens,count+1,endexpr-1));
+		sprintf(temp[exprcount++],"%.6g+",doexpr(tokens,count+1,endexpr-1));
 		
 //		count=endexpr;
  }
  else
  {
-		strcpy(temp[exprcount++],"+");
 		strcpy(temp[exprcount++],tokens[count]);
  }
 
@@ -105,7 +104,7 @@ for(count=start;count<exprcount;count++) {
 
  if(strcmp(temp[count],"/") == 0) {
   val.d /= atof(temp[count+1]);
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
+  //DeleteFromArray(temp,count,count+2);		/* remove rest */
 
   count++;
  } 
@@ -114,10 +113,13 @@ for(count=start;count<exprcount;count++) {
 for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"*") == 0) {
 
+  printf("MULTIPLY=%.6g\n");
+   
   val.d *= atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
-  count++;
+  printf("MULTIPLY=%.6g\n");
+  //DeleteFromArray(temp,count,count+2);		/* remove rest */
+//  count++;
 	
  } 
 }
@@ -127,7 +129,7 @@ for(count=start;count<exprcount;count++) {
 
   val.d += atof(temp[count+1]);
 
-//  DeleteFromArray(temp,count,count+2);		/* remove rest */
+//  //DeleteFromArray(temp,count,count+2);		/* remove rest */
 
 //  count++;
 //  continue;
@@ -139,7 +141,7 @@ for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"-") == 0) {
 
   val.d -= atof(temp[count+1]);
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
+  //DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
   count++;
@@ -168,7 +170,7 @@ for(count=start;count<exprcount;count++) {
 
   val.d=(double) ti;
 
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
+  //DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
   count++;
@@ -180,7 +182,7 @@ for(count=start;count<exprcount;count++) {
 
   val.d += !atof(temp[count+1]);
  
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
+  //DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
    count++;
@@ -192,7 +194,7 @@ for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"&") == 0) {
   val.d += atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
+  //DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
   count++;
@@ -202,7 +204,7 @@ for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"|") == 0) {
   val.d += atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
+  //DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
   count++;
@@ -212,7 +214,7 @@ for(count=start;count<exprcount;count++) {
  if(strcmp(temp[count],"^") == 0) {
   val.d += atof(temp[count+1]);
 
-  DeleteFromArray(temp,count,count+2);		/* remove rest */
+  //DeleteFromArray(temp,count,count+2);		/* remove rest */
  } 
 
  count++;
