@@ -10,6 +10,6 @@ int RemoveVariable(char *name);
 int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount);
 int CheckFunctionExists(char *name);
 int atoi_base(char *hex,int base);
-int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]);
+int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE],char *out[][MAX_SIZE]);
 double CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end);
 

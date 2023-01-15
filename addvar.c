@@ -411,6 +411,8 @@ memset(arry,0,MAX_SIZE);			/* clear buffer */
 
 memset(split,0,sizeof(varsplit)-1);
 
+if(*name == '(') return(-1);
+
 if((strpbrk(name,"(") == NULL) && (strpbrk(name,"[") == NULL)) {				/* find start of subscript */
  strcpy(split->name,name);
  return;
@@ -577,7 +579,11 @@ int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount) {
  strcpy(next->name,tokens[0]);				/* copy name */
  next->funcargcount=funcargcount;
 
- for(count=1;count<next->funcargcount;count++) {
+/* skip ( and go to end */
+
+ for(count=2;count<next->funcargcount-1;count++) {
+
+   printf("declare var=%s\n",tokens[count]);
 
    if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
      /* check if declaring variable with type */
@@ -628,15 +634,17 @@ int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount) {
 
  next->vars=NULL;
  next->funcstart=currentptr;
+
  if(strcmpi(tokens[count+1], "AS") == 0) count += 3;		/* skip as and type */
 
 }
 
 /* get function return type */
 
-if(strcmpi(tokens[funcargcount-1], "AS") == 0) {		/* type */
  typecount=0;
 
+
+if(strcmpi(tokens[funcargcount-1], "AS") == 0) {		/* type */
  while(vartypenames[typecount] != NULL) {
    if(strcmpi(vartypenames[typecount],tokens[count+1]) == 0) break;	/* found type */
 
@@ -722,7 +730,7 @@ if(next == NULL) return(INVALID_STATEMENT);
 
 next->vars=NULL;		/* no vars to begin with */
 
-SubstituteVariables(start,end,tokens);			/* substitute variables */
+SubstituteVariables(start,end,tokens,tokens);			/* substitute variables */
 
 callstack[callpos].callptr=currentptr;	/* save information aboutn the calling function */
 callstack[callpos].funcptr=currentfunction;
@@ -740,9 +748,11 @@ currentfunction->stat |= FUNCTION_STATEMENT;
 /* add variables from parameters */
 
 parameters=next->parameters;
-count=1;
+count=2;		/* skip function name and ( */
 
 while(parameters != NULL) {
+
+  printf("%s %s\n",parameters->varname,tokens[count]);
 
   ParseVariableName(parameters->varname,&split);
 
@@ -769,7 +779,7 @@ while(parameters != NULL) {
    UpdateVariable(parameters->varname,&val,split.x,split.y);
 
    parameters=parameters->next;   
-   count++;
+   count += 2;		/* skip , */
 }
 
 /* do function */
@@ -896,20 +906,22 @@ return(num);
  *
  */
 
-int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]) {
+int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE],char *out[][MAX_SIZE]) {
 int count;
 varsplit split;
 char *valptr;
 char *buf[MAX_SIZE];
 functions *next;
-char *functionargs[MAX_SIZE];
 functions *func;
 char *b;
 char *d;
 int countx;
-double ret;
+int outcount;
 varval val;
-int foundfunc=FALSE;
+int tokentype;
+int s;
+char *temp[MAX_SIZE][MAX_SIZE];
+
 
 /* replace non-decimal numbers with decimal equivalents */
  for(count=start;count<end;count++) {
@@ -937,39 +949,45 @@ int foundfunc=FALSE;
    }
  }
 
-/* replace variables with values */
+outcount=start;
 
 for(count=start;count<end;count++) { 
+ tokentype=0;
 
  if(CheckFunctionExists(tokens[count]) != -1) {	/* user function */
+	  tokentype=SUBST_FUNCTION;
 
+	  s=count;	/* save start */
  	  count++;		/* skip ( */
 
 	  for(countx=count;countx<end;countx++) {		/* find end of function call */
 		if(strcmp(tokens[countx],")") == 0) break;
 	  }
  
-	  if(CallFunction(tokens,count,countx) == -1) exit(-1);	/* error calling function */
+	  CallFunction(&tokens[s],count,countx-1);
 
 	  if(retval.type == VAR_STRING) {		/* returning string */   
-	   sprintf(tokens[count],"\"%s\"",retval.s);
+	   sprintf(temp[outcount++],"\"%s\"",retval.s);
 	  }
 	  else if(retval.type == VAR_INTEGER) {		/* returning integer */
-		 sprintf(tokens[count],"%d",retval.i);
+		 sprintf(temp[outcount++],"%d",retval.i);
   	  }
 	  else if(retval.type == VAR_NUMBER) {		/* returning double */
-		 sprintf(tokens[count],"%.6g",retval.d);
+		 sprintf(temp[outcount++],"%.6g",retval.d);		 		
 	  }
 	  else if(retval.type == VAR_SINGLE) {		/* returning single */
-		 sprintf(tokens[count],"%f",retval.f);
+		 sprintf(temp[outcount++],"%f",retval.f);
 	  }
 
+	  count=countx+1;
 	  continue;
   }
+
 
  ParseVariableName(tokens[count],&split);
 
  if(GetVariableValue(split.name,&val) != -1) {		/* is variable */
+   tokentype=SUBST_VAR;
 
    switch(GetVariableType(tokens[count])) {
 	case VAR_STRING:
@@ -977,8 +995,8 @@ for(count=start;count<end;count++) {
 		b=&val.s;			/* get start */
 		b += split.x;
 
-		memset(tokens[count],0,MAX_SIZE);
-		d=tokens[count];
+		memset(temp[outcount],0,MAX_SIZE);
+		d=temp[++outcount];
 		*d++='"';
 
 		for(count=0;count < split.y+1;count++) {
@@ -989,29 +1007,49 @@ for(count=start;count<end;count++) {
 	    }
 	    else
 	    {
-	     d=tokens[count];
+	     d=temp[count];
 	     *d++='"';
 		
-	     strcpy(tokens[count],val.s);
+	     strcpy(temp[outcount],val.s);
             }
 
 	    break;
 	
-	case VAR_NUMBER:		   
-	    sprintf(tokens[count],"%.6g",val.d);          
+	case VAR_NUMBER:	
+	    sprintf(temp[outcount],"%.6g",val.d);          
+	    outcount++;
    	    break;
 
 	case VAR_INTEGER:	
-	    sprintf(tokens[count],"%d",val.i);
+	    sprintf(temp[outcount++],"d",val.i);
 	    break;
 
        case VAR_SINGLE:	     
-	    sprintf(tokens[count],"%f",val.f);
+	    sprintf(temp[outcount++],"%f",val.f);
             break;
+
+       default:
+	    sprintf(temp[outcount++],"%.6g",val.d);          
+   	    break;
+
+
 	}
 	
+	continue;
      }
+
+   if(tokentype == 0) {		/* is not variable or function */
+    strcpy(temp[outcount++],tokens[count]);  
+   }   
+
   }
+
+/* copy tokens */
+
+ for(count=0;count<outcount;count++) {
+  strcpy(out[count],temp[count]);
+ }
+
 }
 
 /*
@@ -1030,7 +1068,7 @@ int count;
 char *b;
 char *d;
 
-SubstituteVariables(start,end,tokens);
+SubstituteVariables(start,end,tokens,tokens);
 
 val->type=VAR_STRING;
 

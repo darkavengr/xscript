@@ -82,6 +82,9 @@
 #define ARRAY_SUBSCRIPT 1
 #define ARRAY_SLICE	2
 
+#define SUBST_VAR	1
+#define SUBST_FUNCTION	2
+
 #include <stdio.h>
 
 typedef struct {

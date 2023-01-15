@@ -234,9 +234,6 @@ if(tc == -1) {
  return(-1);
 }
 
-for(count=0;count<tc;count++) {
- printf("token=%s\n",tokens[count]);
-}
 
 /* check if statement is valid by searching through struct of statements*/
 
@@ -358,7 +355,7 @@ return;
 
 int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
-DeclareFunction(tokens,tc);
+DeclareFunction(&tokens[1],tc-1);
 
 return;
 } 
@@ -397,6 +394,7 @@ if((c == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExi
 }
 else
 {
+
  printf("%.6g\n",doexpr(tokens,1,tc));
 }
 
@@ -732,6 +730,8 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  retval.type=currentfunction->return_type;		/* get return type */
 
+ printf("RETURN=%d\n",retval.type);
+
  if(currentfunction->return_type == VAR_STRING) {		/* returning string */
   ConatecateStrings(1,tc,tokens,&retval);		/* get strings */
   return;
@@ -745,7 +745,9 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 	 SubstituteVariables(1,tc,tokens);
 
-	 retval.d=doexpr(tokens,0,tc);
+	 retval.d=doexpr(tokens,1,tc);
+	 printf("retval.d=%.6g\n",retval.d);
+
  }
  else if(currentfunction->return_type == VAR_SINGLE) {		/* returning single */
 	 SubstituteVariables(1,tc,tokens);
@@ -1081,6 +1083,8 @@ char *s;
 char *ns;
 char *nextns;
 char *nexttoken;
+int IsSeperator;
+
 tc=0;
 
 token=linebuf;
@@ -1095,6 +1099,8 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
  d=tokens[0];
 
 while(*token != 0) {
+ IsSeperator=FALSE;
+
  if((*token == '"') || (*token == '[') ) {		/* quoted text */
    
    *d++=*token++;
@@ -1107,47 +1113,38 @@ while(*token != 0) {
   }
 
  }
+
   s=split;
 
   while(*s != 0) {
+   if(*token == *s) {		/* token found */
  
-   if((*token == *s)) {		/* token found */
 
-    if(*s != ' ') {
-
-    /* check if next token is a seperator 
-     is should not be a seperator*/
-
-     nexttoken=token;
-     nexttoken++;
-
-     ns=split;
-     while(*ns != 0) {
-	if(*ns == *nexttoken) return(-1);	/* syntax error */
-	
-	ns++;
-     }
-   }
-
-/* non-seperator character */
+/* seperator character */
 
     if(*token == ' ') {
-      d=tokens[++tc]; 		/* new token */
-      token++;
-      break;
+      d=tokens[++tc]; 
+      token++;     
+    }
+    else
+    {
+     if(strlen(tokens[tc]) != 0) tc++;
+
+     d=tokens[tc]; 			
+     *d=*token++;
+     d=tokens[++tc]; 		
+
+     IsSeperator=TRUE;
     }
 
-    d=tokens[++tc]; 		/* new token */
-    *d++=*token++;
-    d=tokens[++tc]; 		/* new token */
- 
+    break;
   }
 
    s++;
  }
 
- *d++=*token++;
-
+/* non-seperator character */
+if(IsSeperator == FALSE) *d++=*token++;
 }
 
 return(tc+1);

@@ -24,5 +24,3 @@ int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 double doexpr(char *tokens[][MAX_SIZE],int start,int end);
 int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
 
-extern int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE]);
-
