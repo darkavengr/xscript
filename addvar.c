@@ -296,7 +296,24 @@ if(name == NULL) return(-1);
 c=*name;
 
 if(c >= '0' && c <= '9') {
- val->d=atof(name);
+   switch(GetVariableType(name)) {
+      case VAR_NUMBER:				/* Double precision */
+        val->d=atof(name);
+	break;
+
+       case VAR_INTEGER:			/* Integer */
+        val->i=atoi(name);
+	break;
+
+       case VAR_SINGLE:				/* Single precision */
+        val->f=atof(name);
+	break;
+
+       default:					/* Default type */
+        val->d=atof(name);
+	break;
+    }
+
  return(0);
 }
 
@@ -704,7 +721,7 @@ return(-1);
 
 double CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end) {
 functions *next;
-int count;
+int count,countx;
 int tc;
 char *argbuf[MAX_SIZE][MAX_SIZE];
 char *buf[MAX_SIZE];
@@ -714,14 +731,14 @@ varval val;
 vars_t *parameters;
 int varstc;
 
-printf("CALL FUNCTION=%s\n",tokens[0]);
+printf("CALL FUNCTION=%s\n",tokens[start]);
 
 next=funcs;						/* point to variables */
 
 /* find function name */
 
 while(next != NULL) {
- if(strcmpi(next->name,tokens[0]) == 0) break;		/* found name */   
+ if(strcmpi(next->name,tokens[start]) == 0) break;		/* found name */   
 
  next=next->next;
 }
@@ -747,12 +764,12 @@ currentfunction->stat |= FUNCTION_STATEMENT;
 
 /* add variables from parameters */
 
+count=start+1;		/* skip function name and ( */
+
 parameters=next->parameters;
-count=2;		/* skip function name and ( */
 
 while(parameters != NULL) {
-
-  printf("%s %s\n",parameters->varname,tokens[count]);
+  printf("parameter=%s %s\n",parameters->varname,tokens[count]);
 
   ParseVariableName(parameters->varname,&split);
 
@@ -920,6 +937,7 @@ int outcount;
 varval val;
 int tokentype;
 int s;
+int countz;
 char *temp[MAX_SIZE][MAX_SIZE];
 
 
@@ -954,8 +972,10 @@ outcount=start;
 for(count=start;count<end;count++) { 
  tokentype=0;
 
- if(CheckFunctionExists(tokens[count]) != -1) {	/* user function */
+ if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
 	  tokentype=SUBST_FUNCTION;
+
+	  printf("IS FUNCTION\n");
 
 	  s=count;	/* save start */
  	  count++;		/* skip ( */
@@ -964,7 +984,8 @@ for(count=start;count<end;count++) {
 		if(strcmp(tokens[countx],")") == 0) break;
 	  }
  
-	  CallFunction(&tokens[s],count,countx-1);
+
+	  CallFunction(tokens,s,countx-1);
 
 	  if(retval.type == VAR_STRING) {		/* returning string */   
 	   sprintf(temp[outcount++],"\"%s\"",retval.s);
@@ -982,7 +1003,6 @@ for(count=start;count<end;count++) {
 	  count=countx+1;
 	  continue;
   }
-
 
  ParseVariableName(tokens[count],&split);
 
@@ -1016,12 +1036,11 @@ for(count=start;count<end;count++) {
 	    break;
 	
 	case VAR_NUMBER:	
-	    sprintf(temp[outcount],"%.6g",val.d);          
-	    outcount++;
+	    sprintf(temp[outcount++],"%.6g",val.d);          
    	    break;
 
 	case VAR_INTEGER:	
-	    sprintf(temp[outcount++],"d",val.i);
+	    sprintf(temp[outcount++],"%d",val.i);
 	    break;
 
        case VAR_SINGLE:	     

@@ -728,6 +728,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  }
 }
 
+
  retval.type=currentfunction->return_type;		/* get return type */
 
  printf("RETURN=%d\n",retval.type);
@@ -737,21 +738,18 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   return;
  }
  else if(currentfunction->return_type == VAR_INTEGER) {		/* returning integer */
-
-	 SubstituteVariables(1,tc,tokens);
-	 retval.i=doexpr(tokens,0,tc);
+  retval.i=doexpr(tokens,1,tc);
  }
- else if(currentfunction->return_type == VAR_NUMBER) {		/* returning double */
-
-	 SubstituteVariables(1,tc,tokens);
+ else if(currentfunction->return_type == VAR_NUMBER) {		/* returning double */	 
+	 printf("return number\n");
 
 	 retval.d=doexpr(tokens,1,tc);
+
 	 printf("retval.d=%.6g\n",retval.d);
 
  }
  else if(currentfunction->return_type == VAR_SINGLE) {		/* returning single */
-	 SubstituteVariables(1,tc,tokens);
-	 retval.f=doexpr(tokens,0,tc);	
+	 retval.f=doexpr(tokens,1,tc);	
  }
 
 ReturnFromFunction();			/* return */
@@ -1118,13 +1116,14 @@ while(*token != 0) {
 
   while(*s != 0) {
    if(*token == *s) {		/* token found */
- 
-
 /* seperator character */
 
     if(*token == ' ') {
       d=tokens[++tc]; 
       token++;     
+
+      IsSeperator=TRUE;     
+      break;
     }
     else
     {
@@ -1134,7 +1133,7 @@ while(*token != 0) {
      *d=*token++;
      d=tokens[++tc]; 		
 
-     IsSeperator=TRUE;
+     IsSeperator=TRUE;     
     }
 
     break;
@@ -1145,6 +1144,7 @@ while(*token != 0) {
 
 /* non-seperator character */
 if(IsSeperator == FALSE) *d++=*token++;
+
 }
 
 return(tc+1);
