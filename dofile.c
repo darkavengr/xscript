@@ -84,6 +84,7 @@ char *endptr=NULL;		/* end of buffer */
 char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
+char *TokenCharacters="\"+-*/<>=!%~|& \t(),";
 
 include includefiles[MAX_INCLUDE];	/* included files */
 
@@ -152,8 +153,6 @@ int LoadFile(char *filename) {
  */
 int ExecuteFile(char *filename) {
  char *linebuf[MAX_SIZE];
-
- //printf("debug\n");
 
  includefiles[ic].lc=0;
  
@@ -228,12 +227,11 @@ if(memcmp(lbuf,"//",2) == 0) return;		/* skip comments */
 
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
-tc=TokenizeLine(lbuf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+tc=TokenizeLine(lbuf,tokens,TokenCharacters);			/* tokenize line */
 if(tc == -1) {
  PrintError(SYNTAX_ERROR);
  return(-1);
 }
-
 
 /* check if statement is valid by searching through struct of statements*/
 
@@ -245,6 +243,12 @@ do {
 /* found statement */
 
  if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  
+
+  if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) {		/* check syntax */
+   PrintError(SYNTAX_ERROR);
+   return;
+  }
+
   if(statements[statementcount].call_statement(tc,tokens) == -1) exit(-1);		/* call statement and exit if error */
   statementcount=0;
 
@@ -258,6 +262,10 @@ do {
 /* call user function */
 
 
+if(CheckSyntax(tokens,TokenCharacters,2,tc) == FALSE) {		/* check syntax */
+ PrintError(SYNTAX_ERROR);
+ return;
+ }
 
 if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
  CallFunction(tokens,0,tc);
@@ -273,6 +281,11 @@ if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
 for(count=1;count<tc;count++) {
 
  if(strcmpi(tokens[count],"=") == 0) {
+
+	  if(CheckSyntax(tokens,1,tc) == FALSE) {		/* check syntax */
+   	   PrintError(SYNTAX_ERROR);
+	   return;
+	  }
 
 	 ParseVariableName(tokens[count-1],&split);			/* split variable */
 
@@ -374,30 +387,43 @@ int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 double exprone;
 char c;
 varval val;
-int countx;
-varsplit split;
-double x;
+int start;
+int end;
 int count;
-int printtc;
-int splittc;
+varsplit split;
 
-ParseVariableName(tokens[1],&split);
+start=1;
 
-c=*tokens[1];
+for(count=1;count<tc;count++) {
+ c=*tokens[count];
 
-/* if string literal, string variable or function returning string */
+ ParseVariableName(tokens[count	],&split);
 
-if((c == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExists(split.name) == VAR_STRING) ) {
- ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
+ /* if string literal, string variable or function returning string */
+
+ if((c == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(split.name) == VAR_STRING) ) {
+//  ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
  
- printf("%s\n",val.s);
-}
-else
-{
+  printf("%s ",tokens[count]);
+  start++;
+ }
+ else
+ {
+  end=start+1;
 
- printf("%.6g\n",doexpr(tokens,1,tc));
+  while(end < tc) {
+   if(strcmp(tokens[end],",") == 0) break;
+   end++;
+  }
+
+  printf("%.6g ",doexpr(tokens,start,end));
+
+   start=end+1;
+   count=start;
+ }
 }
 
+if(strcmp(tokens[end],";") != 0) printf("\n");
 return;
 }
 
@@ -464,7 +490,7 @@ if(exprtrue == 1) {
 
 		ExecuteLine(buf);
 
-		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+		tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 		if(tc == -1) {
 		 PrintError(SYNTAX_ERROR);
 		 return(-1);
@@ -488,7 +514,7 @@ if(exprtrue == 1) {
 
 		ExecuteLine(buf);
 
-		tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+		tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 		if(tc == -1) {
 		 PrintError(SYNTAX_ERROR);
 		 return(-1);
@@ -504,7 +530,7 @@ if(exprtrue == 1) {
 }
 
  currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
- tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+ tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
  if(tc == -1) {
   PrintError(SYNTAX_ERROR);
@@ -646,7 +672,7 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
              if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
              if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
- 	     tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+ 	     tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	     if(tc == -1) {
 		 PrintError(SYNTAX_ERROR);
 		 return(-1);
@@ -731,8 +757,6 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  retval.type=currentfunction->return_type;		/* get return type */
 
- printf("RETURN=%d\n",retval.type);
-
  if(currentfunction->return_type == VAR_STRING) {		/* returning string */
   ConatecateStrings(1,tc,tokens,&retval);		/* get strings */
   return;
@@ -741,12 +765,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   retval.i=doexpr(tokens,1,tc);
  }
  else if(currentfunction->return_type == VAR_NUMBER) {		/* returning double */	 
-	 printf("return number\n");
-
 	 retval.d=doexpr(tokens,1,tc);
-
-	 printf("retval.d=%.6g\n",retval.d);
-
  }
  else if(currentfunction->return_type == VAR_SINGLE) {		/* returning single */
 	 retval.f=doexpr(tokens,1,tc);	
@@ -819,7 +838,7 @@ do {
        while(*currentptr != 0) {
 
         currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-	tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	if(tc == -1) {
 	 PrintError(SYNTAX_ERROR);
 	 return(-1);
@@ -833,7 +852,7 @@ do {
 
       }
 
-      tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+      tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
        if(tc == -1) {
 	 PrintError(SYNTAX_ERROR);
 	 return(-1);
@@ -956,7 +975,7 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
    }
   }
 
-   tc=TokenizeLine(buf,tokens,"+-*/<>=!%~|& \t(),");			/* tokenize line */
+   tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
    if(tc == -1) {
     PrintError(SYNTAX_ERROR);
     return(-1);
@@ -1150,6 +1169,81 @@ if(IsSeperator == FALSE) *d++=*token++;
 return(tc+1);
 }
 
+/*
+ * Check if is seperator
+ *
+ * In: token		Token to check
+       sep		Seperator characters to check against
+ *
+ * Returns TRUE or FALSE
+ *
+ */
+int IsSeperator(char *token,char *sep) {
+ char *s;
+ char *b;
+
+ if(*token == 0) return(FALSE);
+
+ s=sep;
+
+  while(*s != 0) {
+   if(*s == *token) return(TRUE);
+   s++;
+  }
+
+ return(FALSE);
+}
+
+/*
+ * Check syntax
+ *
+ * In: tokens		Tokens to check
+       seperators	Seperator characters to check against
+       start		Start in array
+       end		End in array
+ *
+ * Returns TRUE or FALSE
+ *
+ */ 
+int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *seperators,int start,int end) {
+ int count;
+ char *s;
+ int bracketcount=0;
+
+/* check if brackets are balanced */
+
+ for(count=start;count<end;count++) {
+  if(strcmp(tokens[count],"(") == 0) bracketcount++;
+  if(strcmp(tokens[count],")") == 0) bracketcount--;
+ }
+
+ if((bracketcount > 0) || (bracketcount < 0)) return(FALSE);
+
+/* check if two seperators are together or two non-seperators are together */
+
+ for(count=start;count<end;count++) {
+ 
+   if((IsSeperator(tokens[count],seperators) == TRUE) && (count+1 < end) && (IsSeperator(tokens[count+1],seperators) == TRUE)) {
+
+     /* brackets can be next to seperators */
+
+     if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
+     if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
+
+     if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
+     if( (strcmp(tokens[count],")") != 0 && strcmp(tokens[count+1],")") == 0)) return(TRUE);
+
+     return(FALSE);
+   }
+
+   if((IsSeperator(tokens[count],seperators) == FALSE) &&  (count+1 < end) && (IsSeperator(tokens[count+1],seperators) == FALSE)) return(FALSE);
+//   if(((*tokens[count] == '"') || GetVariableType(tokens[count) == VAR_STRING) {
+ }
+
+ return(TRUE);
+}
+
+  
 /*
  * Convert to uppercase
  *

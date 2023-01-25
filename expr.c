@@ -58,7 +58,7 @@ exprcount=0;
 
 for(count=start;count<end;count++) {
  if((strcmp(tokens[count],"(") == 0)) {				/* start of expression */ 
-	/*if(CheckFunctionExists(tokens[count-1]) == 0) {
+	if(CheckFunctionExists(tokens[count-1]) == 0) {
 		while(count < end) {
 		 if(strcmp(tokens[count] ,")") == 0) break;
 		 count++;
@@ -67,7 +67,7 @@ for(count=start;count<end;count++) {
 		continue;
 	}
 	else
-	{ */
+	{
 		startexpr=count+1;
 
 		while(count < end) {
@@ -78,11 +78,9 @@ for(count=start;count<end;count++) {
 		SubstituteVariables(startexpr,count,tokens,subexpr);
 	
 		exprone=doexpr(subexpr,startexpr,count);
-			
-		printf("exprone=%.6g\n",exprone);
-		
+	
 		sprintf(temp[exprcount++],"%.6g",exprone);
-	//}
+	}
 			
  }
  else
@@ -94,9 +92,9 @@ for(count=start;count<end;count++) {
 
 SubstituteVariables(0,exprcount,temp,temp);
 
- for(count=0;count<exprcount;count++) {
-	printf("print=%s\n",temp[count]);
- }
+// for(count=0;count<exprcount;count++) {
+	//printf("print=%s\n",temp[count]);
+// }
 
 
 for(count=0;count<exprcount;count++) {
