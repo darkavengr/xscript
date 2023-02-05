@@ -84,7 +84,7 @@ char *endptr=NULL;		/* end of buffer */
 char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
-char *TokenCharacters="\"+-*/<>=!%~|& \t(),";
+char *TokenCharacters="\"+-*/<>=!%~|&, \t(),";
 
 include includefiles[MAX_INCLUDE];	/* included files */
 
@@ -207,6 +207,7 @@ int ExecuteLine(char *lbuf) {
  char *args[MAX_SIZE];
  char *b;
  char *d;
+ int start;
 
  includefiles[ic].lc++;						/* increment line counter */
 
@@ -233,6 +234,11 @@ if(tc == -1) {
  return(-1);
 }
 
+if(CheckSyntax(tokens,TokenCharacters,0,tc) == FALSE) {		/* check syntax */
+ PrintError(SYNTAX_ERROR);
+ return;
+}
+
 /* check if statement is valid by searching through struct of statements*/
 
 statementcount=0;
@@ -243,11 +249,6 @@ do {
 /* found statement */
 
  if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  
-
-  if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) {		/* check syntax */
-   PrintError(SYNTAX_ERROR);
-   return;
-  }
 
   if(statements[statementcount].call_statement(tc,tokens) == -1) exit(-1);		/* call statement and exit if error */
   statementcount=0;
@@ -261,11 +262,6 @@ do {
 
 /* call user function */
 
-
-if(CheckSyntax(tokens,TokenCharacters,2,tc) == FALSE) {		/* check syntax */
- PrintError(SYNTAX_ERROR);
- return;
- }
 
 if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
  CallFunction(tokens,0,tc);
@@ -287,7 +283,7 @@ for(count=1;count<tc;count++) {
 	   return;
 	  }
 
-	 ParseVariableName(tokens[count-1],&split);			/* split variable */
+	 ParseVariableName(tokens,0,count-1,&split);			/* split variable */
 
 	 vartype=GetVariableType(split.name);
 
@@ -316,8 +312,10 @@ for(count=1;count<tc;count++) {
 	  PrintError(TYPE_ERROR);
 	  return(TYPE_ERROR);
 	 }
-
+	
 	 exprone=doexpr(tokens,count+1,tc);
+
+         printf("exprone=%.6g\n",exprone);
 
 	 if(vartype == VAR_NUMBER) {
 	  val.d=exprone;
@@ -334,7 +332,7 @@ for(count=1;count<tc;count++) {
 	 }
 	 else
 	 {
-	  val.d=exprone;
+	  val.d=exprone;	  
 	 }
 
 
@@ -390,25 +388,35 @@ varval val;
 int start;
 int end;
 int count;
-varsplit split;
+int countx;
+char *s[MAX_SIZE];
+char *sptr;
 
 start=1;
 
 for(count=1;count<tc;count++) {
  c=*tokens[count];
 
- ParseVariableName(tokens[count	],&split);
-
  /* if string literal, string variable or function returning string */
 
- if((c == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(split.name) == VAR_STRING) ) {
+ if((c == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
 //  ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
+
+/* remove quotes from string */
  
-  printf("%s ",tokens[count]);
+  sptr=tokens[count];
+  sptr++;
+
+  memcpy(s,sptr,strlen(tokens[count])-2);
+
+  printf("%s ",s);
   start++;
+
+  count++;		/* skip , */
  }
  else
  {
+  start=count;
   end=start+1;
 
   while(end < tc) {
@@ -418,8 +426,7 @@ for(count=1;count<tc;count++) {
 
   printf("%.6g ",doexpr(tokens,start,end));
 
-   start=end+1;
-   count=start;
+  count=end;
  }
 }
 
@@ -616,7 +623,7 @@ else
  steppos=doexpr(tokens,countx+1,tc);
 }
 
-ParseVariableName(tokens[1],&split);
+ParseVariableName(tokens,1,tc,&split);
 
 //  0   1    2 3 4  5
 // for count = 1 to 10
@@ -1006,7 +1013,11 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  varsplit split;
  int vartype;
 
- ParseVariableName(tokens[1],&split);
+ for(int count=1;count<tc;count++) {
+   printf("declare=%s\n",tokens[count]);
+ }
+
+ ParseVariableName(tokens,1,tc,&split);
 
  if(strcmpi(tokens[2],"AS") == 0) {		/* array as type */
   vartype=CheckVariableType(tokens[3]);		/* get variable type */  
@@ -1118,24 +1129,26 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
 while(*token != 0) {
  IsSeperator=FALSE;
 
- if((*token == '"') || (*token == '[') ) {		/* quoted text */
-   
+ if((*token == '"') || (*token == '[') ) {		/* quoted text */ 
    *d++=*token++;
+
    while(*token != 0) {
     *d=*token++;
 
-      if((*d == '"') || (*d == ']') ) break;		/* quoted text */	
+    if((*d == '"') || (*d == ']') ) break;		/* quoted text */	
 
     d++;
   }
 
+  tc++;
  }
-
+ else
+ {
   s=split;
 
   while(*s != 0) {
    if(*token == *s) {		/* token found */
-/* seperator character */
+    /* seperator character */
 
     if(*token == ' ') {
       d=tokens[++tc]; 
@@ -1161,9 +1174,9 @@ while(*token != 0) {
    s++;
  }
 
-/* non-seperator character */
-if(IsSeperator == FALSE) *d++=*token++;
-
+ /* non-seperator character */
+ if(IsSeperator == FALSE) *d++=*token++;
+}
 }
 
 return(tc+1);
@@ -1198,34 +1211,44 @@ int IsSeperator(char *token,char *sep) {
  * Check syntax
  *
  * In: tokens		Tokens to check
-       seperators	Seperator characters to check against
+       separators	Seperator characters to check against
        start		Start in array
        end		End in array
  *
  * Returns TRUE or FALSE
  *
  */ 
-int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *seperators,int start,int end) {
+int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int end) {
  int count;
- char *s;
  int bracketcount=0;
+ int squarebracketcount=0;
+ bool IsInBracket=false;
+ int statementcount=0;
 
 /* check if brackets are balanced */
 
  for(count=start;count<end;count++) {
   if(strcmp(tokens[count],"(") == 0) bracketcount++;
   if(strcmp(tokens[count],")") == 0) bracketcount--;
+
+  if(strcmp(tokens[count],"[") == 0) squarebracketcount++;
+  if(strcmp(tokens[count],"]") == 0) squarebracketcount--;
+
+  if(strcmp(tokens[count],",") == 0) {
+    if(strcmpi(tokens[start],"PRINT") == 0) return(TRUE);
+    if(bracketcount == 0) return(FALSE);
+   }
  }
 
- if((bracketcount > 0) || (bracketcount < 0)) return(FALSE);
-
-/* check if two seperators are together or two non-seperators are together */
+ if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
 
  for(count=start;count<end;count++) {
- 
-   if((IsSeperator(tokens[count],seperators) == TRUE) && (count+1 < end) && (IsSeperator(tokens[count+1],seperators) == TRUE)) {
 
-     /* brackets can be next to seperators */
+/* check if two separators are together or two non-separators are together */
+
+   if((IsSeperator(tokens[count],separators) == TRUE) && (count+1 < end) && (IsSeperator(tokens[count+1],separators) == TRUE)) {
+
+     /* brackets can be next to separators */
 
      if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
      if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
@@ -1233,10 +1256,26 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *seperators,int start,int 
      if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
      if( (strcmp(tokens[count],")") != 0 && strcmp(tokens[count+1],")") == 0)) return(TRUE);
 
+     if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
+     if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
      return(FALSE);
    }
 
-   if((IsSeperator(tokens[count],seperators) == FALSE) &&  (count+1 < end) && (IsSeperator(tokens[count+1],seperators) == FALSE)) return(FALSE);
+   /* check if two non-separator tokes are next to each other */
+
+   if((IsSeperator(tokens[count],separators) == FALSE) &&  (count+1 < end) && (IsSeperator(tokens[count+1],separators) == FALSE)) {
+	/* keywords can be next to non-separator tokens */
+	statementcount=0;
+
+	do {
+	 if(statements[statementcount].statement == NULL) break;
+	 if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) return(TRUE);
+	
+	 statementcount++;
+
+	} while(statements[statementcount].statement != NULL);
+    
+  }
 //   if(((*tokens[count] == '"') || GetVariableType(tokens[count) == VAR_STRING) {
  }
 

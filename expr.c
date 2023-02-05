@@ -49,6 +49,7 @@ int startexpr;
 int endexpr;
 int exprcount;
 int ti;
+int countx;
 
 memset(temp,0,MAX_SIZE*MAX_SIZE);
 
@@ -62,6 +63,13 @@ for(count=start;count<end;count++) {
 		while(count < end) {
 		 if(strcmp(tokens[count] ,")") == 0) break;
 		 count++;
+		}
+		
+		continue;
+	}
+	else if(IsVariable(tokens[count-1]) == 0) {
+		for(countx=count+1;countx<end;countx++) {
+	 	 if(strcmp(tokens[countx] ,")") == 0) break;
 		}
 		
 		continue;
@@ -91,10 +99,6 @@ for(count=start;count<end;count++) {
 }
 
 SubstituteVariables(0,exprcount,temp,temp);
-
-// for(count=0;count<exprcount;count++) {
-	//printf("print=%s\n",temp[count]);
-// }
 
 
 for(count=0;count<exprcount;count++) {

@@ -115,7 +115,7 @@ varsplit split;
 functions *funcnext;
 int statementcount;
 
-ParseVariableName(name,&split);				/* parse variable name */
+////printf("create variable %s=%d %d\n",name,xsize,ysize);
 
 /* Check if variable name is a reserved name */
 
@@ -124,7 +124,7 @@ statementcount=0;
 do {
  if(statements[statementcount].statement == NULL) break;
 
- if(strcmpi(statements[statementcount].statement,split.name) == 0) return(BAD_VARNAME);
+ if(strcmpi(statements[statementcount].statement,name) == 0) return(BAD_VARNAME);
  
  statementcount++;
 
@@ -147,7 +147,7 @@ if(currentfunction->vars == NULL) {			/* first entry */
   while(next != NULL) {
    last=next;
 
-   if(strcmpi(next->varname,split.name) == 0) return(-1);		/* variable exists */
+   if(strcmpi(next->varname,name) == 0) return(-1);		/* variable exists */
    next=next->next;
   }
 
@@ -159,17 +159,34 @@ if(currentfunction->vars == NULL) {			/* first entry */
 
 /* add to end */
 
- next->val=malloc(sizeof(varval)*(xsize*ysize));
- if(next->val == NULL) {
-  free(next);
-  return(NO_MEM);
- }
+    switch(next->type) {
+     case VAR_NUMBER:				/* double precision */			
+	next->val=malloc((xsize*sizeof(double))*(ysize*sizeof(double)));
+ 	if(next->val == NULL)  return(NO_MEM);
+       break;
+
+     case VAR_STRING:				/* string */
+	next->val=malloc((xsize*MAX_SIZE)*(ysize*MAX_SIZE));
+ 	if(next->val == NULL)  return(NO_MEM);
+       break;
+
+     case VAR_INTEGER:	 			/* integer */
+	next->val=malloc((xsize*sizeof(int))*(ysize*sizeof(int)));
+ 	if(next->val == NULL)  return(NO_MEM);
+       break;
+
+     case VAR_SINGLE:				/* single */	     
+	next->val=malloc((xsize*sizeof(float))*(ysize*sizeof(float)));
+ 	if(next->val == NULL)  return(NO_MEM);
+       break;
+    }
+ 
   
  next->xsize=xsize;				/* set size */
  next->ysize=ysize;
  next->type=type;
 
- strcpy(next->varname,split.name);		/* set name */
+ strcpy(next->varname,name);		/* set name */
  next->next=NULL;
 
  return(0);
@@ -189,17 +206,16 @@ if(currentfunction->vars == NULL) {			/* first entry */
 int UpdateVariable(char *name,varval *val,int x,int y) {
 vars_t *next;
 char *o;
-varsplit split;
 varval *varv;
-
-ParseVariableName(name,&split);
 
 /* Find variable */
 
 next=currentfunction->vars;
 
  while(next != NULL) {
-   if(strcmpi(next->varname,split.name) == 0) {		/* already defined */
+   if(strcmpi(next->varname,name) == 0) {		/* already defined */
+
+    ////printf("update variable %s=%d %d %d %d\n",name,x,y,next->xsize,next->ysize);
 
     if((x*y) > (next->xsize*next->ysize)) {		/* outside array */
 	PrintError(BAD_ARRAY);
@@ -210,19 +226,20 @@ next=currentfunction->vars;
 
     switch(next->type) {
      case VAR_NUMBER:				/* double precision */			
-       next->val[x*y].d=val->d;
+       next->val[(x*sizeof(double))+(y*sizeof(double))].d=val->d;
+       printf("set val=%.6g\n", next->val[(x*sizeof(double))+(y*sizeof(double))].d);	
        break;
 
      case VAR_STRING:				/* string */
-       strcpy(next->val[x*y].s,val->s);
+       strcpy(next->val[(x*y)].s,val->s);
        break;
 
      case VAR_INTEGER:	 			/* integer */
-       next->val[x*y].i=val->i;
+       next->val[x*sizeof(int)+y].i=val->i;
        break;
 
      case VAR_SINGLE:				/* single */	     
-       next->val[x*y].f=val->f;
+       next->val[x*sizeof(float)+y].f=val->f;
        break;
     }
  
@@ -248,18 +265,16 @@ next=currentfunction->vars;
 int ResizeArray(char *name,int x,int y) {
 vars_t *next;
 char *o;
-varsplit split;
+
 int statementcount;
  
-ParseVariableName(name,&split);				/* parse variable name */
-
 /* Find variable */
 
 next=currentfunction->vars;
 
  while(next != NULL) {
 
-   if(strcmpi(next->varname,split.name) == 0) {		/* found variable */
+   if(strcmpi(next->varname,name) == 0) {		/* found variable */
     if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) return(-1);	/* resize buffer */
    
     next->xsize=x;		/* update x subscript */
@@ -282,7 +297,7 @@ next=currentfunction->vars;
  * Returns -1 on error or 0 on success
  *
  */
-int GetVariableValue(char *name,varval *val) {
+int GetVariableValue(char *name,int x,int y,varval *val) {
 vars_t *next;
 varsplit split;
 char *token;
@@ -292,6 +307,9 @@ int intval;
 double floatval;
 
 if(name == NULL) return(-1);
+
+//printf("GetVariableValue x=%d\n",x);
+//printf("GetVariableValue y=%d\n",y);
 
 c=*name;
 
@@ -322,40 +340,41 @@ if(c == '"') {
  return(0);
 }
 
-ParseVariableName(name,&split);
-
 /* Find variable */
 
 next=currentfunction->vars;
 
 while(next != NULL) {
-
- if(strcmpi(next->varname,split.name) == 0) {
-
-    if((split.x*split.y) > (next->xsize*next->ysize)) {		/* outside array */
+  
+ if(strcmpi(next->varname,name) == 0) {
+    if((x*y) > (next->xsize*next->ysize)) {		/* outside array */
 	PrintError(BAD_ARRAY);
 	return;
     }
 
    switch(next->type) {
       case VAR_NUMBER:				/* Double precision */
-        val->d=next->val[split.x*split.y].d;
+        val->d=next->val[(x*sizeof(double))+(y*sizeof(double))].d;
+
+	printf("val=%.6g\n",val->d);
         return(0);
 
        case VAR_STRING:			 	/* string */
-        strcpy(val->s,next->val[split.x*split.y].s);
+        strcpy(val->s,next->val[(x*MAX_SIZE)+(y*MAX_SIZE)].s);
         return(0);
 
        case VAR_INTEGER:			/* Integer */
-        val->i=next->val[split.x*split.y].i;
+        val->i=next->val[(x*sizeof(int))+(y*sizeof(int))].i;
 	return(0);
 
        case VAR_SINGLE:				/* Single precision */
-        next->val[split.x*split.y].f=val->f;
+        next->val[(x*sizeof(float))+(y*sizeof(float))].f=val->f;
 	return(0);
 
        default:					/* Default type */
-        val->d=next->val[split.x*split.y].d;
+        val->d=next->val[(x*sizeof(double))+(y*sizeof(double))].d;
+	//printf("val=%.6g\n",val->d);
+
         return(0);
     }
 
@@ -385,8 +404,6 @@ if(name == NULL) return(-1);				/* Variable does not exist */
 if(*name >= '0' && *name <= '9') return(VAR_NUMBER);	/* Literal number */
 
 if(*name == '"') return(VAR_STRING);			/* Literal string */
-
-ParseVariableName(name,&split);
  
 /* Find variable name */
 
@@ -394,7 +411,7 @@ next=currentfunction->vars;
 
 while(next != NULL) {  
   
- if(strcmpi(next->varname,split.name) == 0) {		/* Found variable */
+ if(strcmpi(next->varname,name) == 0) {		/* Found variable */
   return(next->type);
  }
 
@@ -413,108 +430,30 @@ return(-1);
  * Returns -1 on error or 0 on success
  *
  */
-int ParseVariableName(char *name,varsplit *split) {
-char *arrpos;
-char *arrx[MAX_SIZE];
-char *arry[MAX_SIZE];
-char *o;
-char *commapos;
-char *b;
-char *tokens[10][MAX_SIZE];
-int tc;
+int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split) {
+int count;
 
-memset(arrx,0,MAX_SIZE);			/* clear buffer */
-memset(arry,0,MAX_SIZE);			/* clear buffer */
+strcpy(split->name,tokens[start]);		/* copy name */
+split->y=1;
 
-memset(split,0,sizeof(varsplit)-1);
+count=start+1;
+if(strcmp(tokens[count],"(") == 0) count++;
 
-if(*name == '(') return(-1);
 
-if((strpbrk(name,"(") == NULL) && (strpbrk(name,"[") == NULL)) {				/* find start of subscript */
- strcpy(split->name,name);
- return;
+split->x=atoi(tokens[count]);		/* get x subscript */
+  
+//printf("parse x=%d\n",atoi(tokens[count]));
+//printf("comma=%s %s\n",tokens[count+1],tokens[count+2]);
+
+
+if(strcmp(tokens[count+1],",") == 0) {
+ split->y=atoi(tokens[count+2]); /* 3d array */
+ //printf("parse y=%d\n",split->y);
 }
 
-o=name;				/* copy name */
-b=split->name;
-
-while(*o != 0) {
- if(*o == '(') {
-	split->arraytype=ARRAY_SUBSCRIPT;
-	break;
- }
-
- if(*o == '[') {
-	split->arraytype=ARRAY_SLICE;
-	break;
- }
-
- *b++=*o++;
+return;
 }
 
-/* Get subscripts */
-
-commapos=strpbrk(name,",");	/* find comma position */
-if(commapos == NULL) {			/* 2d array */
- 	o++;				/* copy subscript */
-	 b=arrx;
-
-	 while(*o != 0) {
-  		if(*o == ']' || *o == ')') break;
-		*b++=*o++;
-		 }
-
- 	o--;
- 	//*o=0;	
-
-         tc=TokenizeLine(arrx,tokens,"+-*/<>=!%~|&");			/* tokenize line */
-	 if(tc == -1) {
-	  PrintError(SYNTAX_ERROR);
-	  return(-1);
-	 }
-
-	 split->x=doexpr(tokens,0,tc);		/* get x pos */
-	 split->y=1;
-
-	 return;
-} 
-else
-{				/* 3d array */
-
-	 o++;				/* copy subscript */
- 	b=arrx;
-
-	 while(*o != 0) {
-	  if(*o == ',') break;
-	  *b++=*o++;
-	 }
-
-	o++;
-	 b=arry;
-
-	 while(*o != 0) {
-		  if((*o == ']') || (*o == ')')) break;
-		  *b++=*o++;
-	 }
-
-         tc=TokenizeLine(arrx,tokens,"+-*/<>=!%~|&");			/* tokenize line */
-	 if(tc == -1) {
-	  PrintError(SYNTAX_ERROR);
-	  return(-1);
-	 }
-
-	 split->x=doexpr(tokens,0,tc);		/* get x pos */
-
-    	 tc=TokenizeLine(arry,tokens,"+-*/<>=!%~|&");			/* tokenize line */
-	 if(tc == -1) {
-	  PrintError(SYNTAX_ERROR);
-	  return(-1);
-	 }
-
-	 split->y=doexpr(tokens,0,tc);		/* get x pos */
-	 return;
- 	}
-}
 
 /*
  * Remove variable
@@ -527,16 +466,13 @@ else
 int RemoveVariable(char *name) {
  vars_t *next;
  vars_t *last;
- varsplit split;
 
- ParseVariableName(name,&split);				/* parse variable name */
- 
  next=currentfunction->vars;						/* point to variables */
  
  while(next != NULL) {
    last=next;
   
-   if(strcmpi(next->varname,split.name) == 0) {			/* found variable */
+   if(strcmpi(next->varname,name) == 0) {			/* found variable */
      last->next=next->next;				/* point over link */
 
 //    free(next);
@@ -600,7 +536,7 @@ int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount) {
 
  for(count=2;count<next->funcargcount-1;count++) {
 
-   printf("declare var=%s\n",tokens[count]);
+   ////printf("declare var=%s\n",tokens[count]);
 
    if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
      /* check if declaring variable with type */
@@ -731,7 +667,7 @@ varval val;
 vars_t *parameters;
 int varstc;
 
-printf("CALL FUNCTION=%s\n",tokens[start]);
+////printf("CALL FUNCTION=%s\n",tokens[start]);
 
 next=funcs;						/* point to variables */
 
@@ -769,9 +705,9 @@ count=start+1;		/* skip function name and ( */
 parameters=next->parameters;
 
 while(parameters != NULL) {
-  printf("parameter=%s %s\n",parameters->varname,tokens[count]);
+  ////printf("parameter=%s %s\n",parameters->varname,tokens[count]);
 
-  ParseVariableName(parameters->varname,&split);
+  ParseVariableName(tokens,start,end,&split);
 
   CreateVariable(parameters->varname,parameters->type,split.x,split.y);
  
@@ -844,7 +780,7 @@ if(callpos-1 >= 0) {
  currentfunction=callstack[callpos].funcptr;  
  currentptr=callstack[callpos].callptr;	/* restore information about the calling function */
 
-// printf("currentptr=%lX\n",currentptr);
+// ////printf("currentptr=%lX\n",currentptr);
 // asm("int $3");
 
 }
@@ -975,7 +911,7 @@ for(count=start;count<end;count++) {
  if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
 	  tokentype=SUBST_FUNCTION;
 
-	  printf("IS FUNCTION\n");
+	  ////printf("IS FUNCTION\n");
 
 	  s=count;	/* save start */
  	  count++;		/* skip ( */
@@ -1004,12 +940,27 @@ for(count=start;count<end;count++) {
 	  continue;
   }
 
- ParseVariableName(tokens[count],&split);
+// ////printf("token=%s\n",tokens[count]);
 
- if(GetVariableValue(split.name,&val) != -1) {		/* is variable */
-   tokentype=SUBST_VAR;
+ if(IsVariable(tokens[count]) == 0) {
+   for(countx=count;countx<end;countx++) {		/* find end of function call */    
+    if(strcmp(tokens[countx],")") == 0) break;
+   }
 
-   switch(GetVariableType(tokens[count])) {
+    ParseVariableName(tokens,count,countx-1,&split);
+
+    tokentype=SUBST_VAR;
+
+    ////printf("subst.name=%s\n",split.name);
+    ////printf("subst.x=%d\n",split.x);
+    ////printf("subst.y=%d\n",split.y);
+
+  //  ////printf("type=%d\n",GetVariableType(split.name));
+
+ 
+    GetVariableValue(split.name,split.x,split.y,&val);
+
+    switch(GetVariableType(split.name)) {
 	case VAR_STRING:
 	    if(split.arraytype == ARRAY_SLICE) {		/* part of string */
 		b=&val.s;			/* get start */
@@ -1050,18 +1001,16 @@ for(count=start;count<end;count++) {
        default:
 	    sprintf(temp[outcount++],"%.6g",val.d);          
    	    break;
-
-
-	}
+       }
 	
+	while((count < end) && strcmp(tokens[count],")") != 0) count++;
 	continue;
-     }
+ }
 
-   if(tokentype == 0) {		/* is not variable or function */
-    strcpy(temp[outcount++],tokens[count]);  
-   }   
-
-  }
+ if(tokentype == 0) {		/* is not variable or function */
+  strcpy(temp[outcount++],tokens[count]);  
+ }   
+}
 
 /* copy tokens */
 
@@ -1149,5 +1098,26 @@ int CheckVariableType(char *typename) {
  if(vartypenames[typecount] == NULL) return(-1);		/* invalid type */
 
  return(typecount);
+}
+
+/*
+ * Check if is variable
+ *
+ * In: varname		Variable name
+ *
+ * Returns -1 on error or 0 on success
+ *
+ */
+int IsVariable(char *varname) {
+vars_t *next;
+
+next=currentfunction->vars;						/* point to variables */
+
+while(next != NULL) {
+ if(strcmpi(next->varname,varname) == 0) return(0);		/* variable exists */
+ next=next->next;
+}
+
+return(-1);
 }
 

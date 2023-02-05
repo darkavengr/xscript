@@ -48,19 +48,16 @@ InitializeFunctions();						/* Initialize functions */
 /* intialize command-line arguments */
 
 CreateVariable("argc",VAR_INTEGER,argc,0);
-cmdargs.i=argc;
-UpdateVariable("argc",&cmdargs,count,0);
 
-CreateVariable("argv",VAR_STRING,argc,0);			/* add command line arguments variable */
-
-memset(cmdargs.s,0,MAX_SIZE);
-
-for(count=0;count<argc;count++) {
- strcpy(cmdargs.s,argv[count]);
- UpdateVariable("argv",&cmdargs,count,0);
-}
 
 if(argc == 1) {					/* no arguments */ 
+/* add argv[0] = executable and argc=1 */
+
+ CreateVariable("argv",VAR_STRING,1,0);			/* add command line arguments variable */
+
+ strcpy(cmdargs.s,argv[0]);
+ UpdateVariable("argv",&cmdargs,0,0);
+
  while(1) {
   fgets(buffer,MAX_SIZE,stdin);			/* read line */
   
@@ -70,6 +67,17 @@ if(argc == 1) {					/* no arguments */
 }
 else
 {
+ cmdargs.i=argc;
+ UpdateVariable("argc",&cmdargs,count,0);
+
+ CreateVariable("argv",VAR_STRING,argc,0);			/* add command line arguments variable */
+
+ memset(cmdargs.s,0,MAX_SIZE);
+
+ for(count=0;count<argc;count++) {
+  strcpy(cmdargs.s,argv[count]);
+  UpdateVariable("argv",&cmdargs,count,0);
+ }
  ExecuteFile(argv[1]);						/* execute file */
 }
 
