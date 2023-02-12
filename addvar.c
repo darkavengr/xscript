@@ -227,7 +227,8 @@ next=currentfunction->vars;
     switch(next->type) {
      case VAR_NUMBER:				/* double precision */			
        next->val[(x*sizeof(double))+(y*sizeof(double))].d=val->d;
-       printf("set val=%.6g\n", next->val[(x*sizeof(double))+(y*sizeof(double))].d);	
+
+       printf("set val %s(%d,%d)=%.6g\n", next->varname,y,next->val[(x*sizeof(double))+(y*sizeof(double))].d);	
        break;
 
      case VAR_STRING:				/* string */
@@ -308,9 +309,6 @@ double floatval;
 
 if(name == NULL) return(-1);
 
-//printf("GetVariableValue x=%d\n",x);
-//printf("GetVariableValue y=%d\n",y);
-
 c=*name;
 
 if(c >= '0' && c <= '9') {
@@ -356,7 +354,7 @@ while(next != NULL) {
       case VAR_NUMBER:				/* Double precision */
         val->d=next->val[(x*sizeof(double))+(y*sizeof(double))].d;
 
-	printf("val=%.6g\n",val->d);
+	printf("get variable value %s(%d,%d)=%.6g\n",next->varname,x,y,val->d);
         return(0);
 
        case VAR_STRING:			 	/* string */
@@ -373,8 +371,8 @@ while(next != NULL) {
 
        default:					/* Default type */
         val->d=next->val[(x*sizeof(double))+(y*sizeof(double))].d;
-	//printf("val=%.6g\n",val->d);
 
+	printf("get variable value (%d,%d)=%.6g\n",x,y,val->d);
         return(0);
     }
 
@@ -431,24 +429,20 @@ return(-1);
  *
  */
 int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split) {
-int count;
 
 strcpy(split->name,tokens[start]);		/* copy name */
 split->y=1;
 
-count=start+1;
-if(strcmp(tokens[count],"(") == 0) count++;
+if(strcmp(tokens[start+1],"(") == 0) {
+ split->x=atoi(tokens[start+2]);		/* get x subscript */
 
+ if(strcmp(tokens[start+3],",") == 0) split->y=atoi(tokens[start+4]); /* 2d array */
+}
+else
+{
+ split->x=atoi(tokens[start+1]);		/* get x subscript */
 
-split->x=atoi(tokens[count]);		/* get x subscript */
-  
-//printf("parse x=%d\n",atoi(tokens[count]));
-//printf("comma=%s %s\n",tokens[count+1],tokens[count+2]);
-
-
-if(strcmp(tokens[count+1],",") == 0) {
- split->y=atoi(tokens[count+2]); /* 3d array */
- //printf("parse y=%d\n",split->y);
+ if(strcmp(tokens[start+2],",") == 0) split->y=atoi(tokens[start+3]); /* 2d array */
 }
 
 return;
@@ -779,11 +773,7 @@ if(callpos-1 >= 0) {
  callpos--;
  currentfunction=callstack[callpos].funcptr;  
  currentptr=callstack[callpos].callptr;	/* restore information about the calling function */
-
-// ////printf("currentptr=%lX\n",currentptr);
-// asm("int $3");
-
-}
+ }
 }
 
 /*
@@ -911,8 +901,6 @@ for(count=start;count<end;count++) {
  if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
 	  tokentype=SUBST_FUNCTION;
 
-	  ////printf("IS FUNCTION\n");
-
 	  s=count;	/* save start */
  	  count++;		/* skip ( */
 
@@ -940,24 +928,17 @@ for(count=start;count<end;count++) {
 	  continue;
   }
 
-// ////printf("token=%s\n",tokens[count]);
-
  if(IsVariable(tokens[count]) == 0) {
    for(countx=count;countx<end;countx++) {		/* find end of function call */    
     if(strcmp(tokens[countx],")") == 0) break;
    }
 
-    ParseVariableName(tokens,count,countx-1,&split);
+    ParseVariableName(tokens,count,countx+1,&split);
 
     tokentype=SUBST_VAR;
+   
+    printf("subst %s x y=%d %d\n",split.name,split.x,split.y);
 
-    ////printf("subst.name=%s\n",split.name);
-    ////printf("subst.x=%d\n",split.x);
-    ////printf("subst.y=%d\n",split.y);
-
-  //  ////printf("type=%d\n",GetVariableType(split.name));
-
- 
     GetVariableValue(split.name,split.x,split.y,&val);
 
     switch(GetVariableType(split.name)) {

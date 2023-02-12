@@ -84,7 +84,7 @@ char *endptr=NULL;		/* end of buffer */
 char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
-char *TokenCharacters="\"+-*/<>=!%~|&, \t(),";
+char *TokenCharacters="\"+-*/<>=!%~|& \t(),";
 
 include includefiles[MAX_INCLUDE];	/* included files */
 
@@ -234,7 +234,7 @@ if(tc == -1) {
  return(-1);
 }
 
-if(CheckSyntax(tokens,TokenCharacters,0,tc) == FALSE) {		/* check syntax */
+if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) {		/* check syntax */
  PrintError(SYNTAX_ERROR);
  return;
 }
@@ -314,8 +314,6 @@ for(count=1;count<tc;count++) {
 	 }
 	
 	 exprone=doexpr(tokens,count+1,tc);
-
-         printf("exprone=%.6g\n",exprone);
 
 	 if(vartype == VAR_NUMBER) {
 	  val.d=exprone;
@@ -420,6 +418,12 @@ for(count=1;count<tc;count++) {
   end=start+1;
 
   while(end < tc) {
+   if(strcmp(tokens[end],"(") == 0) {
+	  while(end < tc) {
+		   if(strcmp(tokens[end++],")") == 0) break;
+          }
+   }
+
    if(strcmp(tokens[end],",") == 0) break;
    end++;
   }
@@ -1244,7 +1248,7 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
  for(count=start;count<end;count++) {
 
-/* check if two separators are together or two non-separators are together */
+/* check if two separators are together */
 
    if((IsSeperator(tokens[count],separators) == TRUE) && (count+1 < end) && (IsSeperator(tokens[count+1],separators) == TRUE)) {
 
@@ -1258,26 +1262,19 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
      if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
      if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
-     return(FALSE);
    }
+ }
 
-   /* check if two non-separator tokes are next to each other */
 
-   if((IsSeperator(tokens[count],separators) == FALSE) &&  (count+1 < end) && (IsSeperator(tokens[count+1],separators) == FALSE)) {
-	/* keywords can be next to non-separator tokens */
-	statementcount=0;
+   /* check if two non-separator tokens are next to each other */
 
-	do {
-	 if(statements[statementcount].statement == NULL) break;
-	 if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) return(TRUE);
-	
-	 statementcount++;
-
-	} while(statements[statementcount].statement != NULL);
-    
+ for(count=start;count<end;count++) {
+   if((IsSeperator(tokens[count],separators) == FALSE) && (count+1 > end) && (IsSeperator(tokens[count+1],separators) == FALSE)) {	
+	return(FALSE);
   }
 //   if(((*tokens[count] == '"') || GetVariableType(tokens[count) == VAR_STRING) {
- }
+}
+
 
  return(TRUE);
 }
