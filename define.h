@@ -53,7 +53,7 @@
 #define BAD_CONDITION	    28
 #define BAD_TYPE	    29
 #define NO_MODULE_PATH 	    30
-#define TYPE_EXISTS	    31
+#define VARIABLE_EXISTS	    31
 
 #define TRUE 0
 #define FALSE 1

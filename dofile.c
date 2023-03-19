@@ -84,7 +84,7 @@ char *endptr=NULL;		/* end of buffer */
 char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
-char *TokenCharacters="\"+-*/<>=!%~|& \t(),";
+char *TokenCharacters="+-*/<>=!%~|& \t()[],";
 
 include includefiles[MAX_INCLUDE];	/* included files */
 
@@ -170,9 +170,8 @@ do {
 
  currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
- if(*currentptr == 0) return(NO_ERROR);		/* if at end of buffer, return */
-
  ExecuteLine(linebuf);
+
 
  memset(linebuf,0,MAX_SIZE);
 
@@ -208,6 +207,8 @@ int ExecuteLine(char *lbuf) {
  char *b;
  char *d;
  int start;
+
+ printf("line=%s\n",lbuf);
 
  includefiles[ic].lc++;						/* increment line counter */
 
@@ -274,32 +275,34 @@ if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
  * assignment
  *
  */
+
 for(count=1;count<tc;count++) {
 
- if(strcmpi(tokens[count],"=") == 0) {
-
+  if(strcmpi(tokens[count],"=") == 0) {
 	  if(CheckSyntax(tokens,1,tc) == FALSE) {		/* check syntax */
    	   PrintError(SYNTAX_ERROR);
 	   return;
 	  }
 
 	 ParseVariableName(tokens,0,count-1,&split);			/* split variable */
+  	
+	 printf("split=%s %d %d\n",split.name,split.x,split.y);
 
 	 vartype=GetVariableType(split.name);
 
-	 c=*tokens[count+1];
+	 c=*tokens[count+2];
 
-	 if((c == '"') || GetVariableType(split.name) == VAR_STRING) {			/* string */  
+	 if((c == '"') || (GetVariableType(split.name) == VAR_STRING)) {			/* string */  
 	  if(vartype == -1) {
 		CreateVariable(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
 	  }
-	  else
-	  {  
+	  else if(vartype != VAR_STRING) {
 	   PrintError(TYPE_ERROR);
 	   return(TYPE_ERROR);
 	  }
 
-	  ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
+	  //ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
+	  strcpy(val.s,tokens[count+2]);
 
 	  UpdateVariable(split.name,&val,split.x,split.y);		/* set variable */
 
@@ -333,6 +336,8 @@ for(count=1;count<tc;count++) {
 	  val.d=exprone;	  
 	 }
 
+	
+         printf("vartype=%d\n",vartype);
 
 	 if(vartype == -1) {		/* new variable */ 
 	  CreateVariable(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
@@ -391,6 +396,11 @@ char *s[MAX_SIZE];
 char *sptr;
 
 start=1;
+SubstituteVariables(1,tc,tokens);  
+
+for(count=1;count<tc;count++) {
+ printf("print=%s\n",tokens[count]);
+}
 
 for(count=1;count<tc;count++) {
  c=*tokens[count];
@@ -405,9 +415,9 @@ for(count=1;count<tc;count++) {
   sptr=tokens[count];
   sptr++;
 
-  memcpy(s,sptr,strlen(tokens[count])-2);
+//  memcpy(s,sptr,strlen(tokens[count])-2);
 
-  printf("%s ",s);
+  printf("%s ",sptr);
   start++;
 
   count++;		/* skip , */
@@ -1016,25 +1026,32 @@ int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  varsplit split;
  int vartype;
-
- for(int count=1;count<tc;count++) {
-   printf("declare=%s\n",tokens[count]);
- }
+ int count;
 
  ParseVariableName(tokens,1,tc,&split);
 
- if(strcmpi(tokens[2],"AS") == 0) {		/* array as type */
-  vartype=CheckVariableType(tokens[3]);		/* get variable type */  
- 
-  if(vartype == -1) {				/* invalid variable type */
-   PrintError(BAD_TYPE);
-   return(-1);
+ for(count=0;count<tc;count++) {  
+  printf("declare=%s\n",tokens[count]);
+
+  if(strcmpi(tokens[count],"AS") == 0) {		/* array as type */
+   printf("as=%s\n",tokens[count+1]);
+
+   vartype=CheckVariableType(tokens[count+1]);		/* get variable type */  
+
+   printf("vartype=%d\n",vartype);
+
+   break;
   }
  }
- else
- {
-  vartype=VAR_NUMBER;
+
+ if(vartype == -1) {				/* invalid variable type */
+  PrintError(BAD_TYPE);
+  return(-1);
  }
+
+ printf("vartype=%d\n",vartype);
+
+ printf("xy=%d %d\n",split.x,split.y);
 
  CreateVariable(split.name,vartype,split.x,split.y);
 
@@ -1133,13 +1150,13 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
 while(*token != 0) {
  IsSeperator=FALSE;
 
- if((*token == '"') || (*token == '[') ) {		/* quoted text */ 
+ if(*token == '"' ) {		/* quoted text */ 
    *d++=*token++;
 
    while(*token != 0) {
     *d=*token++;
 
-    if((*d == '"') || (*d == ']') ) break;		/* quoted text */	
+    if(*d == '"') break;		/* quoted text */	
 
     d++;
   }
@@ -1239,7 +1256,7 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
   if(strcmp(tokens[count],"]") == 0) squarebracketcount--;
 
   if(strcmp(tokens[count],",") == 0) {
-    if(strcmpi(tokens[start],"PRINT") == 0) return(TRUE);
+    if(strcmpi(tokens[0],"PRINT") == 0) return(TRUE);
     if(bracketcount == 0) return(FALSE);
    }
  }

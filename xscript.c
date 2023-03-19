@@ -69,15 +69,14 @@ else
 {
  cmdargs.i=argc;
  UpdateVariable("argc",&cmdargs,count,0);
-
- CreateVariable("argv",VAR_STRING,argc,0);			/* add command line arguments variable */
-
+ 
  memset(cmdargs.s,0,MAX_SIZE);
 
  for(count=0;count<argc;count++) {
   strcpy(cmdargs.s,argv[count]);
   UpdateVariable("argv",&cmdargs,count,0);
  }
+
  ExecuteFile(argv[1]);						/* execute file */
 }
 
