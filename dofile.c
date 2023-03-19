@@ -208,8 +208,6 @@ int ExecuteLine(char *lbuf) {
  char *d;
  int start;
 
- printf("line=%s\n",lbuf);
-
  includefiles[ic].lc++;						/* increment line counter */
 
  /* return if blank line */
@@ -286,14 +284,14 @@ for(count=1;count<tc;count++) {
 
 	 ParseVariableName(tokens,0,count-1,&split);			/* split variable */
   	
-	 printf("split=%s %d %d\n",split.name,split.x,split.y);
-
 	 vartype=GetVariableType(split.name);
 
-	 c=*tokens[count+2];
+	 c=*tokens[count+1];
 
-	 if((c == '"') || (GetVariableType(split.name) == VAR_STRING)) {			/* string */  
+	 if((c == '"') || (vartype == VAR_STRING)) {			/* string */  
 	  if(vartype == -1) {
+		printf("CREATE NEW\n");
+
 		CreateVariable(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
 	  }
 	  else if(vartype != VAR_STRING) {
@@ -302,7 +300,7 @@ for(count=1;count<tc;count++) {
 	  }
 
 	  //ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
-	  strcpy(val.s,tokens[count+2]);
+	  strcpy(val.s,tokens[count+1]);
 
 	  UpdateVariable(split.name,&val,split.x,split.y);		/* set variable */
 
@@ -398,11 +396,13 @@ char *sptr;
 start=1;
 SubstituteVariables(1,tc,tokens);  
 
-for(count=1;count<tc;count++) {
+printf("tc=%d\n",tc);
+
+for(count=0;count < tc;count++) {
  printf("print=%s\n",tokens[count]);
 }
 
-for(count=1;count<tc;count++) {
+for(count=1;count < tc;count++) {
  c=*tokens[count];
 
  /* if string literal, string variable or function returning string */
@@ -415,12 +415,10 @@ for(count=1;count<tc;count++) {
   sptr=tokens[count];
   sptr++;
 
-//  memcpy(s,sptr,strlen(tokens[count])-2);
+  memcpy(s,sptr,strlen(tokens[count])-2);
 
-  printf("%s ",sptr);
+  printf("%s ",s);
   start++;
-
-  count++;		/* skip , */
  }
  else
  {
@@ -1027,18 +1025,13 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  varsplit split;
  int vartype;
  int count;
+ int retval;
 
  ParseVariableName(tokens,1,tc,&split);
 
  for(count=0;count<tc;count++) {  
-  printf("declare=%s\n",tokens[count]);
-
   if(strcmpi(tokens[count],"AS") == 0) {		/* array as type */
-   printf("as=%s\n",tokens[count+1]);
-
    vartype=CheckVariableType(tokens[count+1]);		/* get variable type */  
-
-   printf("vartype=%d\n",vartype);
 
    break;
   }
@@ -1053,7 +1046,12 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  printf("xy=%d %d\n",split.x,split.y);
 
- CreateVariable(split.name,vartype,split.x,split.y);
+ retval=CreateVariable(split.name,vartype,split.x,split.y);
+
+ if(retval != NO_ERROR) {
+  PrintError(retval);
+ }
+
 
 }
 

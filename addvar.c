@@ -147,8 +147,6 @@ if(currentfunction->vars == NULL) {			/* first entry */
   while(next != NULL) {
    last=next;
 
-   printf("next=%lX\n",next);
-
    if(strcmpi(next->varname,name) == 0) return(VARIABLE_EXISTS);		/* variable exists */
    next=next->next;
   }
@@ -158,8 +156,6 @@ if(currentfunction->vars == NULL) {			/* first entry */
 
   next=last->next;
  }
-
-  printf("vars=%lX\n",next);
 
 /* add to end */
 
@@ -185,13 +181,10 @@ if(currentfunction->vars == NULL) {			/* first entry */
  	if(next->val == NULL)  return(NO_MEM);
        break;
     }
- 
 
  next->xsize=xsize;				/* set size */
  next->ysize=ysize;
  next->type=type;
-
- printf("new name=%s\n",name);
 
  strcpy(next->varname,name);		/* set name */
  next->next=NULL;
@@ -235,8 +228,9 @@ next=currentfunction->vars;
        break;
 
      case VAR_STRING:				/* string */
+       printf("x y=%s %d %d %d %d\n",next->varname,x,y,next->xsize,next->ysize);
 
-       strcpy(next->val[((x*MAX_SIZE)*(y*MAX_SIZE))].s,val->s);
+       strcpy(next->val[(y*next->ysize)+(next->xsize*x)].s,val->s);
        break;
 
      case VAR_INTEGER:	 			/* integer */
@@ -359,7 +353,7 @@ while(next != NULL) {
         return(0);
 
        case VAR_STRING:			 	/* string */
-        strcpy(val->s,next->val[(y*(next->ysize*MAX_SIZE))+(next->xsize*MAX_SIZE)].s);
+        strcpy(val->s,next->val[(y*next->ysize)+(next->xsize*x)].s);
         return(0);
 
        case VAR_INTEGER:			/* Integer */
@@ -945,9 +939,6 @@ for(count=start;count<end;count++) {
    
     GetVariableValue(split.name,split.x,split.y,&val);
 
-    printf("subst %s %d %d=%s\n",split.name,split.x,split.y,val.s);
-    printf("var type=%d\n",GetVariableType(split.name));
-
     switch(GetVariableType(split.name)) {
 	case VAR_STRING:
 
@@ -971,8 +962,12 @@ for(count=start;count<end;count++) {
 	    }
 	    else
 	    {
+	      GetVariableValue(split.name,split.x,split.y,&val);
 	
-	     strcpy(temp[outcount++],val.s);
+	      printf("subst %s %d %d=%s\n",split.name,split.x,split.y,val.s);
+              printf("var type=%d\n",GetVariableType(split.name));
+
+	      strcpy(temp[outcount++],val.s);
             }
 
 	    break;
