@@ -1203,7 +1203,7 @@ int IsSeperator(char *token,char *sep) {
  s=sep;
 
   while(*s != 0) {
-   if(*s++ == *t++) return(TRUE);
+   if(*s++ == *token) return(TRUE);
   }
 
  return(FALSE);
@@ -1254,8 +1254,10 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
 /* check if two separators are together */
 
-   if((IsSeperator(tokens[count],separators) == TRUE) && (count < end) && (IsSeperator(tokens[count+1],separators) == TRUE)) {
+   if(IsSeperator(tokens[count],separators) == 1) {
+    if((*tokens[count+1] != 0) && (IsSeperator(tokens[count+1],separators) == 1)) {
 
+    
      /* brackets can be next to separators */
 
      if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
@@ -1268,15 +1270,15 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
      if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
 
      return(FALSE);
+    }
    }
  }
 
    /* check if two non-separator tokens are next to each other */
 
  for(count=start;count<end;count++) {   
-   if(IsSeperator(tokens[count],separators) == 0) {
-	if((*tokens[count+1] != 0) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
-   }
+     if((IsSeperator(tokens[count],separators) == 0) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
+     if((*tokens[count+1] == 0) && (IsSeperator(tokens[count],separators) == 1)) return(FALSE);
 
  }
 
