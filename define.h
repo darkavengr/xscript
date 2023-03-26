@@ -22,6 +22,9 @@
 #define MAX_INCLUDE 10
 #define MAX_SIZE 256
 
+#define TRUE 1
+#define FALSE 0
+
 #define NO_ERROR	    0
 #define FILE_NOT_FOUND	    1
 #define NO_PARAMS	    2
@@ -54,9 +57,6 @@
 #define BAD_TYPE	    29
 #define NO_MODULE_PATH 	    30
 #define VARIABLE_EXISTS	    31
-
-#define TRUE 0
-#define FALSE 1
 
 #define FOR_STATEMENT 1
 #define IF_STATEMENT 2

@@ -41,7 +41,7 @@ char *llcerrs[] = { "No error","File not found","No parameters for statement","B
 		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
 		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH" };
 
-int saveexprtrue=0;
+int saveexprTRUE=0;
 varval retval;
 
 /* statements */
@@ -469,7 +469,7 @@ char *buf[MAX_SIZE];
 int count;
 int countx;
 char *d;
-int exprtrue;
+int exprTRUE;
 
 if(tc < 1) {						/* not enough parameters */
  PrintError(SYNTAX_ERROR);
@@ -481,14 +481,14 @@ currentfunction->stat |= IF_STATEMENT;
 while(*currentptr != 0) {
 
 if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {
-  exprtrue=EvaluateCondition(tokens,1,tc);
-  if(exprtrue == -1) {
+  exprTRUE=EvaluateCondition(tokens,1,tc);
+  if(exprTRUE == -1) {
    PrintError(BAD_CONDITION);
    return(-1);
   }
 
-if(exprtrue == 1) {
-		saveexprtrue=exprtrue;
+if(exprTRUE == 1) {
+		saveexprTRUE=exprTRUE;
 
 		do {
     		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -514,7 +514,7 @@ if(exprtrue == 1) {
 
  if((strcmpi(tokens[0],"ELSE") == 0)) {
 
-  if(saveexprtrue == 0) {
+  if(saveexprTRUE == 0) {
 	    do {
     		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 		if(*currentptr == 0) return;
@@ -810,7 +810,7 @@ int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 int while_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *buf[MAX_SIZE];
-int exprtrue;
+int exprTRUE;
 char *d;
 int count;
 char *condition_tokens[MAX_SIZE][MAX_SIZE];
@@ -834,14 +834,14 @@ currentfunction->stat |= WHILE_STATEMENT;
 do {
       currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
-      exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
+      exprTRUE=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
 
-      if(exprtrue == -1) {
+      if(exprTRUE == -1) {
        PrintError(BAD_CONDITION);
        return(-1);
       }
 
-      if(exprtrue == 0) {
+      if(exprTRUE == 0) {
        while(*currentptr != 0) {
 
         currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -871,7 +871,7 @@ do {
       }
 
      ExecuteLine(buf);
-  } while(exprtrue == 1);
+  } while(exprTRUE == 1);
   
 
 }
@@ -1196,15 +1196,14 @@ return(tc+1);
  */
 int IsSeperator(char *token,char *sep) {
  char *s;
- char *b;
+ char *t=token;
 
  if(*token == 0) return(FALSE);
 
  s=sep;
 
   while(*s != 0) {
-   if(*s == *token) return(TRUE);
-   s++;
+   if(*s++ == *t++) return(TRUE);
   }
 
  return(FALSE);
@@ -1225,7 +1224,7 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
  int count;
  int bracketcount=0;
  int squarebracketcount=0;
- bool IsInBracket=false;
+ bool IsInBracket=FALSE;
  int statementcount=0;
 
 /* check if brackets are balanced */
@@ -1249,7 +1248,7 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
 /* check if two separators are together */
 
-   if((IsSeperator(tokens[count],separators) == TRUE) && (count+1 < end) && (IsSeperator(tokens[count+1],separators) == TRUE)) {
+   if((IsSeperator(tokens[count],separators) == TRUE) && (count < end) && (IsSeperator(tokens[count+1],separators) == TRUE)) {
 
      /* brackets can be next to separators */
 
@@ -1261,19 +1260,17 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
      if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
      if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
+
+     return(FALSE);
    }
  }
 
-
    /* check if two non-separator tokens are next to each other */
 
- for(count=start;count<end;count++) {
-   if((IsSeperator(tokens[count],separators) == FALSE) && (count+1 > end) && (IsSeperator(tokens[count+1],separators) == FALSE)) {	
-	return(FALSE);
-  }
-//   if(((*tokens[count] == '"') || GetVariableType(tokens[count) == VAR_STRING) {
-}
 
+ for(count=start;count<end-1;count++) {   
+   if((IsSeperator(tokens[count],separators) == 0) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
+ }
 
  return(TRUE);
 }

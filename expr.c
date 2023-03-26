@@ -271,7 +271,7 @@ return;
  *     int start			Start in array
        int end				End in array
 
- * Returns true or false
+ * Returns TRUE or FALSE
  *
  */
 
@@ -280,7 +280,7 @@ int inverse;
 double exprone;
 double exprtwo;
 int ifexpr=-1;
-int exprtrue=0;
+int exprTRUE=0;
 int exprpos=0;
 int count=0;
 int conditions[MAX_SIZE];
@@ -331,7 +331,7 @@ varval val;
 	exprone=doexpr(tokens,start,exprpos-1);				/* do expression */
         exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
 
-        exprtrue=0;
+        exprTRUE=0;
 
   	switch(ifexpr) {
 
