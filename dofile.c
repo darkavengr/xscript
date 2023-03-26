@@ -282,16 +282,13 @@ for(count=1;count<tc;count++) {
 	   return;
 	  }
 
-	 ParseVariableName(tokens,0,count-1,&split);			/* split variable */
-  	
+	 ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
 	 vartype=GetVariableType(split.name);
 
 	 c=*tokens[count+1];
 
 	 if((c == '"') || (vartype == VAR_STRING)) {			/* string */  
-	  if(vartype == -1) {
-		printf("CREATE NEW\n");
-
+	  if(vartype == -1) {	
 		CreateVariable(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
 	  }
 	  else if(vartype != VAR_STRING) {
@@ -333,9 +330,6 @@ for(count=1;count<tc;count++) {
 	 {
 	  val.d=exprone;	  
 	 }
-
-	
-         printf("vartype=%d\n",vartype);
 
 	 if(vartype == -1) {		/* new variable */ 
 	  CreateVariable(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
@@ -395,12 +389,6 @@ char *sptr;
 
 start=1;
 SubstituteVariables(1,tc,tokens);  
-
-printf("tc=%d\n",tc);
-
-for(count=0;count < tc;count++) {
- printf("print=%s\n",tokens[count]);
-}
 
 for(count=1;count < tc;count++) {
  c=*tokens[count];
@@ -1041,10 +1029,6 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   PrintError(BAD_TYPE);
   return(-1);
  }
-
- printf("vartype=%d\n",vartype);
-
- printf("xy=%d %d\n",split.x,split.y);
 
  retval=CreateVariable(split.name,vartype,split.x,split.y);
 

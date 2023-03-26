@@ -167,7 +167,7 @@ if(currentfunction->vars == NULL) {			/* first entry */
         break;
 
      case VAR_STRING:				/* string */
-	next->val=malloc(((xsize*MAX_SIZE)*(ysize*MAX_SIZE))+MAX_SIZE);
+	next->val=malloc((xsize*MAX_SIZE)*(ysize*MAX_SIZE));
  	if(next->val == NULL)  return(NO_MEM);
        break;
 
@@ -181,6 +181,7 @@ if(currentfunction->vars == NULL) {			/* first entry */
  	if(next->val == NULL)  return(NO_MEM);
        break;
     }
+ 
 
  next->xsize=xsize;				/* set size */
  next->ysize=ysize;
@@ -228,9 +229,7 @@ next=currentfunction->vars;
        break;
 
      case VAR_STRING:				/* string */
-       printf("x y=%s %d %d %d %d\n",next->varname,x,y,next->xsize,next->ysize);
-
-       strcpy(next->val[(y*next->ysize)+(next->xsize*x)].s,val->s);
+       strcpy(next->val[( (y*next->ysize)+(next->xsize*x))].s,val->s);
        break;
 
      case VAR_INTEGER:	 			/* integer */
@@ -353,7 +352,7 @@ while(next != NULL) {
         return(0);
 
        case VAR_STRING:			 	/* string */
-        strcpy(val->s,next->val[(y*next->ysize)+(next->xsize*x)].s);
+        strcpy(val->s,next->val[( (y*next->ysize)+(next->xsize*x))].s);
         return(0);
 
        case VAR_INTEGER:			/* Integer */
@@ -422,6 +421,7 @@ return(-1);
  *
  */
 int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split) {
+int exprparse=0;
 
 strcpy(split->name,tokens[start]);		/* copy name */
 
@@ -434,23 +434,30 @@ if(start == end) { /* no subscripts */
 
 split->y=0;
 
+/* If array or slice */
+
 if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 
  if(strcmp(tokens[start+1],"(") == 0) split->arraytype=ARRAY_SUBSCRIPT;
  if(strcmp(tokens[start+1],"[") == 0) split->arraytype=ARRAY_SLICE;
+ 
+ for(exprparse=start+2;exprparse<end;exprparse++) {
+    if(strcmp(tokens[exprparse],",") == 0) {		 /* 2d array */
+     	 split->x=doexpr(tokens,start+2,exprparse-1);
+	 split->y=doexpr(tokens,exprparse+1,end);
+	 return;
+    }
+ }
 
- split->x=atoi(tokens[start+2]);		/* get x subscript */
-
- if(strcmp(tokens[start+3],",") == 0) split->y=atoi(tokens[start+4]); /* 2d array */
+ split->x=doexpr(tokens,start+2,end+1);
+ split->y=0;
 }
 else
 {
- split->x=atoi(tokens[start+1]);		/* get x subscript */
-
- if(strcmp(tokens[start+2],",") == 0) split->y=atoi(tokens[start+3]); /* 2d array */
+	split->x=0;
+	split->y=1;
 }
 
-return;
 }
 
 
@@ -929,9 +936,9 @@ for(count=start;count<end;count++) {
   }
 
  if(IsVariable(tokens[count]) == 0) {
-   for(countx=count;countx<end;countx++) {		/* find end of function call */    
-    if(strcmp(tokens[countx],")") == 0) break;
-   }
+    for(countx=count;countx<end;countx++) {		/* find end of function call */
+      if(strcmp(tokens[countx],")") == 0) break;
+    }
 
     ParseVariableName(tokens,count,countx-1,&split);
 
@@ -941,7 +948,6 @@ for(count=start;count<end;count++) {
 
     switch(GetVariableType(split.name)) {
 	case VAR_STRING:
-
 	   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
 		GetVariableValue(split.name,0,0,&val);
 
@@ -963,20 +969,16 @@ for(count=start;count<end;count++) {
 	    else
 	    {
 	      GetVariableValue(split.name,split.x,split.y,&val);
-	
-	      printf("subst %s %d %d=%s\n",split.name,split.x,split.y,val.s);
-              printf("var type=%d\n",GetVariableType(split.name));
-
-	      strcpy(temp[outcount++],val.s);
+	       strcpy(temp[outcount++],val.s);
             }
 
 	    break;
 	
-	case VAR_NUMBER:	
+	case VAR_NUMBER:
 	    sprintf(temp[outcount++],"%.6g",val.d);          
    	    break;
 
-	case VAR_INTEGER:	
+	case VAR_INTEGER:	       
 	    sprintf(temp[outcount++],"%d",val.i);
 	    break;
 
