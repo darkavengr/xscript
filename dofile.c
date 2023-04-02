@@ -32,14 +32,14 @@
 #include "define.h"
 #include "dofile.h"
 
-char *llcerrs[] = { "No error","File not found","No parameters for statement","Bad expression",\
+char *llcerrs[] = { "No error","File not found","Missing parameters in statement","Invalid expression",\
 		    "IF statement without ELSEIF or ENDIF","FOR statement without NEXT",\
 		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
 		    "Invalid variable name","Out of memory","BREAK outside FOR or WHILE loop","Read error","Syntax error",\
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
-		    "NEXT without FOR","WEND without WHILE","Duplicate function","Too few arguments",\
-		    "Invalid array subscript","Type mismatch","Invalid type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
-		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH" };
+		    "NEXT without FOR","WEND without WHILE","Duplicate function name","Too few arguments to function",\
+		    "Invalid array subscript","Type mismatch","Invalid variable type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
+		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH path" };
 
 int saveexprTRUE=0;
 varval retval;
@@ -237,7 +237,7 @@ if(tc == -1) {
 // printf("tokens[%d]=%s\n",count,tokens[count]);
 //}
 
-if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
+if(CheckSyntax(tokens,TokenCharacters,1,tc-1) == 0) {		/* check syntax */
  PrintError(SYNTAX_ERROR);
  return;
 }
@@ -1274,7 +1274,7 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
 /* check if ending with separator */
  if((strcmp(tokens[end],")") != 0) && (strcmp(tokens[end],"]") != 0)) {
-//   if(IsSeperator(tokens[end],separators) == 1) return(FALSE);
+//    if(IsSeperator(tokens[end],separators) == 1) return(FALSE);
  } 
 
  for(count=start;count<end;count++) {

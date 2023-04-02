@@ -991,7 +991,16 @@ for(count=start;count<end;count++) {
    	    break;
        }
 	
-	while((count < end) && strcmp(tokens[count],")") != 0) count++;
+	countx=count;
+
+	while(countx < end) {
+	  if(strcmp(tokens[countx],")") != 0) break;
+          
+          countx++;
+        }
+
+        if(countx > count) count=countx;
+
 	continue;
  }
 

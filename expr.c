@@ -100,7 +100,6 @@ for(count=start;count<end;count++) {
 
 SubstituteVariables(0,exprcount,temp,temp);
 
-
 for(count=0;count<exprcount;count++) {
  if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
   PrintError(TYPE_ERROR);
