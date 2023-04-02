@@ -279,11 +279,9 @@ int inverse;
 double exprone;
 double exprtwo;
 int ifexpr=-1;
-int exprTRUE=0;
+int exprtrue=0;
 int exprpos=0;
 int count=0;
-int conditions[MAX_SIZE];
-int condcount=0;
 varval val;
 
 /* check kind of expression */
@@ -327,10 +325,10 @@ varval val;
 	 return(!strcmp(tokens[exprpos-1],tokens[exprpos+1]));
 	}
 
-	exprone=doexpr(tokens,start,exprpos-1);				/* do expression */
+	exprone=doexpr(tokens,start,exprpos);				/* do expression */
         exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
 
-        exprTRUE=0;
+        exprtrue=0;
 
   	switch(ifexpr) {
 
@@ -363,6 +361,8 @@ int resultcount=0;
 int count;
 int overallresult=0;
 int countx;
+char *evaltokens[MAX_SIZE][MAX_SIZE];
+int exprend;
 
 struct {
  int result;
@@ -376,16 +376,18 @@ struct {
 
 // Evaluate sub-conditions
 
+exprend=SubstituteVariables(start,end,tokens,evaltokens);
+
 startcount=1;
 
 count=start;
 
-while(count < end) {
-  if(strcmpi(tokens[count],"THEN") == 0) break;
+while(count < exprend) {
+  if(strcmpi(evaltokens[count],"THEN") == 0) break;
   
-  if((strcmpi(tokens[count],"AND") == 0) || (strcmpi(tokens[count],"OR") == 0)) {
-	  if(strcmpi(tokens[count],"AND") == 0) { 
-		results[resultcount].result=EvaluateSingleCondition(tokens,startcount,count);
+  if((strcmpi(evaltokens[count],"AND") == 0) || (strcmpi(evaltokens[count],"OR") == 0)) {
+	  if(strcmpi(evaltokens[count],"AND") == 0) { 
+		results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count);
 		results[resultcount++].and_or=CONDITION_AND;
 	  }
 
@@ -401,7 +403,7 @@ while(count < end) {
 
 // If there are no sub conditions, use whole expression
 
-if(resultcount == 0) return(EvaluateSingleCondition(tokens,start,end));
+if(resultcount == 0) return(EvaluateSingleCondition(evaltokens,start,end));
 
 count=0;
 overallresult=0;

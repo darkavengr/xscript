@@ -41,7 +41,7 @@ char *llcerrs[] = { "No error","File not found","Missing parameters in statement
 		    "Invalid array subscript","Type mismatch","Invalid variable type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
 		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH path" };
 
-int saveexprTRUE=0;
+int saveexprtrue=0;
 varval retval;
 
 /* statements */
@@ -321,7 +321,7 @@ for(count=1;count<tc;count++) {
 	  val.d=exprone;
 	 }
  	 else if(vartype == VAR_STRING) {
-	  SubstituteVariables(count+1,count+1,tokens); 
+	  SubstituteVariables(count+1,count+1,tokens,tokens); 
 	  strcpy(val.s,tokens[count+1]);  
 	 }
 	 else if(vartype == VAR_INTEGER) {
@@ -473,7 +473,7 @@ char *buf[MAX_SIZE];
 int count;
 int countx;
 char *d;
-int exprTRUE;
+int exprtrue;
 
 if(tc < 1) {						/* not enough parameters */
  PrintError(SYNTAX_ERROR);
@@ -485,14 +485,14 @@ currentfunction->stat |= IF_STATEMENT;
 while(*currentptr != 0) {
 
 if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {
-  exprTRUE=EvaluateCondition(tokens,1,tc);
-  if(exprTRUE == -1) {
+  exprtrue=EvaluateCondition(tokens,1,tc);
+  if(exprtrue == -1) {
    PrintError(BAD_CONDITION);
    return(-1);
   }
 
-if(exprTRUE == 1) {
-		saveexprTRUE=exprTRUE;
+if(exprtrue == 1) {
+		saveexprtrue=exprtrue;
 
 		do {
     		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -518,7 +518,7 @@ if(exprTRUE == 1) {
 
  if((strcmpi(tokens[0],"ELSE") == 0)) {
 
-  if(saveexprTRUE == 0) {
+  if(saveexprtrue == 0) {
 	    do {
     		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 		if(*currentptr == 0) return;
@@ -822,7 +822,7 @@ int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 int while_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *buf[MAX_SIZE];
-int exprTRUE;
+int exprtrue;
 char *d;
 int count;
 char *condition_tokens[MAX_SIZE][MAX_SIZE];
@@ -846,14 +846,14 @@ currentfunction->stat |= WHILE_STATEMENT;
 do {
       currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
-      exprTRUE=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
+      exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
 
-      if(exprTRUE == -1) {
+      if(exprtrue == -1) {
        PrintError(BAD_CONDITION);
        return(-1);
       }
 
-      if(exprTRUE == 0) {
+      if(exprtrue == 0) {
        while(*currentptr != 0) {
 
         currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
@@ -883,7 +883,7 @@ do {
       }
 
      ExecuteLine(buf);
-  } while(exprTRUE == 1);
+  } while(exprtrue == 1);
   
 
 }
