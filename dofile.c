@@ -233,7 +233,7 @@ if(tc == -1) {
  return(-1);
 }
 
-if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) {		/* check syntax */
+if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
  PrintError(SYNTAX_ERROR);
  return;
 }
@@ -1116,8 +1116,6 @@ char *nextns;
 char *nexttoken;
 int IsSeperator;
 
-tc=0;
-
 token=linebuf;
 
 while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace characters */
@@ -1178,11 +1176,13 @@ while(*token != 0) {
  }
 
  /* non-seperator character */
- if(IsSeperator == FALSE) *d++=*token++;
-}
+  if(IsSeperator == FALSE) *d++=*token++;
+ }
 }
 
-return(tc+1);
+if(strlen(tokens[tc]) > 0) tc++;		/* if there is data in the last token, increment the counter so it is accounted for */
+
+return(tc);
 }
 
 /*
@@ -1246,9 +1246,14 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
 /* check if starting with separator */
 
- if((strcmp(tokens[start],"(") != 0) || (strcmp(tokens[start],"[") != 0)) {
-   if(IsSeperator(tokens[start],separators) == 1) return(FALSE);
- }
+ if((strcmp(tokens[start],"(") != 0) && (strcmp(tokens[start],"[") != 0)) {
+//   if(IsSeperator(tokens[start+1],separators) == 1) return(FALSE);
+ } 
+
+/* check if ending with separator */
+ if((strcmp(tokens[end],")") != 0) && (strcmp(tokens[end],"]") != 0)) {
+//   if(IsSeperator(tokens[end],separators) == 1) return(FALSE);
+ } 
 
  for(count=start;count<end;count++) {
 
@@ -1278,8 +1283,6 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
  for(count=start;count<end;count++) {   
      if((IsSeperator(tokens[count],separators) == 0) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
-     if((*tokens[count+1] == 0) && (IsSeperator(tokens[count],separators) == 1)) return(FALSE);
-
  }
 
  return(TRUE);
