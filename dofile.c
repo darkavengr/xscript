@@ -233,6 +233,10 @@ if(tc == -1) {
  return(-1);
 }
 
+//for(count=0;count<tc;count++) {
+// printf("tokens[%d]=%s\n",count,tokens[count]);
+//}
+
 if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
  PrintError(SYNTAX_ERROR);
  return;
@@ -592,12 +596,21 @@ if(tc < 4) {						/* Not enough parameters */
  return(NO_PARAMS);
 }
 
+
 currentfunction->stat |= FOR_STATEMENT;
 
-if(strcmpi(tokens[2],"=") != 0) {
+/* find end of variable name */
+
+for(count=1;count<tc;count++) {
+ if(strcmpi(tokens[count],"=") == 0) break;
+}
+
+if(count == tc) {		/* no = */
  PrintError(SYNTAX_ERROR);
  return(SYNTAX_ERROR);
 }
+
+ParseVariableName(tokens,1,count-1,&split);
 
 //  0  1     2 3 4  5
 // for count = 1 to 10
@@ -622,8 +635,6 @@ else
 {
  steppos=doexpr(tokens,countx+1,tc);
 }
-
-ParseVariableName(tokens,1,tc,&split);
 
 //  0   1    2 3 4  5
 // for count = 1 to 10
@@ -701,6 +712,7 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
 	          if(currentfunction->nestcount-1 > 0) currentfunction->nestcount--;
                
 	       currentfunction->stat &= FOR_STATEMENT;
+
 	       PrintError(SYNTAX_ERROR);
 	       return(SYNTAX_ERROR);
               }
@@ -1155,7 +1167,7 @@ while(*token != 0) {
       d=tokens[++tc]; 
       token++;     
 
-      IsSeperator=TRUE;     
+      IsSeperator=FALSE;     
       break;
     }
     else
@@ -1197,6 +1209,7 @@ return(tc);
 int IsSeperator(char *token,char *sep) {
  char *s;
  char *t=token;
+ int statementcount;
 
  if(*token == 0) return(TRUE);
 
@@ -1205,6 +1218,15 @@ int IsSeperator(char *token,char *sep) {
   while(*s != 0) {
    if(*s++ == *token) return(TRUE);
   }
+
+ statementcount=0;
+
+do {
+ if(statements[statementcount].statement == NULL) break;
+
+ if(strcmpi(statements[statementcount].statement,token) == 0) return(TRUE);
+
+} while(statements[statementcount++].statement != NULL);
 
  return(FALSE);
 }
@@ -1258,7 +1280,7 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
  for(count=start;count<end;count++) {
 
 /* check if two separators are together */
-
+//
    if(IsSeperator(tokens[count],separators) == 1) {
     if((*tokens[count+1] != 0) && (IsSeperator(tokens[count+1],separators) == 1)) {
 
@@ -1275,14 +1297,14 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
      if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
 
      return(FALSE);
-    }
    }
+  }
  }
 
    /* check if two non-separator tokens are next to each other */
 
  for(count=start;count<end;count++) {   
-     if((IsSeperator(tokens[count],separators) == 0) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
+     if((IsSeperator(tokens[count],separators) == 0) && (count < end) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
  }
 
  return(TRUE);
