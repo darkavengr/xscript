@@ -76,6 +76,7 @@
 #define VAR_STRING  1
 #define VAR_INTEGER 2
 #define VAR_SINGLE  3
+#define VAR_BOOL    4
 
 #define MAX_NEST_COUNT 256
 
@@ -92,6 +93,7 @@ typedef struct {
  char *s[MAX_SIZE];
  int i;
  float f;
+ int b;
  int type;
 } varval;
 

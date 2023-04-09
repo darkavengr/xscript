@@ -164,13 +164,13 @@ int ExecuteFile(char *filename) {
 /* loop through lines and execute */
 
 do {
- currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
+ currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;	/* save current buffer address */
 
  currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
  currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
- ExecuteLine(linebuf);
+ ExecuteLine(linebuf);			/* run statement */
 
 
  memset(linebuf,0,MAX_SIZE);
@@ -390,6 +390,7 @@ int count;
 int countx;
 char *s[MAX_SIZE];
 char *sptr;
+int retval=0;
 
 start=1;
 SubstituteVariables(1,tc,tokens);  
@@ -428,7 +429,18 @@ for(count=1;count < tc;count++) {
    end++;
   }
 
-  printf("%.6g ",doexpr(tokens,start,end));
+  retval=doexpr(tokens,start,end);
+
+/* if it's a condition print True or False */
+
+  for(count=start;count<end;count++) {
+    if((strcmp(tokens[count],">") == 0) || (strcmp(tokens[count],"<") == 0) || (strcmp(tokens[count],"=") == 0)) {
+      retval == 1 ? printf("True") : printf("False");
+      break;
+    } 
+  }
+  
+  if(count == end) printf("%.6g ",retval);	/* Not conditional */
 
   count=end;
  }
@@ -1269,12 +1281,12 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 /* check if starting with separator */
 
  if((strcmp(tokens[start],"(") != 0) && (strcmp(tokens[start],"[") != 0)) {
-//   if(IsSeperator(tokens[start+1],separators) == 1) return(FALSE);
+   if(IsSeperator(tokens[start],separators) == 1) return(FALSE);
  } 
 
 /* check if ending with separator */
  if((strcmp(tokens[end],")") != 0) && (strcmp(tokens[end],"]") != 0)) {
-//    if(IsSeperator(tokens[end],separators) == 1) return(FALSE);
+   if(IsSeperator(tokens[end],separators) == 1) return(FALSE);
  } 
 
  for(count=start;count<end;count++) {

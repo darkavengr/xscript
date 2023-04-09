@@ -23,6 +23,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "define.h"
 #include "expr.h"
@@ -112,9 +113,10 @@ val.d=atof(temp[0]);
 for(count=0;count<exprcount;count++)  {
 
  if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {
-  sprintf(temp[count],"%d",EvaluateCondition(temp,count-1,count+2));
+  val.type=VAR_BOOL;
+  val.d=EvaluateCondition(temp,count-1,count+2);
 
-  //DeleteFromArray(temp,count,2);		/* remove rest */    
+  break;  
  } 
 
 }
@@ -328,6 +330,9 @@ varval val;
 	exprone=doexpr(tokens,start,exprpos);				/* do expression */
         exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
 
+	printf("exprone=%.6g\n",exprone);
+	printf("exprtwo=%.6g\n",exprtwo);
+
         exprtrue=0;
 
   	switch(ifexpr) {
@@ -339,9 +344,11 @@ varval val;
 	   return(exprone != exprtwo);
 
           case LTHAN:						/* exprone < exprtwo */
+	   printf("is less-than=%d\n",exprone < exprtwo);
 	   return(exprone < exprtwo);
 
           case GTHAN:						/* exprone > exprtwo */
+	   printf("is greater-than=%d\n",exprone > exprtwo);
 	   return(exprone > exprtwo);
 
           case EQLTHAN:	           /* exprone =< exprtwo */
@@ -378,6 +385,8 @@ struct {
 
 exprend=SubstituteVariables(start,end,tokens,evaltokens);
 
+printf("exprend=%d\n",exprend);
+
 startcount=1;
 
 count=start;
@@ -385,33 +394,53 @@ count=start;
 while(count < exprend) {
   if(strcmpi(evaltokens[count],"THEN") == 0) break;
   
-  if((strcmpi(evaltokens[count],"AND") == 0) || (strcmpi(evaltokens[count],"OR") == 0)) {
-	  if(strcmpi(evaltokens[count],"AND") == 0) { 
-		results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count);
-		results[resultcount++].and_or=CONDITION_AND;
-	  }
+  if((strcmpi(evaltokens[count],"AND") == 0) || (strcmpi(evaltokens[count],"OR") == 0) || count+1 >= printf) {
+		//printf("AND/OR FOUND\n");
 
+		//for(int countz=startcount;countz<count;countz++) {
+		//  printf("%s ",evaltokens[countz]);
+                //}
 
-	startcount=(count+1);
-	count++;
-  }
-  else
-  {
+               // printf("\n");
+		
+		results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count);		
+		 if(strcmpi(evaltokens[count],"AND") == 0) results[resultcount++].and_or=CONDITION_AND;
+		 if(strcmpi(evaltokens[count],"OR") == 0) results[resultcount++].and_or=CONDITION_OR;
+
+		startcount=(count+1);
+		//printf("startcount=%d\n",startcount);
+		count++;
+
+ }
+ else
+ {
 	count++;
   }
 }
 
 // If there are no sub conditions, use whole expression
 
-if(resultcount == 0) return(EvaluateSingleCondition(evaltokens,start,end));
+if(resultcount == 0) {
+ printf("SINGLE CONDITION\n");
+
+ return(EvaluateSingleCondition(evaltokens,0,exprend));
+}
 
 count=0;
 overallresult=0;
 
+printf("resultcount=%d\n",resultcount);
+
 while(count < resultcount) {
+
  if(results[count].and_or == CONDITION_AND) {		// and
 
+ printf("results=%d %d %d\n",results[count].result,results[count+1], (results[count].result == results[count+1].result));
+
    overallresult = (results[count].result == results[count+1].result);
+   
+   printf("overallresult=%d\n",overallresult);
+
    count += 2;
  }
  else if(results[count].and_or == CONDITION_OR) {		// or
