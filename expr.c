@@ -113,9 +113,7 @@ val.d=atof(temp[0]);
 for(count=0;count<exprcount;count++)  {
 
  if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {
-  val.type=VAR_BOOL;
   val.d=EvaluateCondition(temp,count-1,count+2);
-
   break;  
  } 
 
@@ -292,6 +290,8 @@ varval val;
  exprtwo=0;
 
  for(exprpos=start;exprpos<end;exprpos++) {
+//	  printf("%s ",tokens[exprpos]);
+
 	  if(strcmp(tokens[exprpos],"=") == 0) {
 	   ifexpr=EQUAL;
 	   break;
@@ -318,6 +318,8 @@ varval val;
 	  }
  }
 
+	//printf("\nifexpr=%d\n",ifexpr);
+
 	if(ifexpr == -1) return(-1);
 
 	if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
@@ -330,8 +332,8 @@ varval val;
 	exprone=doexpr(tokens,start,exprpos);				/* do expression */
         exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
 
-	printf("exprone=%.6g\n",exprone);
-	printf("exprtwo=%.6g\n",exprtwo);
+	//printf("exprone=%.6g\n",exprone);
+	//printf("exprtwo=%.6g\n",exprtwo);
 
         exprtrue=0;
 
@@ -344,11 +346,11 @@ varval val;
 	   return(exprone != exprtwo);
 
           case LTHAN:						/* exprone < exprtwo */
-	   printf("is less-than=%d\n",exprone < exprtwo);
+	 //  printf("is less-than=%d\n",exprone < exprtwo);
 	   return(exprone < exprtwo);
 
           case GTHAN:						/* exprone > exprtwo */
-	   printf("is greater-than=%d\n",exprone > exprtwo);
+	 //  printf("is greater-than=%d\n",exprone > exprtwo);
 	   return(exprone > exprtwo);
 
           case EQLTHAN:	           /* exprone =< exprtwo */
@@ -385,70 +387,69 @@ struct {
 
 exprend=SubstituteVariables(start,end,tokens,evaltokens);
 
-printf("exprend=%d\n",exprend);
-
-startcount=1;
-
+startcount=start;
 count=start;
+resultcount=0;
 
 while(count < exprend) {
-  if(strcmpi(evaltokens[count],"THEN") == 0) break;
+ // printf("count=%s %d %d\n",evaltokens[count],count,exprend-1);
   
-  if((strcmpi(evaltokens[count],"AND") == 0) || (strcmpi(evaltokens[count],"OR") == 0) || count+1 >= printf) {
+  if((strcmpi(evaltokens[count],"AND") == 0) || (strcmpi(evaltokens[count],"OR") == 0) || (count >= exprend-1)) {
 		//printf("AND/OR FOUND\n");
 
-		//for(int countz=startcount;countz<count;countz++) {
-		//  printf("%s ",evaltokens[countz]);
-                //}
+		results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count+1);		
 
-               // printf("\n");
-		
-		results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count);		
-		 if(strcmpi(evaltokens[count],"AND") == 0) results[resultcount++].and_or=CONDITION_AND;
-		 if(strcmpi(evaltokens[count],"OR") == 0) results[resultcount++].and_or=CONDITION_OR;
+		//for(countx=startcount;countx<count+1;countx++) {
+		//  printf("%s ",evaltokens[countx]);
+		//}
 
+		//printf("\n");
+
+		if(strcmpi(evaltokens[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
+		if(strcmpi(evaltokens[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
+	
 		startcount=(count+1);
-		//printf("startcount=%d\n",startcount);
-		count++;
 
+		resultcount++;
  }
- else
- {
-	count++;
-  }
+
+ count++;
+}
+
+/* if there is more than one result and an odd number of results, set the last to end */
+
+if((resultcount > 1 ) && (resultcount % 2) != 0) {
+ results[resultcount-1].and_or=CONDITION_END;
 }
 
 // If there are no sub conditions, use whole expression
 
-if(resultcount == 0) {
- printf("SINGLE CONDITION\n");
+if(resultcount == 1) return(EvaluateSingleCondition(evaltokens,start,exprend));
 
- return(EvaluateSingleCondition(evaltokens,0,exprend));
-}
-
-count=0;
 overallresult=0;
-
-printf("resultcount=%d\n",resultcount);
+count=0;
 
 while(count < resultcount) {
-
  if(results[count].and_or == CONDITION_AND) {		// and
-
- printf("results=%d %d %d\n",results[count].result,results[count+1], (results[count].result == results[count+1].result));
-
-   overallresult = (results[count].result == results[count+1].result);
-   
-   printf("overallresult=%d\n",overallresult);
-
-   count += 2;
+   overallresult=(results[count++].result == results[count++].result);
  }
  else if(results[count].and_or == CONDITION_OR) {		// or
-   overallresult = (results[count].result || results[count+1].result);
-   count += 2;
+  overallresult=(results[count++].result || results[count++].result);
+ }
+ else if(results[count].and_or == CONDITION_END) {		// end
+  if(results[count-1].and_or == CONDITION_AND) {
+   overallresult = (results[count-1].result == results[count].result);
   }
+  else
+  {
+   overallresult = (results[count-1].result || results[count+1].result);
+  }
+
+  count++;
  }
 
- return(overallresult);
+}
+
+ return(overallresult);	/* return true or false */
 }
 

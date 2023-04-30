@@ -3,3 +3,5 @@ int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end);
 
 #define CONDITION_AND 0
 #define CONDITION_OR 1
+#define CONDITION_END 2
+

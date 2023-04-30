@@ -73,6 +73,9 @@ statement statements[] = { { "IF",&if_statement },\
       { "STRING",&bad_keyword_as_statement },\
       { "INTEGER",&bad_keyword_as_statement },\
       { "SINGLE",&bad_keyword_as_statement },\
+      { "AND",&bad_keyword_as_statement },\
+      { "OR",&bad_keyword_as_statement },\
+      { "NOT",&bad_keyword_as_statement },\
       { NULL,NULL } };
 
 extern functions *currentfunction;
@@ -390,7 +393,7 @@ int count;
 int countx;
 char *s[MAX_SIZE];
 char *sptr;
-int retval=0;
+double retval=0;
 
 start=1;
 SubstituteVariables(1,tc,tokens);  
@@ -433,14 +436,14 @@ for(count=1;count < tc;count++) {
 
 /* if it's a condition print True or False */
 
-  for(count=start;count<end;count++) {
-    if((strcmp(tokens[count],">") == 0) || (strcmp(tokens[count],"<") == 0) || (strcmp(tokens[count],"=") == 0)) {
+  for(countx=start;countx<end;countx++) {
+    if((strcmp(tokens[countx],">") == 0) || (strcmp(tokens[countx],"<") == 0) || (strcmp(tokens[countx],"=") == 0)) {
       retval == 1 ? printf("True") : printf("False");
       break;
     } 
   }
   
-  if(count == end) printf("%.6g ",retval);	/* Not conditional */
+  if(countx == end) printf("%.6g ",retval);	/* Not conditional */
 
   count=end;
  }
@@ -838,6 +841,8 @@ int exprtrue;
 char *d;
 int count;
 char *condition_tokens[MAX_SIZE][MAX_SIZE];
+char *condition_tokens_substituted[MAX_SIZE][MAX_SIZE];
+
 int condition_tc;
 
 if(tc < 1) {						/* Not enough parameters */
@@ -850,7 +855,8 @@ if(tc < 1) {						/* Not enough parameters */
 currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
 currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
 
-memcpy(condition_tokens,tokens,(tc*MAX_SIZE)*MAX_SIZE);		/* save copy of condition */
+memcpy(condition_tokens,tokens,((tc*MAX_SIZE)*MAX_SIZE)/sizeof(tokens));		/* save copy of condition */
+
 condition_tc=tc;
 
 currentfunction->stat |= WHILE_STATEMENT;
@@ -859,7 +865,6 @@ do {
       currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
       exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
-
       if(exprtrue == -1) {
        PrintError(BAD_CONDITION);
        return(-1);
@@ -876,6 +881,7 @@ do {
 	}
 
         if(strcmpi(tokens[0],"WEND") == 0) {
+         includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
          currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 	 return;
         }
@@ -1280,19 +1286,19 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
 /* check if starting with separator */
 
- if((strcmp(tokens[start],"(") != 0) && (strcmp(tokens[start],"[") != 0)) {
-   if(IsSeperator(tokens[start],separators) == 1) return(FALSE);
+ if((strcmp(tokens[start],"(") != 0) && (strcmp(tokens[start],"[") != 0)  && (strcmp(tokens[start],"") != 0)) {
+//   if(IsSeperator(tokens[start],separators) == 1) return(FALSE);
  } 
 
 /* check if ending with separator */
  if((strcmp(tokens[end],")") != 0) && (strcmp(tokens[end],"]") != 0)) {
-   if(IsSeperator(tokens[end],separators) == 1) return(FALSE);
+ //  if(IsSeperator(tokens[end],separators) == 1) return(FALSE);
  } 
 
  for(count=start;count<end;count++) {
 
 /* check if two separators are together */
-//
+
    if(IsSeperator(tokens[count],separators) == 1) {
     if((*tokens[count+1] != 0) && (IsSeperator(tokens[count+1],separators) == 1)) {
 
