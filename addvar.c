@@ -670,6 +670,7 @@ vars_t *vars;
 varval val;
 vars_t *parameters;
 int varstc;
+int endcount;
 
 next=funcs;						/* point to variables */
 
@@ -685,9 +686,9 @@ if(next == NULL) return(INVALID_STATEMENT);
 
 next->vars=NULL;		/* no vars to begin with */
 
-SubstituteVariables(start,end,tokens,tokens);			/* substitute variables */
+SubstituteVariables(start+2,end,tokens,tokens);			/* substitute variables */
 
-callstack[callpos].callptr=currentptr;	/* save information aboutn the calling function */
+callstack[callpos].callptr=currentptr;	/* save information about the calling function */
 callstack[callpos].funcptr=currentfunction;
 callpos++;
 
@@ -702,14 +703,10 @@ currentfunction->stat |= FUNCTION_STATEMENT;
 
 /* add variables from parameters */
 
-count=start+1;		/* skip function name and ( */
-
 parameters=next->parameters;
+count=start+2;		/* skip function name and ( */
 
-while(parameters != NULL) {
-
-  ParseVariableName(tokens,start,end,&split);
-
+while(parameters != NULL) { 
   CreateVariable(parameters->varname,parameters->type,split.x,split.y);
  
   switch(parameters->type) {
@@ -733,7 +730,7 @@ while(parameters != NULL) {
    UpdateVariable(parameters->varname,&val,split.x,split.y);
 
    parameters=parameters->next;   
-   count += 2;		/* skip , */
+   count++;		/* skip , */
 }
 
 /* do function */

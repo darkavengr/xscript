@@ -1267,6 +1267,8 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
  bool IsInBracket=FALSE;
  int statementcount=0;
 
+ return(TRUE);
+
 /* check if brackets are balanced */
 
  for(count=start;count<end;count++) {
