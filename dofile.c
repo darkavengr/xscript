@@ -236,11 +236,7 @@ if(tc == -1) {
  return(-1);
 }
 
-//for(count=0;count<tc;count++) {
-// printf("tokens[%d]=%s\n",count,tokens[count]);
-//}
-
-if(CheckSyntax(tokens,TokenCharacters,1,tc-1) == 0) {		/* check syntax */
+if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
  PrintError(SYNTAX_ERROR);
  return;
 }
@@ -1141,10 +1137,9 @@ int tc;
 int count;
 char *d;
 char *s;
-char *ns;
-char *nextns;
 char *nexttoken;
 int IsSeperator;
+char *b;
 
 token=linebuf;
 
@@ -1157,56 +1152,58 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
  
  d=tokens[0];
 
-while(*token != 0) {
- IsSeperator=FALSE;
+ while(*token != 0) {
+  IsSeperator=FALSE;
 
- if(*token == '"' ) {		/* quoted text */ 
-   *d++=*token++;
+  if(*token == '"' ) {		/* quoted text */ 
+    *d++=*token++;
 
-   while(*token != 0) {
-    *d=*token++;
-
-    if(*d == '"') break;		/* quoted text */	
-
-    d++;
-  }
-
-  tc++;
- }
- else
- {
-  s=split;
-
-  while(*s != 0) {
-   if(*token == *s) {		/* token found */
-    /* seperator character */
-
-    if(*token == ' ') {
-      d=tokens[++tc]; 
-      token++;     
-
-      IsSeperator=FALSE;     
-      break;
-    }
-    else
-    {
-     if(strlen(tokens[tc]) != 0) tc++;
-
-     d=tokens[tc]; 			
+    while(*token != 0) {
      *d=*token++;
-     d=tokens[++tc]; 		
 
-     IsSeperator=TRUE;     
-    }
+     if(*d == '"') break;		/* quoted text */	
 
-    break;
+     d++;
+   }
+
+   tc++;
+  }
+  else
+  {
+   s=split;
+
+   while(*s != 0) {
+    if(*token == *s) {		/* token found */
+    
+     if(*token == ' ') {
+      d=tokens[++tc]; 
+
+      token++;
+      IsSeperator=TRUE; 
+      break;
+     }
+     else
+     {
+      b=token;
+      b--;
+      if(strlen(tokens[tc]) != 0) tc++;
+     
+      d=tokens[tc]; 			
+      *d=*token++;
+      d=tokens[++tc]; 		
+
+      IsSeperator=TRUE;    
+     }
+
+     break;
+   }
+
+    s++;
   }
 
-   s++;
- }
+//  printf("*token=%c\n",*token);
 
- /* non-seperator character */
-  if(IsSeperator == FALSE) *d++=*token++;
+  if(IsSeperator == FALSE) *d++=*token++; /* non-seperator character */
  }
 }
 
@@ -1286,40 +1283,32 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
 
  if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
 
-/* check if starting with separator */
-
- if((strcmp(tokens[start],"(") != 0) && (strcmp(tokens[start],"[") != 0)  && (strcmp(tokens[start],"") != 0)) {
-//   if(IsSeperator(tokens[start],separators) == 1) return(FALSE);
- } 
-
-/* check if ending with separator */
- if((strcmp(tokens[end],")") != 0) && (strcmp(tokens[end],"]") != 0)) {
- //  if(IsSeperator(tokens[end],separators) == 1) return(FALSE);
- } 
-
  for(count=start;count<end;count++) {
 
 /* check if two separators are together */
 
-   if(IsSeperator(tokens[count],separators) == 1) {
-    if((*tokens[count+1] != 0) && (IsSeperator(tokens[count+1],separators) == 1)) {
+   if(*tokens[count] == 0) break;
+
+   if((IsSeperator(tokens[count],separators) == 1) && (IsSeperator(tokens[count+1],separators) == 1)) {
 
     
      /* brackets can be next to separators */
 
      if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
      if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
-
      if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
      if( (strcmp(tokens[count],")") != 0 && strcmp(tokens[count+1],")") == 0)) return(TRUE);
 
      if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
      if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
 
+     if( (strcmp(tokens[count],")") == 0) && (*tokens[count+1] == 0)) return(TRUE);
+     if( (strcmp(tokens[count],"]") == 0) && (*tokens[count+1] == 0)) return(TRUE);
+
      return(FALSE);
    }
   }
- }
+
 
    /* check if two non-separator tokens are next to each other */
 
@@ -1335,7 +1324,7 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
  * Convert to uppercase
  *
  * In: char *token	String to convert
-	 *
+ *
  * Returns -1 on error or 0 on success
  *
  */
@@ -1420,6 +1409,7 @@ int PrintError(int llcerr) {
 //  asm("int $3");
 
   printf("%s %d: %s %s\n",includefiles[ic].filename,includefiles[ic].lc,currentfunction->name,llcerrs[llcerr]);
+  exit(llcerr);
  }
 }
 
@@ -1429,7 +1419,7 @@ int PrintError(int llcerr) {
  * In: char *source		First string
        char *dest		Second string
  *
- * Returns: Nothing
+ * Returns: 0 if matches, positive or negative number otherwise
  *
  */
 int strcmpi(char *source,char *dest) {

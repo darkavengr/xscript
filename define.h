@@ -86,6 +86,11 @@
 #define SUBST_VAR	1
 #define SUBST_FUNCTION	2
 
+#define INTERACTIVE_BUFFER_SIZE 65536
+
+#define XSCRIPT_VERSION_MAJOR 1
+#define XSCRIPT_VERSION_MINOR 0
+
 #include <stdio.h>
 
 typedef struct {
@@ -147,6 +152,7 @@ typedef struct {
 typedef struct {
  char *statement;
  unsigned int (*call_statement)(int,void *);		/* function pointer */
+ int is_block_statement;
 } statement;
 
 typedef struct {
