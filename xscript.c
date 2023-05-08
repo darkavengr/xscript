@@ -38,7 +38,9 @@
  */
 
 extern char *TokenCharacters;
+
 void signalhandler(int sig);
+char *immediatecurrentptr=NULL;
 
 int main(int argc, char **argv) {
 int count;
@@ -51,6 +53,7 @@ char *tokens[MAX_SIZE][MAX_SIZE];
 char *endstatement[MAX_SIZE];
 int block_statement_nest_count=0;
 char *b;
+char *linebuf[MAX_SIZE];
 
 InitializeFunctions();						/* Initialize functions */
 
@@ -75,6 +78,7 @@ if(argc == 1) {					/* no arguments */
  }
 
  bufptr=buffer;
+ immediatecurrentptr=buffer;
 
  printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
@@ -114,12 +118,17 @@ if(argc == 1) {					/* no arguments */
   }
   
   if(block_statement_nest_count == 0) {
-   printf("%s",buffer);
-
    bufptr=buffer;
 
    do {
-  
+    printf("currentptr before=%lX\n",immediatecurrentptr);
+
+    immediatecurrentptr=ReadLineFromBuffer(immediatecurrentptr,linebuf,LINE_SIZE);			/* get data */	
+
+    printf("currentptr after=%lX\n",immediatecurrentptr);
+
+    printf("line=%s\n",linebuf);
+
     ExecuteLine(bufptr);			/* execute line */
 
     bufptr += strlen(bufptr);
@@ -128,6 +137,8 @@ if(argc == 1) {					/* no arguments */
     memset(buffer,0,INTERACTIVE_BUFFER_SIZE);
 
     bufptr=buffer;
+    immediatecurrentptr=buffer;
+
   }
   else
   {

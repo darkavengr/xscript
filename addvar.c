@@ -966,7 +966,7 @@ for(count=start;count<end;count++) {
 	    else
 	    {
 	      GetVariableValue(split.name,split.x,split.y,&val);
-	       strcpy(temp[outcount++],val.s);
+	      sprintf(temp[outcount++],"\"%s\"",val.s);
             }
 
 	    break;
@@ -1052,13 +1052,17 @@ while(*b != 0) {
 }
 
 for(count=start+1;count<end;count++) {
-
  if(strcmpi(tokens[count],"+") == 0) { 
+
+    if(GetVariableType(tokens[count+1]) != VAR_STRING) {	/* not a string literal or string variable */
+     PrintError(TYPE_ERROR);
+    }
 
     b=tokens[count+1];
     if(*b == '"') b++;			/* skip over quote */
 
     while(*b != 0) {			/* copy token */
+
      if(*b == '"') break;
      if(*b == 0) break;
 

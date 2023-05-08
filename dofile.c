@@ -87,7 +87,7 @@ char *endptr=NULL;		/* end of buffer */
 char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
-char *TokenCharacters="+-*/<>=!%~|& \t()[],";
+char *TokenCharacters="+-*/<>=!%~|& \t()[],{}";
 
 include includefiles[MAX_INCLUDE];	/* included files */
 
@@ -299,8 +299,7 @@ for(count=1;count<tc;count++) {
 	   return(TYPE_ERROR);
 	  }
 
-	  //ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
-	  strcpy(val.s,tokens[count+1]);
+	  ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
 
 	  UpdateVariable(split.name,&val,split.x,split.y);		/* set variable */
 
@@ -400,17 +399,11 @@ for(count=1;count < tc;count++) {
  /* if string literal, string variable or function returning string */
 
  if((c == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
-//  ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
+    count += ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
 
-/* remove quotes from string */
- 
-  sptr=tokens[count];
-  sptr++;
+    printf("%s ",val.s);
+    return;
 
-  memcpy(s,sptr,strlen(tokens[count])-2);
-
-  printf("%s ",s);
-  start++;
  }
  else
  {
@@ -495,19 +488,19 @@ currentfunction->stat |= IF_STATEMENT;
 
 while(*currentptr != 0) {
 
-if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {
+ if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
   exprtrue=EvaluateCondition(tokens,1,tc);
+
   if(exprtrue == -1) {
    PrintError(BAD_CONDITION);
    return(-1);
   }
 
-if(exprtrue == 1) {
+ if(exprtrue == 1) {
 		saveexprtrue=exprtrue;
 
 		do {
     		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-
 		if(*currentptr == 0) return;
 
 		ExecuteLine(buf);
@@ -1201,8 +1194,6 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
     s++;
   }
 
-//  printf("*token=%c\n",*token);
-
   if(IsSeperator == FALSE) *d++=*token++; /* non-seperator character */
  }
 }
@@ -1369,7 +1360,7 @@ memset(linebuf,0,size);
 l=linebuf;
 
 do {
- if(count++ == size) break;
+  if(count++ == size) break;
 
   *l++=*buf++;
   b=buf;
