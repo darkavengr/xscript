@@ -89,8 +89,6 @@ int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
 char *TokenCharacters="+-*/<>=!%~|& \t()[],{}";
 
-include includefiles[MAX_INCLUDE];	/* included files */
-
 /*
  * Load file
  *
@@ -102,7 +100,8 @@ include includefiles[MAX_INCLUDE];	/* included files */
 int LoadFile(char *filename) {
  FILE *handle; 
  int filesize;
- 
+ SAVEINFORMATION *info;
+
  handle=fopen(filename,"r");				/* open file */
  if(!handle) return(-1);						/* can't open */
 
@@ -127,9 +126,16 @@ int LoadFile(char *filename) {
   }
  }
 
- currentfunction->saveinformation[0].bufptr=readbuf;
- currentfunction->saveinformation[0].lc=0;
- currentfunction->nestcount=0;
+/* intialize function save stack */
+ currentfunction->saveinformation=malloc(sizeof(SAVEINFORMATION));
+ if(currentfunction->saveinformation == NULL) {
+   PrintError(NO_MEM);
+   return(NO_MEM);
+ }
+
+ currentfunction->saveinformation_top=currentfunction->saveinformation;	/* save top of stack */
+ currentfunction->saveinformation_top->bufptr=readbuf;
+ currentfunction->saveinformation_top->lc=0;
 
  currentptr=readbuf;
 
@@ -137,9 +143,6 @@ int LoadFile(char *filename) {
   PrintError(READ_ERROR);
   return(READ_ERROR);
  }
-
-
- strcpy(includefiles[ic].filename,filename);
 		
  endptr += filesize;		/* point to end */
  bufsize += filesize;
@@ -156,8 +159,9 @@ int LoadFile(char *filename) {
  */
 int ExecuteFile(char *filename) {
  char *linebuf[MAX_SIZE];
+ SAVEINFORMATION *info;
 
- includefiles[ic].lc=0;
+ currentfunction->lc=0;
  
  if(LoadFile(filename) == -1) {
   PrintError(FILE_NOT_FOUND);
@@ -167,18 +171,19 @@ int ExecuteFile(char *filename) {
 /* loop through lines and execute */
 
 do {
- currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;	/* save current buffer address */
-
+ info=currentfunction->saveinformation_top;		/* point to top of stack */
+ info->bufptr=currentptr;				/* save current buffer address */
+ 
  currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
- currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
+ info->lc=currentfunction->lc;				/* save line number */
 
  ExecuteLine(linebuf);			/* run statement */
 
 
  memset(linebuf,0,MAX_SIZE);
 
- includefiles[ic].lc++;
+ currentfunction->lc++;
 }    while(*currentptr != 0); 			/* until end */
 
  return(NO_ERROR);
@@ -211,7 +216,7 @@ int ExecuteLine(char *lbuf) {
  char *d;
  int start;
 
- includefiles[ic].lc++;						/* increment line counter */
+ currentfunction->lc++;						/* increment line counter */
 
  /* return if blank line */
 
@@ -453,9 +458,7 @@ return;
  */
 
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-int retval=AddModule(tokens[1]);
-
-if(retval > 0) {		/* load module */
+if(AddModule(tokens[1]) > 0) {		/* load module */
  PrintError(retval);
 }
 
@@ -478,18 +481,27 @@ int count;
 int countx;
 char *d;
 int exprtrue;
+SAVEINFORMATION *info;
 
 if(tc < 1) {						/* not enough parameters */
  PrintError(SYNTAX_ERROR);
  return(SYNTAX_ERROR);
 }
 
+info->next=malloc(sizeof(SAVEINFORMATION));
+if(info->next == NULL) {
+   PrintError(NO_MEM);
+   return(NO_MEM);
+ }
+
+info=info->next;
+
 currentfunction->stat |= IF_STATEMENT;
 
 while(*currentptr != 0) {
 
  if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
-  exprtrue=EvaluateCondition(tokens,1,tc);
+  exprtrue=EvaluateCondition(tokens,1,tc-1);
 
   if(exprtrue == -1) {
    PrintError(BAD_CONDITION);
@@ -594,6 +606,7 @@ char *d;
 char *buf[MAX_SIZE];
 int vartype;
 varsplit split;
+SAVEINFORMATION *info;
 
 if(tc < 4) {						/* Not enough parameters */
  PrintError(NO_PARAMS);
@@ -680,10 +693,7 @@ else
  ifexpr=0;
 }
 
-currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
-currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
-
-// printf("startptr=%lX\n",currentptr);
+PushSaveInformation();					/* save line information */
 
  while((ifexpr == 1 && loopcount.d > exprtwo) || (ifexpr == 0 && loopcount.d < exprtwo)) {
 	    currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
@@ -700,34 +710,29 @@ currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic]
 		 return(-1);
 	     }
 
+
   	     if(strcmpi(tokens[0],"NEXT") == 0) {
 
-	      includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
-
-	      currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;		/* restore position */   	    
-
-			
+	      info=currentfunction->saveinformation_top;
+	      currentptr=info->bufptr;
+	      currentfunction->lc=info->lc;
+	
 	      if(ifexpr == 1) loopcount.d=loopcount.d-steppos;					/* increment or decrement counter */
  	      if(ifexpr == 0) loopcount.d=loopcount.d+steppos;      
 		
 	      UpdateVariable(split.name,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
               if(*currentptr == 0) {
-	          if(currentfunction->nestcount-1 > 0) currentfunction->nestcount--;
-               
+	       PopSaveInformation();               
 	       currentfunction->stat &= FOR_STATEMENT;
 
 	       PrintError(SYNTAX_ERROR);
 	       return(SYNTAX_ERROR);
               }
-
-		
 	    }	   
      }
 
-  if(currentfunction->nestcount-1 > 0) currentfunction->nestcount--;
-  currentfunction->stat &= FOR_STATEMENT;
-  return;
+   return;
  }
 
 /*
@@ -831,8 +836,8 @@ char *d;
 int count;
 char *condition_tokens[MAX_SIZE][MAX_SIZE];
 char *condition_tokens_substituted[MAX_SIZE][MAX_SIZE];
-
 int condition_tc;
+SAVEINFORMATION *info;
 
 if(tc < 1) {						/* Not enough parameters */
  PrintError(SYNTAX_ERROR);
@@ -840,9 +845,9 @@ if(tc < 1) {						/* Not enough parameters */
 }
 
 //asm("int $3");
-
-currentfunction->saveinformation[currentfunction->nestcount].bufptr=currentptr;
-currentfunction->saveinformation[currentfunction->nestcount].lc=includefiles[ic].lc;
+info=currentfunction->saveinformation_top;
+info->bufptr=currentptr;
+info->lc=currentfunction->lc;
 
 memcpy(condition_tokens,tokens,((tc*MAX_SIZE)*MAX_SIZE)/sizeof(tokens));		/* save copy of condition */
 
@@ -870,7 +875,7 @@ do {
 	}
 
         if(strcmpi(tokens[0],"WEND") == 0) {
-         includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
+         currentfunction->lc=info->lc;				/* get line number */
          currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 	 return;
         }
@@ -885,8 +890,8 @@ do {
      }
 
       if(strcmpi(tokens[0],"WEND") == 0) {
-       includefiles[ic].lc;currentfunction->saveinformation[currentfunction->nestcount].lc;
-       currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;
+       currentfunction->lc=info->lc;
+       currentptr=info->bufptr;
       }
 
      ExecuteLine(buf);
@@ -1087,8 +1092,15 @@ int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  */
 
 int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+SAVEINFORMATION *info;
+
+info=currentfunction->saveinformation_top;
+info->bufptr=currentptr;
+info->lc=currentfunction->lc;
+
  if(((currentfunction->stat & FOR_STATEMENT)) || ((currentfunction->stat & WHILE_STATEMENT))) {
-  currentptr=currentfunction->saveinformation[currentfunction->nestcount].bufptr;
+  info=currentfunction->saveinformation_top;  
+  currentptr=info->bufptr;
   return(0);
  }
 
@@ -1391,17 +1403,8 @@ return(buf);			/* return new position */
  */
 
 int PrintError(int llcerr) {
- if(*includefiles[ic].filename == 0) {			/* if in interactive mode */
-  printf("Error in function %s: %s\n",currentfunction->name,llcerrs[llcerr]);
- }
- else
- {
-//  printf("line=%lX\n",currentptr);
-//  asm("int $3");
-
-  printf("%s %d: %s %s\n",includefiles[ic].filename,includefiles[ic].lc,currentfunction->name,llcerrs[llcerr]);
-  exit(llcerr);
- }
+ printf("Error in function %s (line %d): %s\n",currentfunction->name,currentfunction->lc,llcerrs[llcerr]);
+ exit(llcerr);
 }
 
 /*
@@ -1439,3 +1442,57 @@ char *GetCurrentBufferAddress(void) {
 char *SetCurrentBufferAddress(char *addr) {
  currentptr=addr;
 }
+
+int PushSaveInformation(void) {
+SAVEINFORMATION *info;
+SAVEINFORMATION *previousinfo;
+
+if(currentfunction->saveinformation_top == NULL) {
+ currentfunction->saveinformation_top=malloc(sizeof(SAVEINFORMATION));		/* allocate new entry */
+
+ if(currentfunction->saveinformation_top == NULL) {
+  PrintError(NO_MEM);
+  return(-1);
+ }
+
+ info=currentfunction->saveinformation_top;
+ info->last=NULL;
+}
+else
+{
+ previousinfo=currentfunction->saveinformation_top;		/* point to top */
+
+ previousinfo->next=malloc(sizeof(SAVEINFORMATION));		/* allocate new entry */
+ if(previousinfo->next == NULL) {
+  PrintError(NO_MEM);
+  return(-1);
+ }
+
+ info=previousinfo->next;
+ info->last=previousinfo;					/* link previous to next */
+}
+
+info->bufptr=currentptr;
+info->lc=currentfunction->lc;
+info->next=NULL;
+
+currentfunction->saveinformation_top=info;
+}
+
+int PopSaveInformation(void) {
+SAVEINFORMATION *info;
+SAVEINFORMATION *previousinfo;
+
+info=currentfunction->saveinformation_top;
+
+previousinfo=info;
+currentfunction->saveinformation_top=info->last;		/* point to previous */
+
+free(previousinfo);
+
+currentptr=currentfunction->saveinformation_top->bufptr;
+currentfunction->lc=currentfunction->saveinformation_top->lc;
+
+}
+
+

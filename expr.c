@@ -290,8 +290,6 @@ varval val;
  exprtwo=0;
 
  for(exprpos=start;exprpos<end;exprpos++) {
-//	  printf("%s ",tokens[exprpos]);
-
 	  if(strcmp(tokens[exprpos],"=") == 0) {
 	   ifexpr=EQUAL;
 	   break;
@@ -318,22 +316,26 @@ varval val;
 	  }
  }
 
-	//printf("\nifexpr=%d\n",ifexpr);
-
 	if(ifexpr == -1) return(-1);
 
 	if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	 ConatecateStrings(start,exprpos,tokens,&val);					/* join all the strings on the line */
-	 ConatecateStrings(exprpos+1,end,tokens,&val);					/* join all the strings on the line */
+
+	 for(count=start;count<exprpos;count++) {
+           printf("xxx=%s\n",tokens[count]);
+         }
+
+	 for(count=exprpos+1;count<end;count++) {
+           printf("yyy=%s\n",tokens[count]);
+         }
+
+	 ConatecateStrings(start,exprpos+1,tokens,&val);					/* join all the strings on the line */
+	 ConatecateStrings(exprpos,end,tokens,&val);					/* join all the strings on the line */
 
 	 return(!strcmp(tokens[exprpos-1],tokens[exprpos+1]));
 	}
 
 	exprone=doexpr(tokens,start,exprpos);				/* do expression */
         exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
-
-	//printf("exprone=%.6g\n",exprone);
-	//printf("exprtwo=%.6g\n",exprtwo);
 
         exprtrue=0;
 
@@ -346,11 +348,9 @@ varval val;
 	   return(exprone != exprtwo);
 
           case LTHAN:						/* exprone < exprtwo */
-	 //  printf("is less-than=%d\n",exprone < exprtwo);
 	   return(exprone < exprtwo);
 
           case GTHAN:						/* exprone > exprtwo */
-	 //  printf("is greater-than=%d\n",exprone > exprtwo);
 	   return(exprone > exprtwo);
 
           case EQLTHAN:	           /* exprone =< exprtwo */
@@ -392,18 +392,9 @@ count=start;
 resultcount=0;
 
 while(count < exprend) {
- // printf("count=%s %d %d\n",evaltokens[count],count,exprend-1);
   
   if((strcmpi(evaltokens[count],"AND") == 0) || (strcmpi(evaltokens[count],"OR") == 0) || (count >= exprend-1)) {
-		//printf("AND/OR FOUND\n");
-
 		results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count+1);		
-
-		//for(countx=startcount;countx<count+1;countx++) {
-		//  printf("%s ",evaltokens[countx]);
-		//}
-
-		//printf("\n");
 
 		if(strcmpi(evaltokens[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
 		if(strcmpi(evaltokens[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;

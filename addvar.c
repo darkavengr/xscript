@@ -134,6 +134,8 @@ statementcount=0;
 
 /* Add entry to variable list */
 
+printf("currentfunction=%lX\n",currentfunction);
+
 if(currentfunction->vars == NULL) {			/* first entry */
   currentfunction->vars=malloc(sizeof(vars_t));		/* add new item to list */
   if(currentfunction->vars == NULL) return(NO_MEM);	/* can't resize */
