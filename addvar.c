@@ -35,24 +35,17 @@
 
 extern varval retval;
 functions *funcs=NULL;
-functions *currentfunction=NULL;
-record *records=NULL;
+FUNCTIONCALLSTACK *currentfunction=NULL;
 
 char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
 
 extern char *currentptr;
 extern statement statements[];
 
-struct {
- char *callptr;
- functions *funcptr;
- int lc;
-} callstack[MAX_NEST_COUNT];
-
 int callpos=0;
 
 /*
- * Initalize function list
+ * Initalize function call stack;
  *
  * In: Nothing
  *
@@ -63,18 +56,13 @@ int callpos=0;
 extern char *TokenCharacters;
 
 int InitializeFunctions(void) {
-funcs=malloc(sizeof(funcs));		/* functions */
-if(funcs == NULL) {
- PrintError(NO_MEM);
- return(-1);
-}
+FUNCTIONCALLSTACK newfunc;
 
-memset(funcs,0,sizeof(funcs));
+memset(&newfunc,0,sizeof(FUNCTIONCALLSTACK));
+strcpy(newfunc.name,"main");
 
-currentfunction=funcs;
+PushFunctionCallInformation(&newfunc);
 
-callstack[0].funcptr=funcs;
-strcpy(currentfunction->name,"main");		/* set function name */
 return(0);
 }
 
@@ -133,8 +121,6 @@ do {
 statementcount=0;
 
 /* Add entry to variable list */
-
-printf("currentfunction=%lX\n",currentfunction);
 
 if(currentfunction->vars == NULL) {			/* first entry */
   currentfunction->vars=malloc(sizeof(vars_t));		/* add new item to list */
@@ -591,7 +577,6 @@ int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount) {
  paramsptr->ysize=0;
  paramsptr->val=NULL;
 
- next->vars=NULL;
  next->funcstart=currentptr;
 
  if(strcmpi(tokens[count+1], "AS") == 0) count += 3;		/* skip as and type */
@@ -614,7 +599,7 @@ if(strcmpi(tokens[funcargcount-1], "AS") == 0) {		/* type */
  if(vartypenames[typecount] == NULL)  typecount=0;
 }
 
-next->return_type=typecount;
+next->returntype=typecount;
 
 /* find end of function */
 
@@ -673,6 +658,7 @@ varval val;
 vars_t *parameters;
 int varstc;
 int endcount;
+FUNCTIONCALLSTACK newfunc;
 
 next=funcs;						/* point to variables */
 
@@ -686,22 +672,24 @@ while(next != NULL) {
 
 if(next == NULL) return(INVALID_STATEMENT);
 
-next->vars=NULL;		/* no vars to begin with */
-
 SubstituteVariables(start+2,end,tokens,tokens);			/* substitute variables */
 
-callstack[callpos].callptr=currentptr;	/* save information about the calling function */
-callstack[callpos].funcptr=currentfunction;
-callpos++;
+/* save information about the calling function. The calling function is already on the stack */
 
-callstack[callpos].callptr=next->funcstart;	/* information about the current function */
-callstack[callpos].funcptr=next;
+currentfunction->callptr=currentptr;
 
-currentfunction=next;
+/* save information about the called function */
+memset(&newfunc,0,sizeof(FUNCTIONCALLSTACK));
+
+strcpy(newfunc.name,next->name);
+
+newfunc.callptr=next->funcstart;
 currentptr=next->funcstart;
+newfunc.lc=next->lc;
+newfunc.stat |= FUNCTION_STATEMENT;
+newfunc.returntype=next->returntype;
 
-currentfunction->stat |= FUNCTION_STATEMENT;
-
+PushFunctionCallInformation(&newfunc);
 
 /* add variables from parameters */
 
@@ -774,12 +762,7 @@ return;
 }
 
 int ReturnFromFunction(void) {
-
-if(callpos-1 >= 0) {
- callpos--;
- currentfunction=callstack[callpos].funcptr;  
- currentptr=callstack[callpos].callptr;	/* restore information about the calling function */
- }
+PopFunctionCallInformation();
 }
 
 /*
@@ -1121,5 +1104,51 @@ while(next != NULL) {
 }
 
 return(-1);
+}
+
+int PushFunctionCallInformation(FUNCTIONCALLSTACK *func) {
+FUNCTIONCALLSTACK *next;
+FUNCTIONCALLSTACK *previous;
+
+if(currentfunction == NULL) {
+ currentfunction=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
+
+ if(currentfunction == NULL) {
+  PrintError(NO_MEM);
+  return(-1);
+ }
+
+ currentfunction->last=NULL;
+ next=currentfunction;
+}
+else
+{
+ currentfunction->next=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
+ if(currentfunction->next == NULL) {
+  PrintError(NO_MEM);
+  return(-1);
+ }
+
+next=currentfunction->next;
+}
+
+memset(next,0,sizeof(FUNCTIONCALLSTACK));
+memcpy(next,func,sizeof(FUNCTIONCALLSTACK));
+
+previous=currentfunction;
+currentfunction=next;
+next->last=previous;
+next->next=NULL;
+}
+
+int PopFunctionCallInformation(void) {
+FUNCTIONCALLSTACK *thisfunction;
+
+thisfunction=currentfunction;
+
+currentfunction=currentfunction->last;
+
+currentptr=currentfunction->callptr;
+free(thisfunction);
 }
 

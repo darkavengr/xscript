@@ -78,8 +78,8 @@ statement statements[] = { { "IF",&if_statement },\
       { "NOT",&bad_keyword_as_statement },\
       { NULL,NULL } };
 
-extern functions *currentfunction;
-extern functions *funcs;
+extern FUNCTIONCALLSTACK *currentfunction;
+extern FUNCTIONCALLSTACK *funcs;
 extern char *vartypenames[];
 
 char *currentptr=NULL;		/* current pointer in buffer */
@@ -100,7 +100,6 @@ char *TokenCharacters="+-*/<>=!%~|& \t()[],{}";
 int LoadFile(char *filename) {
  FILE *handle; 
  int filesize;
- SAVEINFORMATION *info;
 
  handle=fopen(filename,"r");				/* open file */
  if(!handle) return(-1);						/* can't open */
@@ -125,17 +124,6 @@ int LoadFile(char *filename) {
    return(NO_MEM);
   }
  }
-
-/* intialize function save stack */
- currentfunction->saveinformation=malloc(sizeof(SAVEINFORMATION));
- if(currentfunction->saveinformation == NULL) {
-   PrintError(NO_MEM);
-   return(NO_MEM);
- }
-
- currentfunction->saveinformation_top=currentfunction->saveinformation;	/* save top of stack */
- currentfunction->saveinformation_top->bufptr=readbuf;
- currentfunction->saveinformation_top->lc=0;
 
  currentptr=readbuf;
 
@@ -171,15 +159,9 @@ int ExecuteFile(char *filename) {
 /* loop through lines and execute */
 
 do {
- info=currentfunction->saveinformation_top;		/* point to top of stack */
- info->bufptr=currentptr;				/* save current buffer address */
- 
  currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
- info->lc=currentfunction->lc;				/* save line number */
-
  ExecuteLine(linebuf);			/* run statement */
-
 
  memset(linebuf,0,MAX_SIZE);
 
@@ -756,12 +738,12 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 /* check return type */
 
  for(count=1;count<tc;count++) {
-  if((*tokens[count] >= '0' && *tokens[count] <= '9') && (currentfunction->return_type == VAR_STRING)) {
+  if((*tokens[count] >= '0' && *tokens[count] <= '9') && (currentfunction->returntype == VAR_STRING)) {
    PrintError(TYPE_ERROR);
    return(-1);
   }
 
-  if((*tokens[count] == '"') && (currentfunction->return_type != VAR_STRING)) {
+  if((*tokens[count] == '"') && (currentfunction->returntype != VAR_STRING)) {
    PrintError(TYPE_ERROR);
    return(-1);
   }
@@ -769,12 +751,12 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   vartype=GetVariableType(tokens[count]);
 
   if(vartype != -1) {
-   if((currentfunction->return_type == VAR_STRING) && (vartype != VAR_STRING)) {
+   if((currentfunction->returntype == VAR_STRING) && (vartype != VAR_STRING)) {
     PrintError(TYPE_ERROR);
     return(-1);
    }
 
-   if((currentfunction->return_type != VAR_STRING) && (vartype == VAR_STRING)) {
+   if((currentfunction->returntype != VAR_STRING) && (vartype == VAR_STRING)) {
     PrintError(TYPE_ERROR);
     return(-1);
    }
@@ -783,19 +765,19 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 }
 
 
- retval.type=currentfunction->return_type;		/* get return type */
+ retval.type=currentfunction->returntype;		/* get return type */
 
- if(currentfunction->return_type == VAR_STRING) {		/* returning string */
+ if(currentfunction->returntype == VAR_STRING) {		/* returning string */
   ConatecateStrings(1,tc,tokens,&retval);		/* get strings */
   return;
  }
- else if(currentfunction->return_type == VAR_INTEGER) {		/* returning integer */
+ else if(currentfunction->returntype == VAR_INTEGER) {		/* returning integer */
   retval.i=doexpr(tokens,1,tc);
  }
- else if(currentfunction->return_type == VAR_NUMBER) {		/* returning double */	 
+ else if(currentfunction->returntype == VAR_NUMBER) {		/* returning double */	 
 	 retval.d=doexpr(tokens,1,tc);
  }
- else if(currentfunction->return_type == VAR_SINGLE) {		/* returning single */
+ else if(currentfunction->returntype == VAR_SINGLE) {		/* returning single */
 	 retval.f=doexpr(tokens,1,tc);	
  }
 

@@ -112,11 +112,6 @@ typedef struct {
 } vars_t;
 
 typedef struct {
- char *recordname[MAX_SIZE];
- vars_t rdata[MAX_SIZE];
-} record;
-
-typedef struct {
  char *name[MAX_SIZE];
  int x;
  int y;
@@ -134,16 +129,25 @@ typedef struct {
  char *name[MAX_SIZE];
  char *funcstart;
  int funcargcount;
- int stat;	
- int lastlooptype;
- int return_type;
- SAVEINFORMATION *saveinformation;
- SAVEINFORMATION *saveinformation_top;
- vars_t *vars;
+ int returntype;
  vars_t *parameters;
  int lc;
  struct functions *next;
 } functions;
+
+typedef struct {
+ char *name[MAX_SIZE];
+ char *callptr;
+ int lc;
+ SAVEINFORMATION *saveinformation;
+ SAVEINFORMATION *saveinformation_top;
+ vars_t *vars;
+ int stat;	
+ int returntype;
+ int lastlooptype;
+ struct FUNCTIONCALLSTACK *next;
+ struct FUNCTIONCALLSTACK *last;
+} FUNCTIONCALLSTACK;
 
 typedef struct {
  char *statement;
