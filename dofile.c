@@ -800,7 +800,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  }
 
 ReturnFromFunction();			/* return */
- return;
+return;
 }
 
 int get_return_value(varval *val) {
@@ -844,10 +844,7 @@ if(tc < 1) {						/* Not enough parameters */
  return(SYNTAX_ERROR);
 }
 
-//asm("int $3");
-info=currentfunction->saveinformation_top;
-info->bufptr=currentptr;
-info->lc=currentfunction->lc;
+PushSaveInformation();					/* save line information */
 
 memcpy(condition_tokens,tokens,((tc*MAX_SIZE)*MAX_SIZE)/sizeof(tokens));		/* save copy of condition */
 
@@ -875,7 +872,7 @@ do {
 	}
 
         if(strcmpi(tokens[0],"WEND") == 0) {
-         currentfunction->lc=info->lc;				/* get line number */
+         PopSaveInformation();               
          currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 	 return;
         }
@@ -890,14 +887,16 @@ do {
      }
 
       if(strcmpi(tokens[0],"WEND") == 0) {
-       currentfunction->lc=info->lc;
+       info=currentfunction->saveinformation_top;
        currentptr=info->bufptr;
+       currentfunction->lc=info->lc;
       }
 
      ExecuteLine(buf);
   } while(exprtrue == 1);
   
 
+PopSaveInformation();               
 }
 
 /*
