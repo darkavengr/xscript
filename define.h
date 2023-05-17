@@ -151,6 +151,7 @@ typedef struct {
 
 typedef struct {
  char *statement;
+ char *endstatement;
  unsigned int (*call_statement)(int,void *);		/* function pointer */
  int is_block_statement;
 } statement;

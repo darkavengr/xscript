@@ -46,37 +46,37 @@ varval retval;
 
 /* statements */
 			  
-statement statements[] = { { "IF",&if_statement },\
-      { "ELSE",&else_statement },\
-      { "ENDIF",&endif_statement },\
-      { "FOR",&for_statement },\
-      { "WHILE",&while_statement },\
-      { "WEND",&wend_statement },\
-      { "PRINT",&print_statement },\
-      { "IMPORT",&import_statement },\ 
-      { "END",&end_statement },\ 
-      { "FUNCTION",&function_statement },\ 
-      { "ENDFUNCTION",&endfunction_statement },\ 
-      { "RETURN",&return_statement },\ 
-      { "INCLUDE",&include_statement },\ 
-      { "DECLARE",&declare_statement },\
-      { "RUN",&run_statement },\
-      { "CONTINUE",&continue_statement },\
-      { "NEXT",&next_statement },\
-      { "BREAK",&break_statement },\
-      { "AS",&bad_keyword_as_statement },\
-      { "TO",&bad_keyword_as_statement },\
-      { "STEP",&bad_keyword_as_statement },\
-      { "THEN",&bad_keyword_as_statement },\
-      { "AS",&bad_keyword_as_statement },\
-      { "DOUBLE",&bad_keyword_as_statement },\
-      { "STRING",&bad_keyword_as_statement },\
-      { "INTEGER",&bad_keyword_as_statement },\
-      { "SINGLE",&bad_keyword_as_statement },\
-      { "AND",&bad_keyword_as_statement },\
-      { "OR",&bad_keyword_as_statement },\
-      { "NOT",&bad_keyword_as_statement },\
-      { NULL,NULL } };
+statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
+      { "ELSE",NULL,&else_statement,FALSE},\
+      { "ENDIF",NULL,&endif_statement,FALSE},\
+      { "FOR","NEXT",&for_statement,TRUE},\
+      { "WHILE","WEND",&while_statement,TRUE},\
+      { "WEND",NULL,&wend_statement,FALSE},\
+      { "PRINT",NULL,&print_statement,FALSE},\
+      { "IMPORT",NULL,&import_statement,FALSE},\ 
+      { "END",NULL,&end_statement,FALSE},\ 
+      { "FUNCTION","ENDFUNCTION",&function_statement,TRUE},\ 
+      { "ENDFUNCTION",NULL,&endfunction_statement,FALSE},\ 
+      { "RETURN",NULL,&return_statement,FALSE},\ 
+      { "INCLUDE",NULL,&include_statement,FALSE},\ 
+      { "DECLARE",NULL,&declare_statement,FALSE},\
+      { "RUN",NULL,&run_statement,FALSE},\
+      { "CONTINUE",NULL,&continue_statement,FALSE},\
+      { "NEXT",NULL,&next_statement,FALSE},\
+      { "BREAK",NULL,&break_statement,FALSE},\
+      { "AS",NULL,&bad_keyword_as_statement,FALSE},\
+      { "TO",NULL,&bad_keyword_as_statement,FALSE},\
+      { "STEP",NULL,&bad_keyword_as_statement,FALSE},\
+      { "THEN",NULL,&bad_keyword_as_statement,FALSE},\
+      { "AS",NULL,&bad_keyword_as_statement,FALSE},\
+      { "DOUBLE",NULL,&bad_keyword_as_statement,FALSE},\
+      { "STRING",NULL,&bad_keyword_as_statement,FALSE},\
+      { "INTEGER",NULL,&bad_keyword_as_statement,FALSE},\
+      { "SINGLE",NULL,&bad_keyword_as_statement,FALSE},\
+      { "AND",NULL,&bad_keyword_as_statement,FALSE},\
+      { "OR",NULL,&bad_keyword_as_statement,FALSE},\
+      { "NOT",NULL,&bad_keyword_as_statement,FALSE},\
+      { NULL,NULL,NULL } };
 
 extern FUNCTIONCALLSTACK *currentfunction;
 extern FUNCTIONCALLSTACK *funcs;
@@ -88,6 +88,7 @@ char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
 char *TokenCharacters="+-*/<>=!%~|& \t()[],{}";
+int InteractiveModeFlag=FALSE;
 
 /*
  * Load file
@@ -239,7 +240,7 @@ do {
 
  if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  
 
-  if(statements[statementcount].call_statement(tc,tokens) == -1) exit(-1);		/* call statement and exit if error */
+  if(statements[statementcount].call_statement(tc,tokens) > 0) return(-1);		/* call statement and exit if error */
   statementcount=0;
 
   return(0);
@@ -334,8 +335,7 @@ for(count=1;count<tc;count++) {
 }
 
 PrintError(INVALID_STATEMENT);
-
-return;
+return(-1);
 }
 
 /*
@@ -470,15 +470,9 @@ if(tc < 1) {						/* not enough parameters */
  return(SYNTAX_ERROR);
 }
 
-info->next=malloc(sizeof(SAVEINFORMATION));
-if(info->next == NULL) {
-   PrintError(NO_MEM);
-   return(NO_MEM);
- }
-
-info=info->next;
-
 currentfunction->stat |= IF_STATEMENT;
+
+printf("ifptr=%lX\n",currentptr);
 
 while(*currentptr != 0) {
 
@@ -1089,10 +1083,6 @@ info->lc=currentfunction->lc;
  return(CONTINUE_NO_LOOP);
 }
 
-int record_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-
-}
-
 /*
  * Non-statement keyword as statement
  *
@@ -1165,7 +1155,6 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
       d=tokens[++tc]; 
 
       token++;
-      IsSeperator=TRUE; 
       break;
      }
      else
@@ -1187,11 +1176,15 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
     s++;
   }
 
-  if(IsSeperator == FALSE) *d++=*token++; /* non-seperator character */
+  if(IsSeperator == FALSE) *d++=*token++; /* non-token character */
  }
 }
 
 if(strlen(tokens[tc]) > 0) tc++;		/* if there is data in the last token, increment the counter so it is accounted for */
+
+//for(count=0;count<tc;count++) {
+// printf("%s\n",tokens[count]);
+//}
 
 return(tc);
 }
@@ -1384,8 +1377,14 @@ return(buf);			/* return new position */
  */
 
 int PrintError(int llcerr) {
- printf("Error in function %s (line %d): %s\n",currentfunction->name,currentfunction->lc,llcerrs[llcerr]);
- exit(llcerr);
+ if(GetInteractiveModeFlag() == TRUE) {
+  printf("Error in function %s: %s\n",currentfunction->name,llcerrs[llcerr]);  
+ }
+ else
+ {
+  printf("Error in function %s (line %d): %s\n",currentfunction->name,currentfunction->lc,llcerrs[llcerr]);
+  exit(llcerr);
+ }
 }
 
 /*
@@ -1476,4 +1475,111 @@ currentfunction->lc=currentfunction->saveinformation_top->lc;
 
 }
 
+void InteractiveMode(void) {
+char *tokens[MAX_SIZE][MAX_SIZE];
+char *endstatement[MAX_SIZE];
+int block_statement_nest_count=0;
+char *b;
+char *linebuf[MAX_SIZE];
+char *buffer;
+char *bufptr;
+int statementcount;
+
+SetInteractiveModeFlag(TRUE);
+
+buffer=malloc(INTERACTIVE_BUFFER_SIZE);		/* allocate buffer for interactive mode */
+if(buffer == NULL) {
+  perror("xscript");
+  exit(NO_MEM);
+}
+
+bufptr=buffer;
+currentptr=buffer;
+
+printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
+
+while(1) {
+
+ if(block_statement_nest_count == 0) {
+	printf(">");
+ }
+ else
+ {
+	printf("...");
+ }
+
+ fgets(bufptr,MAX_SIZE,stdin);			/* read line */
+
+ TokenizeLine(bufptr,tokens,TokenCharacters);			/* tokenize line */
+
+ /* remove newline */
+
+ if(strlen(tokens[0]) > 1) {
+     b=tokens[0];
+     b += (strlen(tokens[0])-1);
+     if((*b == '\n') || (*b == '\r')) *b=0;
+ }
+
+ touppercase(tokens[0]);
+
+ statementcount=0;
+
+ do {
+   if(statements[statementcount].statement == NULL) break;
+ 
+   if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  
+
+    if(statements[statementcount].is_block_statement == TRUE) {
+
+      strcpy(endstatement,statements[statementcount].endstatement);
+      block_statement_nest_count++;      
+    }
+
+    break;
+   }
+
+   statementcount++;
+  
+ } while(statements[statementcount].statement != NULL);
+
+      
+ if(strcmp(tokens[0],endstatement) == 0) {
+    block_statement_nest_count--;
+
+    bufptr=buffer;
+ }
+  
+ if(block_statement_nest_count == 0) {
+   bufptr=buffer;
+
+   do {
+    currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */	
+
+    if(ExecuteLine(bufptr) == -1) return;	/* return on error */
+
+    bufptr += strlen(bufptr);
+
+  } while(*bufptr != 0);
+
+    memset(buffer,0,INTERACTIVE_BUFFER_SIZE);
+
+    bufptr=buffer;
+    currentptr=buffer;
+
+ }
+ else
+ {
+   bufptr += strlen(bufptr);
+ }
+
+ } 
+}
+
+int GetInteractiveModeFlag(void) {
+ return(InteractiveModeFlag);
+}
+
+int SetInteractiveModeFlag(int mode) {
+ InteractiveModeFlag=mode;
+}
 

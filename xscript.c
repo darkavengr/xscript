@@ -40,20 +40,13 @@
 extern char *TokenCharacters;
 
 void signalhandler(int sig);
-char *immediatecurrentptr=NULL;
+extern char *currentptr;
 
 int main(int argc, char **argv) {
 int count;
 char *args[MAX_SIZE];
 char *filename=NULL;
-char *buffer;
-char *bufptr;
 varval cmdargs;
-char *tokens[MAX_SIZE][MAX_SIZE];
-char *endstatement[MAX_SIZE];
-int block_statement_nest_count=0;
-char *b;
-char *linebuf[MAX_SIZE];
 
 InitializeFunctions();						/* Initialize functions */
 
@@ -71,82 +64,7 @@ if(argc == 1) {					/* no arguments */
  strcpy(cmdargs.s,argv[0]);
  UpdateVariable("argv",&cmdargs,0,0);
 
- buffer=malloc(INTERACTIVE_BUFFER_SIZE);		/* allocate buffer for interactive mode */
- if(buffer == NULL) {
-  perror("xscript");
-  exit(NO_MEM);
- }
-
- bufptr=buffer;
- immediatecurrentptr=buffer;
-
- printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
-
- while(1) {
-  if(block_statement_nest_count == 0) {
-	printf(">");
-  }
-  else
-  {
-	printf("...");
-  }
-
-  fgets(bufptr,MAX_SIZE,stdin);			/* read line */
-
-  TokenizeLine(bufptr,tokens,TokenCharacters);			/* tokenize line */
-
-/* remove newline */
-
-   if(strlen(tokens[0]) > 1) {
-     b=tokens[0];
-     b += (strlen(tokens[0])-1);
-     if((*b == '\n') || (*b == '\r')) *b=0;
-   }
-
-  touppercase(tokens[0]);
-
-  if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"WHILE") == 0) || (strcmpi(tokens[0],"FOR") == 0) || (strcmpi(tokens[0],"FUNCTION") == 0)) {
-   sprintf(endstatement,"END%s",tokens[0]);
-   
-   block_statement_nest_count++;
-  }
- 
-  if(strcmp(tokens[0],endstatement) == 0) {
-    block_statement_nest_count--;
-
-    bufptr=buffer;
-  }
-  
-  if(block_statement_nest_count == 0) {
-   bufptr=buffer;
-
-   do {
-    printf("currentptr before=%lX\n",immediatecurrentptr);
-
-    immediatecurrentptr=ReadLineFromBuffer(immediatecurrentptr,linebuf,LINE_SIZE);			/* get data */	
-
-    printf("currentptr after=%lX\n",immediatecurrentptr);
-
-    printf("line=%s\n",linebuf);
-
-    ExecuteLine(bufptr);			/* execute line */
-
-    bufptr += strlen(bufptr);
-  } while(*bufptr != 0);
-
-    memset(buffer,0,INTERACTIVE_BUFFER_SIZE);
-
-    bufptr=buffer;
-    immediatecurrentptr=buffer;
-
-  }
-  else
-  {
-   bufptr += strlen(bufptr);
-  }
-
- }
-
+ InteractiveMode();
 }
 else
 {
@@ -180,4 +98,5 @@ void signalhandler(int sig) {
   }
 
 }
+
 
