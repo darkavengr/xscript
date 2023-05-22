@@ -1,5 +1,5 @@
 CC = gcc
-OBJFILES = module.o addvar.o dofile.o expr.o itoa.o xscript.o
+OBJFILES = debug.o module.o addvar.o dofile.o expr.o itoa.o xscript.o
 OUTFILE  = xscript
 FLAGS    = -lm
 
@@ -31,6 +31,9 @@ module.o:
 
 xscript.o:
 	$(CC) -c -w xscript.c
+
+debug.o:
+	$(CC) -c -w debug.c
 
 ifeq ($(OS),Windows_NT)
 winmodule.o:

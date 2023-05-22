@@ -28,18 +28,19 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-
+#include <setjmp.h>
 #include "define.h"
 #include "dofile.h"
 
 char *llcerrs[] = { "No error","File not found","Missing parameters in statement","Invalid expression",\
-		    "IF statement without ELSEIF or ENDIF","FOR statement without NEXT",\
+		    "IF statement without ENDIF","FOR statement without NEXT",\
 		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
 		    "Invalid variable name","Out of memory","BREAK outside FOR or WHILE loop","Read error","Syntax error",\
 		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
 		    "NEXT without FOR","WEND without WHILE","Duplicate function name","Too few arguments to function",\
 		    "Invalid array subscript","Type mismatch","Invalid variable type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
-		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH path" };
+		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH path","Variable already exists",
+		    "Variable not found","EXIT FOR without FOR","EXIT WHILE without WHILE","FOR without NEXT" };
 
 int saveexprtrue=0;
 varval retval;
@@ -48,6 +49,7 @@ varval retval;
 			  
 statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
       { "ELSE",NULL,&else_statement,FALSE},\
+      { "ELSEIF",NULL,&elseif_statement,FALSE},\
       { "ENDIF",NULL,&endif_statement,FALSE},\
       { "FOR","NEXT",&for_statement,TRUE},\
       { "WHILE","WEND",&while_statement,TRUE},\
@@ -60,10 +62,9 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
       { "RETURN",NULL,&return_statement,FALSE},\ 
       { "INCLUDE",NULL,&include_statement,FALSE},\ 
       { "DECLARE",NULL,&declare_statement,FALSE},\
-      { "RUN",NULL,&run_statement,FALSE},\
-      { "CONTINUE",NULL,&continue_statement,FALSE},\
+      { "ITERATE",NULL,&iterate_statement,FALSE},\
       { "NEXT",NULL,&next_statement,FALSE},\
-      { "BREAK",NULL,&break_statement,FALSE},\
+      { "EXIT",NULL,&exit_statement,FALSE},\
       { "AS",NULL,&bad_keyword_as_statement,FALSE},\
       { "TO",NULL,&bad_keyword_as_statement,FALSE},\
       { "STEP",NULL,&bad_keyword_as_statement,FALSE},\
@@ -76,11 +77,19 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
       { "AND",NULL,&bad_keyword_as_statement,FALSE},\
       { "OR",NULL,&bad_keyword_as_statement,FALSE},\
       { "NOT",NULL,&bad_keyword_as_statement,FALSE},\
+      { "QUIT",NULL,&quit_command,FALSE},\
+      { "VARIABLES",NULL,&variables_command,FALSE},\
+      { "CONTINUE",NULL,&continue_command,FALSE},\
+      { "LOAD",NULL,&load_command,FALSE},\
+      { "RUN",NULL,&run_command,FALSE},\
+      { "SET",NULL,&set_command,FALSE},\
+      { "CLEAR",NULL,&clear_command,FALSE},\
       { NULL,NULL,NULL } };
 
 extern FUNCTIONCALLSTACK *currentfunction;
 extern FUNCTIONCALLSTACK *funcs;
 extern char *vartypenames[];
+extern jmp_buf savestate;
 
 char *currentptr=NULL;		/* current pointer in buffer */
 char *endptr=NULL;		/* end of buffer */
@@ -88,7 +97,8 @@ char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
 char *TokenCharacters="+-*/<>=!%~|& \t()[],{}";
-int InteractiveModeFlag=FALSE;
+int Flags=0;
+char *CurrentFile[MAX_SIZE];
 
 /*
  * Load file
@@ -103,7 +113,10 @@ int LoadFile(char *filename) {
  int filesize;
 
  handle=fopen(filename,"r");				/* open file */
- if(!handle) return(-1);						/* can't open */
+ if(!handle) {
+	PrintError(FILE_NOT_FOUND);
+	return(-1);
+ }
 
  fseek(handle,0,SEEK_END);				/* get file size */
  filesize=ftell(handle);
@@ -136,6 +149,9 @@ int LoadFile(char *filename) {
  endptr += filesize;		/* point to end */
  bufsize += filesize;
 
+ strcpy(CurrentFile,filename);
+
+ SetIsRunningFlag(FALSE);
 }
 
 /*
@@ -790,7 +806,7 @@ int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if((currentfunction->stat & FOR_STATEMENT) == 0) {
-  PrintError(NEXT_NO_FOR);
+  PrintError(NEXT_WITHOUT_FOR);
   return;
  }
 }
@@ -895,19 +911,33 @@ int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
  *
- * Returns error number on error or 0 on success
- *
  */
 
 int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if((currentfunction->stat& IF_STATEMENT) != IF_STATEMENT) {
-  PrintError(ELSE_NOIF);
-  return(ELSE_NOIF);
+  PrintError(ELSE_WITHOUT_IF);
+  return(ELSE_WITHOUT_IF);
  }
 
 return;
 }
 
+/*
+ * Elseif statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ */
+
+int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ if((currentfunction->stat& IF_STATEMENT) != IF_STATEMENT) {
+  PrintError(ELSE_WITHOUT_IF);
+  return(ELSE_WITHOUT_IF);
+ }
+
+return;
+}
 /*
  * Endfunction statement
  *
@@ -956,45 +986,53 @@ int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  *
  */
 
-int break_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  char *buf[MAX_SIZE];
  char *d;
 
- if(((currentfunction->stat & FOR_STATEMENT) == 0) && ((currentfunction->stat & WHILE_STATEMENT) == 0)) {
-  PrintError(INVALID_BREAK);
-  return(INVALID_BREAK);
+ if((strcmpi(tokens[1],"FOR") == 0) && (currentfunction->stat & FOR_STATEMENT)){
+  PrintError(EXIT_FOR_WITHOUT_FOR);
+  return(EXIT_FOR_WITHOUT_FOR);
  }
 
- if((currentfunction->stat & FOR_STATEMENT) || (currentfunction->stat & WHILE_STATEMENT)) {
-  while(*currentptr != 0) {
+ if((strcmpi(tokens[1],"WHILE") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
+  PrintError(EXIT_WHILE_WITHOUT_WHILE);
+  return(EXIT_WHILE_WITHOUT_WHILE);
+ }
+
+/* find end of loop */
+ while(*currentptr != 0) {
    currentptr=ReadLineFromBuffer(currentptr,buf,MAX_SIZE);			/* get data */
    
    if(*currentptr == 0) {			/* at end without next or wend */   
-    if((currentfunction->stat & FOR_STATEMENT) == 0) {
-    PrintError(FOR_NO_NEXT);
-    return(FOR_NO_NEXT);
-   }
 
-    if((currentfunction->stat & WHILE_STATEMENT) == 0) {
-    PrintError(WEND_NOWHILE);
-    return(WEND_NOWHILE);
+	if((strcmpi(tokens[1],"FOR") == 0) && (currentfunction->stat & FOR_STATEMENT)){
+  		PrintError(FOR_WITHOUT_NEXT);
+		return(FOR_WITHOUT_NEXT);
+	}
+
+	if((strcmpi(tokens[1],"WHILE") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
+  		PrintError(WHILE_WITHOUT_WEND);
+		return(WHILE_WITHOUT_WEND);
+	}
    }
-  }
 
    tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
    if(tc == -1) {
-    PrintError(SYNTAX_ERROR);
-    return(-1);
+	    PrintError(SYNTAX_ERROR);
+	    return(-1);
    }
 
-   if((strcmpi(tokens[0],"WEND") == 0) || (strcmpi(tokens[0],"NEXT") == 0)) {
-    if((strcmpi(tokens[0],"WEND") == 0)) currentfunction->stat &= WHILE_STATEMENT;
-    if((strcmpi(tokens[0],"NEXT") == 0)) currentfunction->stat &= FOR_STATEMENT;
-  
-    currentptr=ReadLineFromBuffer(currentptr,buf,MAX_SIZE);			/* get data */
-    return;
+   if((strcmpi(tokens[1],"NEXT") == 0) && (currentfunction->stat & FOR_STATEMENT)){
+  		currentfunction->stat &= FOR_STATEMENT;
+		return;
    }
-  }
+
+   if((strcmpi(tokens[1],"WEND") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
+  		currentfunction->stat &= WHILE_STATEMENT;
+		return;
+   }
+
  } 
 }
 
@@ -1039,24 +1077,6 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 }
 
 /*
- * Run statement
- *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
- *
- * Returns error number on error or 0 on success
- *
- */
-
-int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- if(ExecuteFile(tokens[1]) == -1) {
-  PrintError(FILE_NOT_FOUND);
-  return(FILE_NOT_FOUND);
- }
-
-}
-
-/*
  * Continue statement
  *
  * In: int tc				Token count
@@ -1066,7 +1086,7 @@ int run_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  *
  */
 
-int continue_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 SAVEINFORMATION *info;
 
 info=currentfunction->saveinformation_top;
@@ -1181,10 +1201,6 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
 }
 
 if(strlen(tokens[tc]) > 0) tc++;		/* if there is data in the last token, increment the counter so it is accounted for */
-
-//for(count=0;count<tc;count++) {
-// printf("%s\n",tokens[count]);
-//}
 
 return(tc);
 }
@@ -1487,6 +1503,8 @@ int statementcount;
 
 SetInteractiveModeFlag(TRUE);
 
+memset(CurrentFile,0,MAX_SIZE);
+
 buffer=malloc(INTERACTIVE_BUFFER_SIZE);		/* allocate buffer for interactive mode */
 if(buffer == NULL) {
   perror("xscript");
@@ -1555,7 +1573,7 @@ while(1) {
    do {
     currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */	
 
-    if(ExecuteLine(bufptr) == -1) return;	/* return on error */
+    ExecuteLine(bufptr);
 
     bufptr += strlen(bufptr);
 
@@ -1576,10 +1594,115 @@ while(1) {
 }
 
 int GetInteractiveModeFlag(void) {
- return(InteractiveModeFlag);
+ return((Flags & INTERACTIVE_MODE_FLAG));
 }
 
-int SetInteractiveModeFlag(int mode) {
- InteractiveModeFlag=mode;
+void SetInteractiveModeFlag(void) {
+  Flags |= INTERACTIVE_MODE_FLAG;
 }
 
+void SetIsRunningFlag(void) {
+  Flags |= IS_RUNNING_FLAG;
+}
+
+int GetIsRunningFlag(void) {
+ return((Flags & IS_RUNNING_FLAG));
+}
+
+int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ exit(0);
+}
+
+int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ if(GetIsRunningFlag() == FALSE) {
+ 	printf("No program running\n");
+ }
+ else
+ {
+	printf("Continuing\n");
+
+	SetIsRunningFlag();
+	longjmp(savestate,0);
+
+ }
+
+}
+
+int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+list_variables(tokens[1]);
+}
+
+int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ if(tc < 1) {						/* Not enough parameters */
+  PrintError(SYNTAX_ERROR);
+  return(SYNTAX_ERROR);
+ }
+
+ LoadFile(tokens[1]);
+}
+
+int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ if(strlen(CurrentFile) == 0) {
+  	printf("No file loaded\n");
+	return;
+ }
+
+ ExecuteFile(CurrentFile);
+}
+
+int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ int StepCount=0;
+ int count;
+ char *linebuf[MAX_SIZE];
+
+ if(strlen(tokens[1]) > 0) {
+	StepCount=doexpr(tokens,1,tc);
+ }
+ else
+ {
+	StepCount=1;
+ }
+
+ for(count=0;count<StepCount;count++) {
+	 currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
+
+	 if(*currentptr == 0) {
+		printf("End reached\n");
+		return;
+	 }
+
+	 ExecuteLine(linebuf);			/* run statement */
+
+ }
+
+}
+
+int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ if(tc < 2) {						/* Not enough parameters */
+  PrintError(SYNTAX_ERROR);
+  return(SYNTAX_ERROR);
+ }
+
+ if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
+	set_breakpoint(atoi(tokens[2]),tokens[3]);
+	return;
+ }
+
+ printf("Invalid sub-command\n");
+ return;
+}
+
+int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+ if(tc < 2) {						/* Not enough parameters */
+  PrintError(SYNTAX_ERROR);
+  return(SYNTAX_ERROR);
+ }
+
+ if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
+	clear_breakpoint(atoi(tokens[2]),tokens[3]);
+	return;
+ }
+
+ printf("Invalid sub-command\n");
+ return;
+}

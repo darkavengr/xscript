@@ -41,6 +41,7 @@ char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
 
 extern char *currentptr;
 extern statement statements[];
+vars_t *findvar;
 
 int callpos=0;
 
@@ -431,8 +432,8 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
  
  for(exprparse=start+2;exprparse<end;exprparse++) {
     if(strcmp(tokens[exprparse],",") == 0) {		 /* 2d array */
-     	 split->x=doexpr(tokens,start+2,exprparse-1);
-	 split->y=doexpr(tokens,exprparse+1,end);
+     	 split->x=doexpr(tokens,start+2,exprparse);
+	 split->y=doexpr(tokens,exprparse+1,end-1);
 	 return;
     }
  }
@@ -1150,5 +1151,38 @@ currentfunction=currentfunction->last;
 
 currentptr=currentfunction->callptr;
 free(thisfunction);
+}
+
+int FindFirstVariable(vars_t *var) {
+if(currentfunction->vars == NULL) return(-1);
+
+findvar=currentfunction->vars;
+
+memcpy(var,currentfunction->vars,sizeof(vars_t));
+}
+
+int FindNextVariable(vars_t *var) {
+findvar=findvar->next;
+
+if(findvar == NULL) return(-1);
+
+memcpy(var,findvar,sizeof(vars_t));
+}
+
+int FindVariable(char *name,vars_t *var) {
+vars_t *next;
+
+next=currentfunction->vars;
+
+while(next != NULL) {
+ if(strcmp(next->varname,name) == 0) {
+	 memcpy(var,next,sizeof(vars_t));
+	 return(0);
+ }
+
+ next=next->next;
+}
+
+return(-1);
 }
 

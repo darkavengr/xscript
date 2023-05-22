@@ -25,26 +25,29 @@
 #define TRUE 1
 #define FALSE 0
 
+#define INTERACTIVE_MODE_FLAG	1
+#define IS_RUNNING_FLAG		2
+
 #define NO_ERROR	    0
 #define FILE_NOT_FOUND	    1
 #define NO_PARAMS	    2
 #define BAD_EXPRESSION	    3
 #define IF_NO_ENDIF	    4
 #define FOR_NO_NEXT	    5
-#define WHILE_NO_WEND	    6
-#define ELSE_NOIF           7
+#define WHILE_WITHOUT_WEND  6
+#define ELSE_WITHOUT_IF     7
 #define ENDIF_NOIF          8
 #define ENDFUNCTION_NO_FUNCTION 9
 #define BAD_VARNAME	    10
 #define NO_MEM		    11
-#define INVALID_BREAK	    12
+#define EXIT_FOR_WITHOUT_FOR 12
 #define READ_ERROR	    13
 #define SYNTAX_ERROR	    14
 #define MISSING_LIBSYM	    15
 #define INVALID_STATEMENT   16
 #define NESTED_FUNCTION	    17
 #define FUNCTION_NO_ENDFUNCTION 18
-#define NEXT_NO_FOR	    19
+#define NEXT_WITHOUT_FOR    19
 #define WEND_NOWHILE	    20
 #define FUNCTION_IN_USE	    21
 #define TOO_FEW_ARGS	    22
@@ -57,6 +60,9 @@
 #define BAD_TYPE	    29
 #define NO_MODULE_PATH 	    30
 #define VARIABLE_EXISTS	    31
+#define VARIABLE_DOES_NOT_EXIST 32
+#define EXIT_WHILE_WITHOUT_WHILE 33
+#define FOR_WITHOUT_NEXT   34
 
 #define FOR_STATEMENT 1
 #define IF_STATEMENT 2
@@ -162,4 +168,10 @@ typedef struct {
  void *dlhandle;
  struct MODULES *next;
 } MODULES;
+
+typedef struct {
+ int linenumber;
+ char *functionname[MAX_SIZE];
+ struct BREAKPOINT *next;
+} BREAKPOINT;
 

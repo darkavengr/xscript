@@ -24,7 +24,8 @@
 #include <ctype.h>
 #include <dlfcn.h>
 #include <signal.h>
-
+#include <unistd.h>
+#include <setjmp.h>
 #include "define.h"
 
 /*
@@ -41,6 +42,7 @@ extern char *TokenCharacters;
 
 void signalhandler(int sig);
 extern char *currentptr;
+jmp_buf savestate;
 
 int main(int argc, char **argv) {
 int count;
@@ -52,7 +54,7 @@ InitializeFunctions();						/* Initialize functions */
 
 /* intialize command-line arguments */
 
-CreateVariable("argc",VAR_INTEGER,argc,0);
+CreateVariable("argc",VAR_INTEGER,0,0);
 
 if(argc == 1) {					/* no arguments */ 
  signal(SIGINT,signalhandler);		/* register signal handler */
@@ -62,7 +64,11 @@ if(argc == 1) {					/* no arguments */
  CreateVariable("argv",VAR_STRING,1,0);			/* add command line arguments variable */
 
  strcpy(cmdargs.s,argv[0]);
+
  UpdateVariable("argv",&cmdargs,0,0);
+
+ cmdargs.i=1;
+ UpdateVariable("argc",&cmdargs,0,0);
 
  InteractiveMode();
 }
@@ -86,17 +92,26 @@ FreeFunctions();
 exit(0);
 }
 
-
 void signalhandler(int sig) {
- if(sig == SIGTRAP) {
-   printf("Keyboard break. Type END to quit.\n");
-   return;
- }
- else {
-   printf("Signal caught");
-   return;
-  }
+ switch(sig) {	
+  case SIGINT:			/* ctrl-c */
+   if(GetIsRunningFlag() == TRUE) {		/* is running */
+	printf("Program suspended. Type continue to resume\n");
+	SetIsRunningFlag(FALSE);
 
+	setjmp(savestate);		/* save program state */
+   }
+   else
+   {
+	printf("\nCtrl-C. Type QUIT to leave.\n");
+   }
+
+   return;
+
+  default:
+   printf("Fatal error %d\n",sig);
+  return;
+  }
 }
 
 
