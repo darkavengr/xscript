@@ -43,34 +43,50 @@ int set_breakpoint(int linenumber,char *functionname) {
 
 int clear_breakpoint(int linenumber,char *functionname) {
  BREAKPOINT *next;
+ BREAKPOINT *last;
 
-/* check if breakpoint set */
-
- if(breakpoints == NULL) {
-   breakpoints=malloc(sizeof(BREAKPOINT));
-   breakpointend=breakpoints;
- }
- else
- {
-   next=breakpoints;
+ next=breakpoints;
  
-   while(next != NULL) {
+ while(next != NULL) {
+    last=next;
+
+
     if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) {	/* breakpoint already set */  
-	printf("Breakpoint already set\n"); 
-	return;
+
+	    if(next == breakpoints) {		/* head */
+		free(breakpoints);
+
+		breakpoints=NULL;
+		return;
+	    }
+	    else if(next->next == NULL) {	/* end */
+		free(next);
+	    }
+	    else
+	    {
+		last->next=next->next;		/* middle */
+		free(next);
+	    }
     }
-
+	    
     next=next->next;
-   }
-
-   breakpointend->next=malloc(sizeof(BREAKPOINT));
-   breakpointend=breakpointend->next;
  }
 
- breakpointend->linenumber=linenumber;
- strcpy(breakpointend->functionname,functionname);
 }
 
+int check_breakpoint(int linenumber,char *functionname) {
+ BREAKPOINT *next;
+ next=breakpoints;
+ 
+ while(next != NULL) {
+
+    if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) return(TRUE);
+	    
+    next=next->next;
+ }
+
+ return(FALSE);
+}
 
 void PrintVariable(vars_t *var) {
 int count;

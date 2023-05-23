@@ -651,6 +651,9 @@ else
 exprone=doexpr(tokens,3,count);			/* start value */
 exprtwo=doexpr(tokens,count+1,countx);			/* end value */
 
+printf("exprone=%.6g\n",exprone);
+printf("exprtwo=%.6g\n",exprtwo);
+
 if(GetVariableValue(split.name,&loopx) == -1) {		/* new variable */  
  CreateVariable(split.name,VAR_NUMBER,split.x,split.y);
 }
@@ -690,6 +693,9 @@ PushSaveInformation();					/* save line information */
  while((ifexpr == 1 && loopcount.d > exprtwo) || (ifexpr == 0 && loopcount.d < exprtwo)) {
 	    currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
 
+	    printf("buf=%s\n",buf);
+	    asm("int $3");
+	   
 	    ExecuteLine(buf);
 
 	     d=*buf+(strlen(buf)-1);
@@ -1466,28 +1472,34 @@ else
 
  info=previousinfo->next;
  info->last=previousinfo;					/* link previous to next */
+ 
 }
 
 info->bufptr=currentptr;
 info->lc=currentfunction->lc;
 info->next=NULL;
 
-currentfunction->saveinformation_top=info;
+printf("\npush currentfunction=%lX\n",currentfunction);
+printf("\npush top=%lX\n",currentfunction->saveinformation_top);
 }
 
 int PopSaveInformation(void) {
 SAVEINFORMATION *info;
 SAVEINFORMATION *previousinfo;
 
-info=currentfunction->saveinformation_top;
+if(currentfunction->saveinformation_top->last != NULL) {
+	info=currentfunction->saveinformation_top;
 
-previousinfo=info;
-currentfunction->saveinformation_top=info->last;		/* point to previous */
+	previousinfo=info;
+	currentfunction->saveinformation_top=info->last;		/* point to previous */
 
-free(previousinfo);
-
-currentptr=currentfunction->saveinformation_top->bufptr;
-currentfunction->lc=currentfunction->saveinformation_top->lc;
+	free(previousinfo);
+}
+else
+{
+	currentptr=currentfunction->saveinformation_top->bufptr;
+	currentfunction->lc=currentfunction->saveinformation_top->lc;
+}
 
 }
 
@@ -1513,8 +1525,6 @@ if(buffer == NULL) {
 
 bufptr=buffer;
 currentptr=buffer;
-
-printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
 while(1) {
 
@@ -1571,6 +1581,16 @@ while(1) {
    bufptr=buffer;
 
    do {
+    if(check_breakpoint(currentfunction->lc,currentfunction->name) == TRUE) {	/* breakpoint found */
+	printf("Breakpoint in function %s on line %d reached\n",currentfunction->name,currentfunction->lc);
+
+	SetIsRunningFlag(FALSE);
+
+	setjmp(savestate);		/* save program state */
+
+	break;
+    }
+	
     currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */	
 
     ExecuteLine(bufptr);

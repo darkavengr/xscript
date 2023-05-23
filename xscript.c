@@ -70,6 +70,8 @@ if(argc == 1) {					/* no arguments */
  cmdargs.i=1;
  UpdateVariable("argc",&cmdargs,0,0);
 
+ printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
+
  InteractiveMode();
 }
 else
@@ -109,7 +111,7 @@ void signalhandler(int sig) {
    return;
 
   default:
-   printf("Fatal error %d\n",sig);
+   printf("Signal %d recieved\n",sig);
   return;
   }
 }
