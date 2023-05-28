@@ -1,0 +1,97 @@
+
+int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *linebuf[MAX_SIZE];
+char *tokens[MAX_SIZE][MAX_SIZE];
+vartype newtype;
+typeentry *tnext;
+typeentry *tlast;
+vartype *next;
+vartype *last;
+
+if(tc < 1) {						/* not enough parameters */
+ print_error(SYNTAX_ERROR);
+ return(SYNTAX_ERROR);
+}
+
+/* check if type exists */
+
+next=customtypes;
+
+while(next != NULL) {
+ if(strcmp(next->typename,tokens[1]) == 0) {		/* type exists */
+  print_error(TYPE_EXISTS);
+
+  return(TYPE_EXISTS);
+ }
+
+ next=next->next;
+}
+
+/*
+ * Create a type entry */
+
+strcpy(newtype.tokens[1]);		/* copy type name */
+
+tnext=newtype.entries;		/* point to entries */
+
+while(*currentptr != 0) {
+ currentptr=readlinefrombuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
+
+ tc=tokenize_line(lbuf,tokens," \009");			/* tokenize line */
+
+ if((strcmpi(tokens[0],"ENDTYPE") == 0) break;
+
+ if(getvartype(tokens[0]) == -1) {		/* not a variable type */
+  print_error(BAD_VAR_TYPE);
+  return(BAD_VAR_TYPE);
+ }
+
+
+ if(tnext == newtype.entries) {		/* first */
+  newtype.entries=malloc(sizeof(typeentry));
+  if(newtype.entries == NULL) {
+    print_error(NO_MEM);
+    return(NO_MEM);
+  }
+
+  tnext=newtype.entries;
+ }
+ else
+ {
+	/* find next */
+   while(tnext != NULL) {
+     tlast=tnext;
+     tnext=tnext->next;
+   }
+ 
+   tlast->next=malloc(sizeof(typeentry));
+   if(tlast == NULL) {
+    print_error(NO_MEM);
+    return(NO_MEM);
+   }
+
+   tnext=tlast->next;   
+ }
+
+   strcpy(tnext.name,tokens[0]);		/* name */
+   strcpy(tnext.type,tokens[1]);		/* type */
+}
+
+/* add type entry to type list */
+next=customtypes;
+
+while(next != NULL) {
+ last=next;
+ next=next->next;
+}
+
+/* add to end */
+
+last->next=malloc(sizeof(vartype));
+if(last->next == NULL) return(NO_MEM);
+
+memcpy(last->next,&newtype,sizeof(vartype));
+
+return(NO_ERROR);
+}
+

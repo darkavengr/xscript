@@ -1042,6 +1042,7 @@ for(count=start+1;count<end;count++) {
 
     if(GetVariableType(tokens[count+1]) != VAR_STRING) {	/* not a string literal or string variable */
      PrintError(TYPE_ERROR);
+     return(TYPE_ERROR);
     }
 
     b=tokens[count+1];

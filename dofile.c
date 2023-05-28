@@ -654,7 +654,7 @@ exprtwo=doexpr(tokens,count+1,countx);			/* end value */
 printf("exprone=%.6g\n",exprone);
 printf("exprtwo=%.6g\n",exprtwo);
 
-if(GetVariableValue(split.name,&loopx) == -1) {		/* new variable */  
+if(GetVariableValue(split.name,split.x,split.y,&loopx) == -1) {		/* new variable */  
  CreateVariable(split.name,VAR_NUMBER,split.x,split.y);
 }
 
@@ -688,13 +688,13 @@ else
  ifexpr=0;
 }
 
+currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
+
 PushSaveInformation();					/* save line information */
 
- while((ifexpr == 1 && loopcount.d > exprtwo) || (ifexpr == 0 && loopcount.d < exprtwo)) {
-	    currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
+do {
 
 	    printf("buf=%s\n",buf);
-	    asm("int $3");
 	   
 	    ExecuteLine(buf);
 
@@ -715,8 +715,13 @@ PushSaveInformation();					/* save line information */
 	      currentptr=info->bufptr;
 	      currentfunction->lc=info->lc;
 	
-	      if(ifexpr == 1) loopcount.d=loopcount.d-steppos;					/* increment or decrement counter */
- 	      if(ifexpr == 0) loopcount.d=loopcount.d+steppos;      
+	      /* increment or decrement counter */
+	      if( (vartype == VAR_NUMBER) && (ifexpr == 1)) loopcount.d -= steppos;
+ 	      if( (vartype == VAR_NUMBER) && (ifexpr == 0)) loopcount.d += steppos;      
+	      if( (vartype == VAR_INTEGER) && (ifexpr == 1)) loopcount.i -= steppos;
+ 	      if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += steppos;      
+	      if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=steppos;
+ 	      if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += steppos;      
 		
 	      UpdateVariable(split.name,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
@@ -727,8 +732,18 @@ PushSaveInformation();					/* save line information */
 	       PrintError(SYNTAX_ERROR);
 	       return(SYNTAX_ERROR);
               }
-	    }	   
-     }
+	    } 
+
+       currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
+
+     } while(
+	( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d > exprtwo)) ||
+	((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d < exprtwo)) ||
+	((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i > exprtwo)) ||
+	((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i < exprtwo)) ||
+	((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f > exprtwo)) ||
+	((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f < exprtwo))
+       );
 
    return;
  }
@@ -1478,9 +1493,6 @@ else
 info->bufptr=currentptr;
 info->lc=currentfunction->lc;
 info->next=NULL;
-
-printf("\npush currentfunction=%lX\n",currentfunction);
-printf("\npush top=%lX\n",currentfunction->saveinformation_top);
 }
 
 int PopSaveInformation(void) {

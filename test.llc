@@ -1,0 +1,5 @@
+function testfunction(a as integer)
+ print a + 1
+endfunction
+
+testfunction(2)

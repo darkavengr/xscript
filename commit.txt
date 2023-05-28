@@ -1,6 +1,3 @@
-Rewrote clear_breakpoint.
-Added check_breakpoint function.
-Added breakpoint checking in interactive mode.
-Moved banner message to main function.
-Fixed error in PopSaveInformation that popped information from null pointer.
+Fixed error in for_statement where non-double variables are not supported.
+Fixed error in GetVariableValue where single-precision variable values were not returned.
 

@@ -1,0 +1,22 @@
+                                   º
+#define ERROR_FOR_NO_NEXT	 1          º  37      Argument-count mismatch
+#define ERROR_SYNTAX_ERROR	 2
+#define ERROR_RETURN_NO_GOSUB	 3
+#define ERROR_OUT_OF_DATA	 4
+#define ERROR_ILLEGAL_FUNCCALL	 5
+#define ERROR_OVERFLOW		 6
+#define ERROR_NOMEM		 7
+#define ERROR_UNKNOWN_LABEL	 8
+#define ERROR_SUBSCRIPT_BAD	 9
+#define ERROR_DUPLICATE_DEFINE	 10
+#define ERROR_DIVISION_ZERO	 11
+#define ERROR_TYPE_MISMATCH	 12
+#define ERROR_NO_FUNCTION	 14
+#define ERROR_UNUSED2		 15
+#define ERROR_NEXT_NO_FOR	 16
+
+
+
+
+
+
