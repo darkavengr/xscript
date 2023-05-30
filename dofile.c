@@ -488,12 +488,15 @@ if(tc < 1) {						/* not enough parameters */
 
 currentfunction->stat |= IF_STATEMENT;
 
-printf("ifptr=%lX\n",currentptr);
+//printf("ifptr=%lX\n",currentptr);
+//asm("int $3");
 
 while(*currentptr != 0) {
 
  if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
   exprtrue=EvaluateCondition(tokens,1,tc-1);
+
+ // printf("exprtrue=%d\n",exprtrue);
 
   if(exprtrue == -1) {
    PrintError(BAD_CONDITION);
@@ -522,7 +525,28 @@ while(*currentptr != 0) {
 
 	  } while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF") != 0)  && (strcmpi(tokens[0],"ELSE") != 0));
   }
+  else
+  {
+		do {
+    		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+		if(*currentptr == 0) return;
+	
+
+		tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+		if(tc == -1) {
+		 PrintError(SYNTAX_ERROR);
+		 return(-1);
+		}
+
+		if(strcmpi(tokens[0],"ENDIF") == 0) {
+			currentfunction->stat |= IF_STATEMENT;
+			return;
+		}
+
+	  } while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF") != 0)  && (strcmpi(tokens[0],"ELSE") != 0));
+ }
 }
+
 
  if((strcmpi(tokens[0],"ELSE") == 0)) {
 
@@ -688,9 +712,8 @@ else
  ifexpr=0;
 }
 
-currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
-
 PushSaveInformation();					/* save line information */
+currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
 
 do {
 
@@ -923,7 +946,13 @@ PopSaveInformation();
  */
 
 int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- return(atoi(tokens[1]));
+ if(GetInteractiveModeFlag() == TRUE) {
+	 return(atoi(tokens[1]));
+ }
+ else
+ {
+	 exit(atoi(tokens[1]));
+ }
 }
 
 /*
