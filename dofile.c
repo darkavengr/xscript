@@ -151,7 +151,7 @@ int LoadFile(char *filename) {
 
  strcpy(CurrentFile,filename);
 
- SetIsRunningFlag(FALSE);
+ ClearIsRunningFlag();
 }
 
 /*
@@ -173,12 +173,16 @@ int ExecuteFile(char *filename) {
   return(FILE_NOT_FOUND);
 }
 
+ SetIsRunningFlag();
+
 /* loop through lines and execute */
 
 do {
  currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
  ExecuteLine(linebuf);			/* run statement */
+
+ if(GetIsRunningFlag() == FALSE) return;	/* program ended */
 
  memset(linebuf,0,MAX_SIZE);
 
@@ -675,9 +679,6 @@ else
 exprone=doexpr(tokens,3,count);			/* start value */
 exprtwo=doexpr(tokens,count+1,countx);			/* end value */
 
-printf("exprone=%.6g\n",exprone);
-printf("exprtwo=%.6g\n",exprtwo);
-
 if(GetVariableValue(split.name,split.x,split.y,&loopx) == -1) {		/* new variable */  
  CreateVariable(split.name,VAR_NUMBER,split.x,split.y);
 }
@@ -715,11 +716,10 @@ else
 PushSaveInformation();					/* save line information */
 currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
 
-do {
-
-	    printf("buf=%s\n",buf);
-	   
+do {	   
 	    ExecuteLine(buf);
+	    
+	    if(GetIsRunningFlag() == FALSE) return;	/* program ended */
 
 	     d=*buf+(strlen(buf)-1);
              if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
@@ -929,6 +929,8 @@ do {
       }
 
      ExecuteLine(buf);
+     if(GetIsRunningFlag() == FALSE) return;	/* program ended */
+
   } while(exprtrue == 1);
   
 
@@ -947,6 +949,8 @@ PopSaveInformation();
 
 int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(GetInteractiveModeFlag() == TRUE) {
+	 ClearIsRunningFlag();
+
 	 return(atoi(tokens[1]));
  }
  else
@@ -1554,7 +1558,7 @@ char *buffer;
 char *bufptr;
 int statementcount;
 
-SetInteractiveModeFlag(TRUE);
+SetInteractiveModeFlag();
 
 memset(CurrentFile,0,MAX_SIZE);
 
@@ -1625,7 +1629,7 @@ while(1) {
     if(check_breakpoint(currentfunction->lc,currentfunction->name) == TRUE) {	/* breakpoint found */
 	printf("Breakpoint in function %s on line %d reached\n",currentfunction->name,currentfunction->lc);
 
-	SetIsRunningFlag(FALSE);
+	ClearIsRunningFlag();
 
 	setjmp(savestate);		/* save program state */
 
@@ -1666,8 +1670,12 @@ void SetIsRunningFlag(void) {
   Flags |= IS_RUNNING_FLAG;
 }
 
+void ClearIsRunningFlag(void) {
+  Flags &= ~IS_RUNNING_FLAG;
+}
+
 int GetIsRunningFlag(void) {
- return((Flags & IS_RUNNING_FLAG));
+ return((Flags & IS_RUNNING_FLAG) >> 1);
 }
 
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
