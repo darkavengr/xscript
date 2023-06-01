@@ -32,7 +32,7 @@
 #include "define.h"
 #include "dofile.h"
 
-char *llcerrs[] = { "No error","File not found","Missing parameters in statement","Invalid expression",\
+char *errs[] = { "No error","File not found","Missing parameters in statement","Invalid expression",\
 		    "IF statement without ENDIF","FOR statement without NEXT",\
 		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
 		    "Invalid variable name","Out of memory","BREAK outside FOR or WHILE loop","Read error","Syntax error",\
@@ -99,6 +99,7 @@ int ic=0;			/* number of included files */
 char *TokenCharacters="+-*/<>=!%~|& \t()[],{}";
 int Flags=0;
 char *CurrentFile[MAX_SIZE];
+int returnvalue=0;
 
 /*
  * Load file
@@ -115,7 +116,7 @@ int LoadFile(char *filename) {
  handle=fopen(filename,"r");				/* open file */
  if(!handle) {
 	PrintError(FILE_NOT_FOUND);
-	return(-1);
+	return(FILE_NOT_FOUND);
  }
 
  fseek(handle,0,SEEK_END);				/* get file size */
@@ -165,6 +166,7 @@ int LoadFile(char *filename) {
 int ExecuteFile(char *filename) {
  char *linebuf[MAX_SIZE];
  SAVEINFORMATION *info;
+ char *savecurrentptr;
 
  currentfunction->lc=0;
  
@@ -174,20 +176,34 @@ int ExecuteFile(char *filename) {
 }
 
  SetIsRunningFlag();
+ SetIsFileLoadedFlag();
 
-/* loop through lines and execute */
+ savecurrentptr=currentptr;		/* save current pointer */
+ currentptr=readbuf;
+
+ currentfunction->callptr=currentptr;
+ currentfunction->lc=1;
 
 do {
  currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
 
- ExecuteLine(linebuf);			/* run statement */
+ returnvalue=ExecuteLine(linebuf);
+ if(returnvalue != 0) {
+  ClearIsRunningFlag();
+  return(returnvalue);
+ }
 
- if(GetIsRunningFlag() == FALSE) return;	/* program ended */
+ if(GetIsRunningFlag() == FALSE) {
+  currentptr=savecurrentptr;
+  return(NO_ERROR);	/* program ended */
+ }
 
  memset(linebuf,0,MAX_SIZE);
 
  currentfunction->lc++;
 }    while(*currentptr != 0); 			/* until end */
+
+ currentptr=savecurrentptr;
 
  return(NO_ERROR);
 }	
@@ -218,6 +234,7 @@ int ExecuteLine(char *lbuf) {
  char *b;
  char *d;
  int start;
+ int retval=0;
 
  currentfunction->lc++;						/* increment line counter */
 
@@ -241,7 +258,7 @@ memset(tokens,0,MAX_SIZE*MAX_SIZE);
 tc=TokenizeLine(lbuf,tokens,TokenCharacters);			/* tokenize line */
 if(tc == -1) {
  PrintError(SYNTAX_ERROR);
- return(-1);
+ return(SYNTAX_ERROR);
 }
 
 if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
@@ -260,7 +277,9 @@ do {
 
  if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  
 
-  if(statements[statementcount].call_statement(tc,tokens) > 0) return(-1);		/* call statement and exit if error */
+  retval=statements[statementcount].call_statement(tc,tokens); /* call statement and exit if error */
+  if(retval > 0) return(retval);		
+
   statementcount=0;
 
   return(0);
@@ -274,8 +293,7 @@ do {
 
 
 if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
- CallFunction(tokens,0,tc);
- return;
+ return(CallFunction(tokens,0,tc));
 } 
 
 
@@ -355,7 +373,7 @@ for(count=1;count<tc;count++) {
 }
 
 PrintError(INVALID_STATEMENT);
-return(-1);
+return(INVALID_STATEMENT);
 }
 
 /*
@@ -492,9 +510,6 @@ if(tc < 1) {						/* not enough parameters */
 
 currentfunction->stat |= IF_STATEMENT;
 
-//printf("ifptr=%lX\n",currentptr);
-//asm("int $3");
-
 while(*currentptr != 0) {
 
  if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
@@ -504,7 +519,7 @@ while(*currentptr != 0) {
 
   if(exprtrue == -1) {
    PrintError(BAD_CONDITION);
-   return(-1);
+   return(BAD_CONDITION);
   }
 
  if(exprtrue == 1) {
@@ -519,7 +534,7 @@ while(*currentptr != 0) {
 		tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 		if(tc == -1) {
 		 PrintError(SYNTAX_ERROR);
-		 return(-1);
+		 return(SYNTAX_ERROR);
 		}
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
@@ -539,7 +554,7 @@ while(*currentptr != 0) {
 		tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 		if(tc == -1) {
 		 PrintError(SYNTAX_ERROR);
-		 return(-1);
+		 return(SYNTAX_ERROR);
 		}
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
@@ -564,7 +579,7 @@ while(*currentptr != 0) {
 		tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 		if(tc == -1) {
 		 PrintError(SYNTAX_ERROR);
-		 return(-1);
+		 return(SYNTAX_ERROR);
 		}
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
@@ -581,7 +596,7 @@ while(*currentptr != 0) {
 
  if(tc == -1) {
   PrintError(SYNTAX_ERROR);
-  return(-1);
+  return(SYNTAX_ERROR);
  }
 
 }
@@ -717,10 +732,15 @@ PushSaveInformation();					/* save line information */
 currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
 
 do {	   
-	    ExecuteLine(buf);
-	    
-	    if(GetIsRunningFlag() == FALSE) return;	/* program ended */
+	      returnvalue=ExecuteLine(buf);
 
+ 	  //  if(returnvalue != 0) {
+	 //      ClearIsRunningFlag();
+	   //    return(returnvalue);
+	 //    }
+
+             if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
+	    
 	     d=*buf+(strlen(buf)-1);
              if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
              if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
@@ -728,16 +748,15 @@ do {
  	     tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	     if(tc == -1) {
 		 PrintError(SYNTAX_ERROR);
-		 return(-1);
+		 return(SYNTAX_ERROR);
 	     }
-
 
   	     if(strcmpi(tokens[0],"NEXT") == 0) {
 
 	      info=currentfunction->saveinformation_top;
 	      currentptr=info->bufptr;
 	      currentfunction->lc=info->lc;
-	
+
 	      /* increment or decrement counter */
 	      if( (vartype == VAR_NUMBER) && (ifexpr == 1)) loopcount.d -= steppos;
  	      if( (vartype == VAR_NUMBER) && (ifexpr == 0)) loopcount.d += steppos;      
@@ -768,7 +787,7 @@ do {
 	((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f < exprtwo))
        );
 
-   return;
+   return(NO_ERROR);
  }
 
 /*
@@ -794,12 +813,12 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  for(count=1;count<tc;count++) {
   if((*tokens[count] >= '0' && *tokens[count] <= '9') && (currentfunction->returntype == VAR_STRING)) {
    PrintError(TYPE_ERROR);
-   return(-1);
+   return(TYPE_ERROR);
   }
 
   if((*tokens[count] == '"') && (currentfunction->returntype != VAR_STRING)) {
    PrintError(TYPE_ERROR);
-   return(-1);
+   return(TYPE_ERROR);
   }
 
   vartype=GetVariableType(tokens[count]);
@@ -807,12 +826,12 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   if(vartype != -1) {
    if((currentfunction->returntype == VAR_STRING) && (vartype != VAR_STRING)) {
     PrintError(TYPE_ERROR);
-    return(-1);
+    return(TYPE_ERROR);
    }
 
    if((currentfunction->returntype != VAR_STRING) && (vartype == VAR_STRING)) {
     PrintError(TYPE_ERROR);
-    return(-1);
+    return(TYPE_ERROR);
    }
 
  }
@@ -894,7 +913,7 @@ do {
       exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
       if(exprtrue == -1) {
        PrintError(BAD_CONDITION);
-       return(-1);
+       return(BAD_CONDITION);
       }
 
       if(exprtrue == 0) {
@@ -904,7 +923,7 @@ do {
 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	if(tc == -1) {
 	 PrintError(SYNTAX_ERROR);
-	 return(-1);
+	 return(SYNTAX_ERROR);
 	}
 
         if(strcmpi(tokens[0],"WEND") == 0) {
@@ -919,7 +938,7 @@ do {
       tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
        if(tc == -1) {
 	 PrintError(SYNTAX_ERROR);
-	 return(-1);
+	 return(SYNTAX_ERROR);
      }
 
       if(strcmpi(tokens[0],"WEND") == 0) {
@@ -928,8 +947,13 @@ do {
        currentfunction->lc=info->lc;
       }
 
-     ExecuteLine(buf);
-     if(GetIsRunningFlag() == FALSE) return;	/* program ended */
+      returnvalue=ExecuteLine(buf);
+      if(returnvalue != 0) {
+        ClearIsRunningFlag();
+        return(returnvalue);
+      }
+
+      if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
 
   } while(exprtrue == 1);
   
@@ -1074,7 +1098,7 @@ int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
    tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
    if(tc == -1) {
 	    PrintError(SYNTAX_ERROR);
-	    return(-1);
+	    return(SYNTAX_ERROR);
    }
 
    if((strcmpi(tokens[1],"NEXT") == 0) && (currentfunction->stat & FOR_STATEMENT)){
@@ -1118,7 +1142,7 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  if(vartype == -1) {				/* invalid variable type */
   PrintError(BAD_TYPE);
-  return(-1);
+  return(BAD_TYPE);
  }
 
  retval=CreateVariable(split.name,vartype,split.x,split.y);
@@ -1223,29 +1247,24 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
    s=split;
 
    while(*s != 0) {
-    if(*token == *s) {		/* token found */
+	    if(*token == *s) {		/* token found */
     
-     if(*token == ' ') {
-      d=tokens[++tc]; 
-
-      token++;
-      break;
-     }
-     else
-     {
-      b=token;
-      b--;
-      if(strlen(tokens[tc]) != 0) tc++;
+		    b=token;
+		    b--;
+		    if(strlen(tokens[tc]) != 0) tc++;
      
-      d=tokens[tc]; 			
-      *d=*token++;
-      d=tokens[++tc]; 		
+		    IsSeperator=TRUE;
+		    d=tokens[tc]; 			
 
-      IsSeperator=TRUE;    
-     }
-
-     break;
-   }
+		    if(*token != ' ') {
+		      *d=*token++;
+      		      d=tokens[++tc]; 				      
+		    }
+		    else
+		    {
+		      token++;
+		    }
+	   }
 
     s++;
   }
@@ -1274,7 +1293,7 @@ int IsSeperator(char *token,char *sep) {
  int statementcount;
 
  if(*token == 0) return(TRUE);
-
+ 
  s=sep;
 
   while(*s != 0) {
@@ -1310,8 +1329,6 @@ int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int 
  int squarebracketcount=0;
  bool IsInBracket=FALSE;
  int statementcount=0;
-
- return(TRUE);
 
 /* check if brackets are balanced */
 
@@ -1446,15 +1463,17 @@ return(buf);			/* return new position */
  *
  */
 
-int PrintError(int llcerr) {
- if(GetInteractiveModeFlag() == TRUE) {
-  printf("Error in function %s: %s\n",currentfunction->name,llcerrs[llcerr]);  
+int PrintError(int err) {
+ if(GetIsRunningFlag() == TRUE) {
+  printf("Error in function %s (line %d): %s\n",currentfunction->name,currentfunction->lc,errs[err]);
  }
  else
  {
-  printf("Error in function %s (line %d): %s\n",currentfunction->name,currentfunction->lc,llcerrs[llcerr]);
-  exit(llcerr);
+
+  printf("Error in function %s: %s\n",currentfunction->name,errs[err]);  
  }
+
+  if(GetInteractiveModeFlag() == FALSE) exit(err);
 }
 
 /*
@@ -1502,7 +1521,7 @@ if(currentfunction->saveinformation_top == NULL) {
 
  if(currentfunction->saveinformation_top == NULL) {
   PrintError(NO_MEM);
-  return(-1);
+  return(NO_MEM);
  }
 
  info=currentfunction->saveinformation_top;
@@ -1515,7 +1534,7 @@ else
  previousinfo->next=malloc(sizeof(SAVEINFORMATION));		/* allocate new entry */
  if(previousinfo->next == NULL) {
   PrintError(NO_MEM);
-  return(-1);
+  return(NO_MEM);
  }
 
  info=previousinfo->next;
@@ -1619,7 +1638,7 @@ while(1) {
  if(strcmp(tokens[0],endstatement) == 0) {
     block_statement_nest_count--;
 
-    bufptr=buffer;
+//    bufptr=buffer;
  }
   
  if(block_statement_nest_count == 0) {
@@ -1676,6 +1695,14 @@ void ClearIsRunningFlag(void) {
 
 int GetIsRunningFlag(void) {
  return((Flags & IS_RUNNING_FLAG) >> 1);
+}
+
+void SetIsFileLoadedFlag(void) {
+  Flags |= IS_FILE_LOADED_FLAG;
+}
+
+int GetIsFileLoadedFlag(void) {
+ return((Flags & IS_FILE_LOADED_FLAG) >> 2);
 }
 
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
