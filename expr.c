@@ -372,6 +372,9 @@ int overallresult=0;
 int countx;
 char *evaltokens[MAX_SIZE][MAX_SIZE];
 int exprend;
+char *temp[MAX_SIZE][MAX_SIZE];
+int subcount=0;
+int outcount=0;
 
 struct {
  int result;
@@ -389,23 +392,81 @@ exprend=SubstituteVariables(start,end,tokens,evaltokens);
 
 startcount=start;
 count=start;
-resultcount=0;
+
+//
+// Do conditions in brackets first
+//
+
+printf("start=%d %s\n",count,evaltokens[count]);
 
 while(count < exprend) {
-  
-  if((strcmpi(evaltokens[count],"AND") == 0) || (strcmpi(evaltokens[count],"OR") == 0) || (count >= exprend-1)) {
-		results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count+1);		
+  printf("evaltoken[%d]=%s\n",count,evaltokens[count]);
 
-		if(strcmpi(evaltokens[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
-		if(strcmpi(evaltokens[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
+  if(strcmp(evaltokens[count],"(") == 0) {		// if sub-expression
+   printf("found bracket at position %d\n",count);
+
+   subcount++;
+   startcount=count;
+
+   while(count < exprend) {
+     if(strcmp(evaltokens[count],")") == 0) {		// end of sub-expression
+       printf("next condition=%s\n",evaltokens[count+1]);
+
+       results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count+1);
+       printf("result=%d\n",results[resultcount].result);
+
+       resultcount++;
+
+       if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
+       if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
+
+       count += subcount;		// Add length of expression
+       printf("skipped to end at position %d %s\n",count,evaltokens[count]);
+     }
+
+     count++;
+   }
+
+ }
+ else
+ {		
+		strcpy(temp[outcount++],evaltokens[count]);
+ }
+
+ count++;
+}
+
+printf("outcount=%d\n",outcount);
+
+//
+// Do conditions outside brackets
+//
+
+startcount=0;
+
+for(count=0;count<outcount;count++) {
+  printf("other=%s\n",temp[count]);
+
+  if((strcmpi(temp[count],"AND") == 0) || (strcmpi(temp[count],"OR") == 0) || (count >= outcount-1)) {
+		for(countx=startcount;countx<count+2;countx++) {
+			printf("token=%s\n",temp[countx]);
+		}
+
+		results[resultcount].result=EvaluateSingleCondition(temp,startcount,count+1);		
+
+		printf("result=%d\n",results[resultcount].result);
+
+		if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
+		if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
 	
 		startcount=(count+1);
 
 		resultcount++;
  }
 
- count++;
 }
+
+printf("resultcount=%d\n",resultcount);
 
 /* if there is more than one result and an odd number of results, set the last to end */
 
@@ -415,32 +476,40 @@ if((resultcount > 1 ) && (resultcount % 2) != 0) {
 
 // If there are no sub conditions, use whole expression
 
-if(resultcount == 1) return(EvaluateSingleCondition(evaltokens,start,exprend));
+if(resultcount == 1) return(EvaluateSingleCondition(temp,0,outcount));
 
 overallresult=0;
+
 count=0;
 
 while(count < resultcount) {
  if(results[count].and_or == CONDITION_AND) {		// and
-   overallresult=(results[count++].result == results[count++].result);
+  overallresult=results[count].result;
+  overallresult=results[count+1].result;
+
+  count += 2;
  }
  else if(results[count].and_or == CONDITION_OR) {		// or
-  overallresult=(results[count++].result || results[count++].result);
+  overallresult=(results[count].result || results[count+1].result);
+  count += 2;
  }
  else if(results[count].and_or == CONDITION_END) {		// end
   if(results[count-1].and_or == CONDITION_AND) {
-   overallresult = (results[count-1].result == results[count].result);
+   overallresult = (results[count].result == results[count+1].result);
+   count += 2;
   }
   else
   {
-   overallresult = (results[count-1].result || results[count+1].result);
+   overallresult = (results[count].result || results[count+1].result);
+   count += 2;
   }
 
-  count++;
  }
 
 }
 
- return(overallresult);	/* return true or false */
+printf("overallresult=%d\n",overallresult);
+
+return(overallresult);
 }
 

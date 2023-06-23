@@ -435,6 +435,8 @@ for(count=1;count < tc;count++) {
   start=count;
   end=start+1;
 
+// If function call with parameter list
+
   while(end < tc) {
    if(strcmp(tokens[end],"(") == 0) {
 	  while(end < tc) {
@@ -452,6 +454,9 @@ for(count=1;count < tc;count++) {
 
   for(countx=start;countx<end;countx++) {
     if((strcmp(tokens[countx],">") == 0) || (strcmp(tokens[countx],"<") == 0) || (strcmp(tokens[countx],"=") == 0)) {
+
+      retval=EvaluateCondition(tokens,start,end);
+
       retval == 1 ? printf("True") : printf("False");
       break;
     } 
