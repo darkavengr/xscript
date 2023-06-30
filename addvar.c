@@ -156,7 +156,7 @@ if(currentfunction->vars == NULL) {			/* first entry */
         break;
 
      case VAR_STRING:				/* string */
-	next->val=malloc((xsize*MAX_SIZE)*(ysize*MAX_SIZE));
+	next->val=calloc(((xsize*MAX_SIZE)*(ysize*MAX_SIZE)),sizeof(char *));
  	if(next->val == NULL)  return(NO_MEM);
        break;
 
@@ -197,6 +197,7 @@ int UpdateVariable(char *name,varval *val,int x,int y) {
 vars_t *next;
 char *o;
 varval *varv;
+char *strptr;
 
 /* Find variable */
 
@@ -218,7 +219,17 @@ next=currentfunction->vars;
        break;
 
      case VAR_STRING:				/* string */
-       strcpy(next->val[( (y*next->ysize)+(next->xsize*x))].s,val->s);
+       if(next->val[( (y*next->ysize)+(next->xsize*x))].s == NULL) {		/* if string element not allocated */
+
+	 next->val[((y*next->ysize)+(next->xsize*x))].s=malloc(strlen(val->s));	/* allocate memory */
+     	 strcpy(next->val[((y*next->ysize)+(next->xsize*x))].s,val->s);		/* assign value */
+       } 
+
+       if( strlen(val->s) > strlen(next->val[( (y*next->ysize)+(next->xsize*x))].s)) {	/* if string element larger */
+	 realloc(next->val[((y*next->ysize)+(next->xsize*x))].s,strlen(val->s));	/* resize memory */
+
+     	 strcpy(next->val[((y*next->ysize)+(next->xsize*x))].s,val->s);		/* assign value */
+       }
        break;
 
      case VAR_INTEGER:	 			/* integer */
@@ -320,6 +331,9 @@ if(c >= '0' && c <= '9') {
 }
 
 if(c == '"') {
+ val->s=malloc(strlen(name));				/* allocate string */
+ if(val->s == NULL) return(-1);
+
  strcpy(val->s,name);
  return(0);
 }
@@ -341,6 +355,9 @@ while(next != NULL) {
         return(0);
 
        case VAR_STRING:			 	/* string */
+	val->s=malloc(strlen(next->val[( (y*next->ysize)+(next->xsize*x))].s));				/* allocate string */
+	if(val->s == NULL) return(-1);
+
         strcpy(val->s,next->val[( (y*next->ysize)+(next->xsize*x))].s);
         return(0);
 
@@ -1021,8 +1038,10 @@ char *d;
 SubstituteVariables(start,end,tokens,tokens);
 
 val->type=VAR_STRING;
-
+val->s=malloc(MAX_SIZE);		/* initial size */
 d=val->s;				/* copy token */
+
+printf("d=%lX\n",d);
 
 b=tokens[start];			/* point to first token */
 if(*b == '"') {

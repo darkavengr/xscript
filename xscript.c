@@ -63,6 +63,9 @@ if(argc == 1) {					/* no arguments */
 
  CreateVariable("argv",VAR_STRING,1,0);			/* add command line arguments variable */
 
+ cmdargs.s=malloc(strlen(argv[0]));				/* allocate string */
+ if(cmdargs.s == NULL) return(-1);
+
  strcpy(cmdargs.s,argv[0]);
 
  UpdateVariable("argv",&cmdargs,0,0);
@@ -77,13 +80,17 @@ if(argc == 1) {					/* no arguments */
 else
 {
  cmdargs.i=argc;
+
  UpdateVariable("argc",&cmdargs,count,0);
- 
- memset(cmdargs.s,0,MAX_SIZE);
 
  for(count=0;count<argc;count++) {
+  cmdargs.s=malloc(sizeof(argv[count]));
+
   strcpy(cmdargs.s,argv[count]);
   UpdateVariable("argv",&cmdargs,count,0);
+
+  free(cmdargs.s);
+
  }
 
  ExecuteFile(argv[1]);						/* execute file */

@@ -102,7 +102,7 @@
 
 typedef struct {
  double d;
- char *s[MAX_SIZE];
+ char *s;
  int i;
  float f;
  int b;
