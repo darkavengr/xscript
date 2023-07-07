@@ -1,0 +1,29 @@
+char *typetokens[MAX_SIZE][MAX_SIZE];
+int typetc;
+UserDefinedTypeField udtfield;
+UserDefinedTypeField *next;
+
+do {
+
+ currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+
+ typetc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+ if(tc == -1) {
+  PrintError(SYNTAX_ERROR);
+  return(SYNTAX_ERROR); 
+ }
+
+ if(strcmpi(tokens[0],"ENDTYPE") == 0) return;
+
+/* variablename as type */
+
+ if(strcmpi(tokens[1],"AS") != 0) {			/* missing as */
+  PrintError(SYNTAX_ERROR);
+  return(SYNTAX_ERROR); 
+ }
+
+/* add field to user defined type */
+ strcpy(udtfield.fieldname,tokens[0]);
+
+} while(*currentptr != 0);
+

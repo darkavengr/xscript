@@ -1,5 +1,0 @@
-Fixed error in for_statement where non-double variables are not supported.
-Fixed error in GetVariableValue where single-precision variable values were not returned.
-Added evaluating condition in brackets.
-Fixed error in print_statement where condition was not evaluated.
-

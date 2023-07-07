@@ -54,24 +54,24 @@ InitializeFunctions();						/* Initialize functions */
 
 /* intialize command-line arguments */
 
-CreateVariable("argc",VAR_INTEGER,0,0);
+CreateVariable("argc","INTEGER",0,0);
 
 if(argc == 1) {					/* no arguments */ 
  signal(SIGINT,signalhandler);		/* register signal handler */
 
 /* add argv[0] = executable and argc=1 */
 
- CreateVariable("argv",VAR_STRING,1,0);			/* add command line arguments variable */
+ CreateVariable("argv","STRING",1,0);			/* add command line arguments variable */
 
  cmdargs.s=malloc(strlen(argv[0]));				/* allocate string */
  if(cmdargs.s == NULL) return(-1);
 
  strcpy(cmdargs.s,argv[0]);
 
- UpdateVariable("argv",&cmdargs,0,0);
+ UpdateVariable("argv",NULL,&cmdargs,0,0);
 
  cmdargs.i=1;
- UpdateVariable("argc",&cmdargs,0,0);
+ UpdateVariable("argc",NULL,&cmdargs,0,0);
 
  printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
@@ -81,13 +81,13 @@ else
 {
  cmdargs.i=argc;
 
- UpdateVariable("argc",&cmdargs,count,0);
+ UpdateVariable("argc",NULL,&cmdargs,count,0);
 
  for(count=0;count<argc;count++) {
   cmdargs.s=malloc(sizeof(argv[count]));
 
   strcpy(cmdargs.s,argv[count]);
-  UpdateVariable("argv",&cmdargs,count,0);
+  UpdateVariable("argv",NULL,&cmdargs,count,0);
 
   free(cmdargs.s);
 

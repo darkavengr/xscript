@@ -40,7 +40,8 @@ char *errs[] = { "No error","File not found","Missing parameters in statement","
 		    "NEXT without FOR","WEND without WHILE","Duplicate function name","Too few arguments to function",\
 		    "Invalid array subscript","Type mismatch","Invalid variable type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
 		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH path","Variable already exists",
-		    "Variable not found","EXIT FOR without FOR","EXIT WHILE without WHILE","FOR without NEXT" };
+		    "Variable not found","EXIT FOR without FOR","EXIT WHILE without WHILE","FOR without NEXT","User-defined type already exists",
+             };
 
 int saveexprtrue=0;
 varval retval;
@@ -65,6 +66,7 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
       { "ITERATE",NULL,&iterate_statement,FALSE},\
       { "NEXT",NULL,&next_statement,FALSE},\
       { "EXIT",NULL,&exit_statement,FALSE},\
+      { "TYPE","ENDTYPE",&type_statement,FALSE},\
       { "AS",NULL,&bad_keyword_as_statement,FALSE},\
       { "TO",NULL,&bad_keyword_as_statement,FALSE},\
       { "STEP",NULL,&bad_keyword_as_statement,FALSE},\
@@ -77,6 +79,7 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
       { "AND",NULL,&bad_keyword_as_statement,FALSE},\
       { "OR",NULL,&bad_keyword_as_statement,FALSE},\
       { "NOT",NULL,&bad_keyword_as_statement,FALSE},\
+      { "ENDTYPE",NULL,&bad_keyword_as_statement,FALSE},\
       { "QUIT",NULL,&quit_command,FALSE},\
       { "VARIABLES",NULL,&variables_command,FALSE},\
       { "CONTINUE",NULL,&continue_command,FALSE},\
@@ -318,7 +321,7 @@ for(count=1;count<tc;count++) {
 
 	 if((c == '"') || (vartype == VAR_STRING)) {			/* string */  
 	  if(vartype == -1) {	
-		CreateVariable(split.name,VAR_STRING,split.x,split.y);		/* new variable */ 
+		CreateVariable(split.name,vartypenames[VAR_STRING],split.x,split.y);		/* new variable */ 
 	  }
 	  else if(vartype != VAR_STRING) {
 	   PrintError(TYPE_ERROR);
@@ -327,7 +330,7 @@ for(count=1;count<tc;count++) {
 
 	  ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
 
-	  UpdateVariable(split.name,&val,split.x,split.y);		/* set variable */
+	  UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);		/* set variable */
 
 	  return;
 	 }
@@ -360,12 +363,12 @@ for(count=1;count<tc;count++) {
 	 }
 
 	 if(vartype == -1) {		/* new variable */ 
-	  CreateVariable(split.name,VAR_NUMBER,split.x,split.y);			/* create variable */
-	  UpdateVariable(split.name,&val,split.x,split.y);
+	  CreateVariable(split.name,vartypenames[VAR_NUMBER],split.x,split.y);			/* create variable */
+	  UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
 	  return;
 	 }
 
-	 UpdateVariable(split.name,&val,split.x,split.y);
+	 UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
 
 	 return;
   } 
@@ -699,8 +702,8 @@ else
 exprone=doexpr(tokens,3,count);			/* start value */
 exprtwo=doexpr(tokens,count+1,countx);			/* end value */
 
-if(GetVariableValue(split.name,split.x,split.y,&loopx) == -1) {		/* new variable */  
- CreateVariable(split.name,VAR_NUMBER,split.x,split.y);
+if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&loopx,split.fieldx,split.fieldy) == -1) {
+ CreateVariable(split.name,vartypenames[VAR_NUMBER],split.x,split.y);
 }
 
 vartype=GetVariableType(split.name);			/* check if string */
@@ -723,7 +726,7 @@ switch(vartype) {
   break;
  }
 
-UpdateVariable(split.name,&loopcount,split.x,split.y);			/* set loop variable to next */	
+UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
 if(exprone >= exprtwo) {
  ifexpr=1;
@@ -770,7 +773,7 @@ do {
 	      if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=steppos;
  	      if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += steppos;      
 		
-	      UpdateVariable(split.name,&loopcount,split.x,split.y);			/* set loop variable to next */	
+	      UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
               if(*currentptr == 0) {
 	       PopSaveInformation();               
@@ -1138,19 +1141,17 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  ParseVariableName(tokens,1,tc,&split);
 
  for(count=0;count<tc;count++) {  
-  if(strcmpi(tokens[count],"AS") == 0) {		/* array as type */
-   vartype=CheckVariableType(tokens[count+1]);		/* get variable type */  
-
+  if(strcmpi(tokens[count],"AS") == 0) break;		/* array as type */
    break;
-  }
  }
 
+/* fixme */
  if(vartype == -1) {				/* invalid variable type */
   PrintError(BAD_TYPE);
   return(BAD_TYPE);
  }
 
- retval=CreateVariable(split.name,vartype,split.x,split.y);
+ retval=CreateVariable(split.name,tokens[count+1],split.x,split.y);
 
  if(retval != NO_ERROR) {
   PrintError(retval);
@@ -1160,7 +1161,7 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 }
 
 /*
- * Continue statement
+ * Iterate statement
  *
  * In: int tc				Token count
        char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
@@ -1184,6 +1185,113 @@ info->lc=currentfunction->lc;
 
  PrintError(CONTINUE_NO_LOOP);
  return(CONTINUE_NO_LOOP);
+}
+
+/*
+ * Type statement
+ *
+ * In: int tc				Token count
+       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ *
+ * Returns error on error or 0 on success
+ *
+ */
+int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *typetokens[MAX_SIZE][MAX_SIZE];
+int typetc;
+int count;
+char *buf[MAX_SIZE];
+UserDefinedTypeField *fieldptr;
+UserDefinedType addudt;
+varsplit split;
+
+/* check if built-in type */
+
+count=0;
+
+while(vartypenames[count] != NULL) {
+ if(strcmpi(tokens[1],vartypenames[count]) == 0) {
+  PrintError(BAD_TYPE);
+  return(BAD_TYPE); 
+ }
+
+ count++;
+}
+
+if(GetUDT(tokens[1]) != NULL) {		/* If type exists */
+ PrintError(SYNTAX_ERROR);
+ return(SYNTAX_ERROR); 
+}
+
+/* create user-defined type entry */
+
+strcpy(addudt.name,tokens[1]);
+
+addudt.field=malloc(sizeof(UserDefinedTypeField));	/* add first field */
+if(addudt.field == NULL) {
+ PrintError(NO_MEM);
+ return(NO_MEM); 
+}
+ 
+fieldptr=addudt.field;
+
+/* add user-defined type fields */
+ 
+do {
+
+ currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+
+ typetc=TokenizeLine(buf,typetokens,TokenCharacters);			/* tokenize line */
+ if(tc == -1) {
+  PrintError(SYNTAX_ERROR);
+  return(SYNTAX_ERROR); 
+ }
+
+ if(strcmpi(typetokens[0],"ENDTYPE") == 0) return;
+
+ if(strcmpi(typetokens[1],"AS") != 0) {			/* missing as */
+  PrintError(SYNTAX_ERROR);
+  return(SYNTAX_ERROR); 
+ }
+
+/* add field to user defined type */
+ 
+ ParseVariableName(typetokens,0,typetc,split);		/* split variable name */
+
+ strcpy(fieldptr->fieldname,split.name);		/* copy name */
+ 
+ fieldptr->xsize=split.x;				/* get x size of field variable */
+ fieldptr->ysize=split.y;				/* get y size of field variable */
+
+/* get type */
+
+ count=0;
+ 
+ while(vartypenames[count] != NULL) {
+  if(strcmpi(vartypenames[count],typetokens[2]) == 0) {	/* bad type */
+   PrintError(BAD_TYPE);
+   return(BAD_TYPE); 
+  }
+
+  
+  count++;
+ }
+
+ fieldptr->type=count;
+
+ 
+/* add link to next field */
+ fieldptr->next=malloc(sizeof(UserDefinedTypeField));
+ if(fieldptr->next == NULL) {
+  PrintError(NO_MEM);
+  return(NO_MEM); 
+ }
+
+} while(*currentptr != 0);
+
+AddUserDefinedType(&addudt);			/* add user-defined type */
+
+return(0);
 }
 
 /*

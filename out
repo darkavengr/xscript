@@ -1,0 +1,13 @@
+addvar.c: In function ‘DeclareFunction’:
+addvar.c:1374:1: error: expected declaration or statement at end of input
+ }
+ ^
+addvar.c: In function ‘ParseVariableName’:
+addvar.c:1374:1: error: expected declaration or statement at end of input
+addvar.c: In function ‘GetVariableValue’:
+addvar.c:1374:1: error: expected declaration or statement at end of input
+addvar.c: In function ‘UpdateVariable’:
+addvar.c:1374:1: error: expected declaration or statement at end of input
+addvar.c: In function ‘CreateVariable’:
+addvar.c:1374:1: error: expected declaration or statement at end of input
+make: *** [addvar.o] Error 1

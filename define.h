@@ -64,6 +64,7 @@
 #define VARIABLE_DOES_NOT_EXIST 32
 #define EXIT_WHILE_WITHOUT_WHILE 33
 #define FOR_WITHOUT_NEXT   34
+#define TYPE_EXISTS	   35
 
 #define FOR_STATEMENT 1
 #define IF_STATEMENT 2
@@ -83,7 +84,7 @@
 #define VAR_STRING  1
 #define VAR_INTEGER 2
 #define VAR_SINGLE  3
-#define VAR_BOOL    4
+#define VAR_UDT     4
 
 #define MAX_NEST_COUNT 256
 
@@ -105,16 +106,31 @@ typedef struct {
  char *s;
  int i;
  float f;
- int b;
  int type;
 } varval;
 
 typedef struct {
- char *varname[MAX_SIZE];
- varval *val;
+ char *fieldname[MAX_SIZE];
+ varval *fieldval;
  int xsize;
  int ysize;
  int type;
+ struct UserDefinedTypeField *next;
+} UserDefinedTypeField;
+
+typedef struct  {
+ char *name[MAX_SIZE];
+ UserDefinedTypeField *field;
+ struct UserDefinedType *next;
+} UserDefinedType;
+
+typedef struct {
+ char *varname[MAX_SIZE];
+ varval *val;
+ UserDefinedType *udt;
+ int xsize;
+ int ysize;
+ char *type[MAX_SIZE];
  struct vars_t *next;
 } vars_t;
 
@@ -123,6 +139,9 @@ typedef struct {
  int x;
  int y;
  int arraytype;
+ char *fieldname[MAX_SIZE];
+ int fieldx;
+ int fieldy;
 } varsplit;
 
 typedef struct {
@@ -134,6 +153,7 @@ typedef struct {
 
 typedef struct {
  char *name[MAX_SIZE];
+ char *fieldname[MAX_SIZE];
  char *funcstart;
  int funcargcount;
  int returntype;
