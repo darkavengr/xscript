@@ -1,5 +1,5 @@
 CC = gcc
-OBJFILES = debug.o module.o addvar.o dofile.o expr.o itoa.o xscript.o
+OBJFILES = debug.o module.o dofile.o addvar.o expr.o itoa.o xscript.o
 OUTFILE  = xscript
 FLAGS    = -lm
 

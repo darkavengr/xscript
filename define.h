@@ -131,6 +131,7 @@ typedef struct {
  int xsize;
  int ysize;
  char *type[MAX_SIZE];
+ int type_int;
  struct vars_t *next;
 } vars_t;
 
@@ -156,7 +157,8 @@ typedef struct {
  char *fieldname[MAX_SIZE];
  char *funcstart;
  int funcargcount;
- int returntype;
+ char *returntype[MAX_SIZE];
+ int type_int;
  vars_t *parameters;
  int lc;
  struct functions *next;
@@ -170,7 +172,8 @@ typedef struct {
  SAVEINFORMATION *saveinformation_top;
  vars_t *vars;
  int stat;	
- int returntype;
+ char *returntype[MAX_SIZE];
+ int type_int;
  int lastlooptype;
  struct FUNCTIONCALLSTACK *next;
  struct FUNCTIONCALLSTACK *last;
@@ -195,4 +198,9 @@ typedef struct {
  char *functionname[MAX_SIZE];
  struct BREAKPOINT *next;
 } BREAKPOINT;
+
+typedef struct {
+ varval val;
+ UserDefinedType *udt;
+} functionreturnvalue;
 

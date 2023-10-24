@@ -282,7 +282,7 @@ int ifexpr=-1;
 int exprtrue=0;
 int exprpos=0;
 int count=0;
-varval val;
+varval firstval,secondval;
 
 /* check kind of expression */
 
@@ -319,19 +319,13 @@ varval val;
 	if(ifexpr == -1) return(-1);
 
 	if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
+	 ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the line */
+	 ConatecateStrings(exprpos+1,end,tokens,&secondval);					/* join all the strings on the line */
 
-	 for(count=start;count<exprpos;count++) {
-           printf("xxx=%s\n",tokens[count]);
-         }
+	 printf("first=%s\n",firstval.s);
+	 printf("second=%s\n",secondval.s);
 
-	 for(count=exprpos+1;count<end;count++) {
-           printf("yyy=%s\n",tokens[count]);
-         }
-
-	 ConatecateStrings(start,exprpos+1,tokens,&val);					/* join all the strings on the line */
-	 ConatecateStrings(exprpos,end,tokens,&val);					/* join all the strings on the line */
-
-	 return(!strcmp(tokens[exprpos-1],tokens[exprpos+1]));
+	 return(!strcmp(firstval.s,secondval.s));
 	}
 
 	exprone=doexpr(tokens,start,exprpos);				/* do expression */
@@ -397,23 +391,15 @@ count=start;
 // Do conditions in brackets first
 //
 
-printf("start=%d %s\n",count,evaltokens[count]);
-
 while(count < exprend) {
-  printf("evaltoken[%d]=%s\n",count,evaltokens[count]);
-
   if(strcmp(evaltokens[count],"(") == 0) {		// if sub-expression
-   printf("found bracket at position %d\n",count);
 
    subcount++;
    startcount=count;
 
    while(count < exprend) {
      if(strcmp(evaltokens[count],")") == 0) {		// end of sub-expression
-       printf("next condition=%s\n",evaltokens[count+1]);
-
        results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count+1);
-       printf("result=%d\n",results[resultcount].result);
 
        resultcount++;
 
@@ -421,7 +407,6 @@ while(count < exprend) {
        if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
 
        count += subcount;		// Add length of expression
-       printf("skipped to end at position %d %s\n",count,evaltokens[count]);
      }
 
      count++;
@@ -436,8 +421,6 @@ while(count < exprend) {
  count++;
 }
 
-printf("outcount=%d\n",outcount);
-
 //
 // Do conditions outside brackets
 //
@@ -445,16 +428,9 @@ printf("outcount=%d\n",outcount);
 startcount=0;
 
 for(count=0;count<outcount;count++) {
-  printf("other=%s\n",temp[count]);
 
   if((strcmpi(temp[count],"AND") == 0) || (strcmpi(temp[count],"OR") == 0) || (count >= outcount-1)) {
-		for(countx=startcount;countx<count+2;countx++) {
-			printf("token=%s\n",temp[countx]);
-		}
-
 		results[resultcount].result=EvaluateSingleCondition(temp,startcount,count+1);		
-
-		printf("result=%d\n",results[resultcount].result);
 
 		if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
 		if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
@@ -465,8 +441,6 @@ for(count=0;count<outcount;count++) {
  }
 
 }
-
-printf("resultcount=%d\n",resultcount);
 
 /* if there is more than one result and an odd number of results, set the last to end */
 
@@ -507,8 +481,6 @@ while(count < resultcount) {
  }
 
 }
-
-printf("overallresult=%d\n",overallresult);
 
 return(overallresult);
 }

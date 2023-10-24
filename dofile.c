@@ -44,7 +44,6 @@ char *errs[] = { "No error","File not found","Missing parameters in statement","
              };
 
 int saveexprtrue=0;
-varval retval;
 
 /* statements */
 			  
@@ -93,13 +92,14 @@ extern FUNCTIONCALLSTACK *currentfunction;
 extern FUNCTIONCALLSTACK *funcs;
 extern char *vartypenames[];
 extern jmp_buf savestate;
+extern functionreturnvalue retval;
 
 char *currentptr=NULL;		/* current pointer in buffer */
 char *endptr=NULL;		/* end of buffer */
 char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
-char *TokenCharacters="+-*/<>=!%~|& \t()[],{}";
+char *TokenCharacters="+-*/<>=!%~|& \t()[],{};";
 int Flags=0;
 char *CurrentFile[MAX_SIZE];
 int returnvalue=0;
@@ -156,6 +156,7 @@ int LoadFile(char *filename) {
  strcpy(CurrentFile,filename);
 
  ClearIsRunningFlag();
+ return(0);
 }
 
 /*
@@ -227,6 +228,7 @@ int ExecuteLine(char *lbuf) {
  int statementcount;
  int tc;
  varsplit split;
+ varsplit assignsplit;
  varval val;
  char c;
  int vartype;
@@ -237,7 +239,7 @@ int ExecuteLine(char *lbuf) {
  char *b;
  char *d;
  int start;
- int retval=0;
+ vars_t *varptr;
 
  currentfunction->lc++;						/* increment line counter */
 
@@ -245,7 +247,7 @@ int ExecuteLine(char *lbuf) {
 
 c=*lbuf;
 
-if(c == '\r' || c == '\n' || c == 0) return;			/* blank line */
+if(c == '\r' || c == '\n' || c == 0) return(0);			/* blank line */
 
 if(strlen(lbuf) > 1) {
  b=lbuf+strlen(lbuf)-1;
@@ -254,7 +256,7 @@ if(strlen(lbuf) > 1) {
 
 while(*lbuf == ' ' || *lbuf == '\t') lbuf++;	/* skip white space */
 
-if(memcmp(lbuf,"//",2) == 0) return;		/* skip comments */
+if(memcmp(lbuf,"//",2) == 0) return(0);		/* skip comments */
 
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
@@ -264,10 +266,10 @@ if(tc == -1) {
  return(SYNTAX_ERROR);
 }
 
-if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
- PrintError(SYNTAX_ERROR);
- return;
-}
+//if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
+// PrintError(SYNTAX_ERROR);
+// return(0);
+//}
 
 /* check if statement is valid by searching through struct of statements*/
 
@@ -280,8 +282,7 @@ do {
 
  if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  
 
-  retval=statements[statementcount].call_statement(tc,tokens); /* call statement and exit if error */
-  if(retval > 0) return(retval);		
+  statements[statementcount].call_statement(tc,tokens); /* call statement and exit if error */
 
   statementcount=0;
 
@@ -311,7 +312,7 @@ for(count=1;count<tc;count++) {
   if(strcmpi(tokens[count],"=") == 0) {
 	  if(CheckSyntax(tokens,1,tc) == FALSE) {		/* check syntax */
    	   PrintError(SYNTAX_ERROR);
-	   return;
+	   return(0);
 	  }
 
 	 ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
@@ -332,7 +333,7 @@ for(count=1;count<tc;count++) {
 
 	  UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);		/* set variable */
 
-	  return;
+	  return(0);
 	 }
 
 	/* number otherwise */
@@ -357,20 +358,28 @@ for(count=1;count<tc;count++) {
 	 else if(vartype == VAR_SINGLE) {
 	  val.f=exprone;
 	 }
-	 else
+	 else			/* user-defined type */
 	 {
-	  val.d=exprone;	  
+	  varptr=GetVariablePointer(split.name);		/* point to variable entry */
+
+	  ParseVariableName(tokens,count+1,tc,&assignsplit);
+
+          
+	  //			int CopyUDT(UserDefinedType *source,UserDefinedType *dest) {
+		
 	 }
 
 	 if(vartype == -1) {		/* new variable */ 
+	  
+	  val.d=exprone;
 	  CreateVariable(split.name,vartypenames[VAR_NUMBER],split.x,split.y);			/* create variable */
 	  UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
-	  return;
+	  return(0);
 	 }
 
 	 UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
 
-	 return;
+	 return(0);
   } 
 
 }
@@ -393,7 +402,7 @@ int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 DeclareFunction(&tokens[1],tc-1);
 
-return;
+return(0);
 } 
 
 /*
@@ -410,69 +419,50 @@ int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 double exprone;
 char c;
 varval val;
-int start;
-int end;
 int count;
 int countx;
 char *s[MAX_SIZE];
 char *sptr;
-double retval=0;
+int PrintFunctionFound;
 
-start=1;
 SubstituteVariables(1,tc,tokens);  
 
 for(count=1;count < tc;count++) {
- c=*tokens[count];
 
  /* if string literal, string variable or function returning string */
 
- if((c == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
+ if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
     count += ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
 
-    printf("%s ",val.s);
-    return;
+    printf("%s",val.s);
+
+    if(strcmp(tokens[tc-1],";") != 0) printf("\n");
+
+    return(0);
 
  }
- else
- {
-  start=count;
-  end=start+1;
-
-// If function call with parameter list
-
-  while(end < tc) {
-   if(strcmp(tokens[end],"(") == 0) {
-	  while(end < tc) {
-		   if(strcmp(tokens[end++],")") == 0) break;
-          }
-   }
-
-   if(strcmp(tokens[end],",") == 0) break;
-   end++;
-  }
-
-  retval=doexpr(tokens,start,end);
+}
+  
+retval.val.type=0;
+retval.val.d=doexpr(tokens,1,tc);
 
 /* if it's a condition print True or False */
 
-  for(countx=start;countx<end;countx++) {
-    if((strcmp(tokens[countx],">") == 0) || (strcmp(tokens[countx],"<") == 0) || (strcmp(tokens[countx],"=") == 0)) {
+for(countx=1;countx<tc;countx++) {
+  if((strcmp(tokens[countx],">") == 0) || (strcmp(tokens[countx],"<") == 0) || (strcmp(tokens[countx],"=") == 0)) {
 
-      retval=EvaluateCondition(tokens,start,end);
+      retval.val.type=0;
+      retval.val.d=EvaluateCondition(tokens,1,tc);
 
-      retval == 1 ? printf("True") : printf("False");
+      retval.val.d == 1 ? printf("True") : printf("False");
       break;
-    } 
-  }
-  
-  if(countx == end) printf("%.6g ",retval);	/* Not conditional */
-
-  count=end;
- }
+  } 
 }
+  
+if(countx == tc) printf("%.6g ",retval.val.d);	/* Not conditional */
 
-if(strcmp(tokens[end],";") != 0) printf("\n");
-return;
+if(strcmp(tokens[tc-1],";") != 0) printf("\n");
+return(0);
 }
 
 /*
@@ -487,10 +477,10 @@ return;
 
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if(AddModule(tokens[1]) > 0) {		/* load module */
- PrintError(retval);
+ PrintError(retval.val);
 }
 
-return;
+return(0);
 }
 
 /*
@@ -521,9 +511,7 @@ currentfunction->stat |= IF_STATEMENT;
 while(*currentptr != 0) {
 
  if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
-  exprtrue=EvaluateCondition(tokens,1,tc-1);
-
- // printf("exprtrue=%d\n",exprtrue);
+  exprtrue=EvaluateCondition(tokens,1,tc);
 
   if(exprtrue == -1) {
    PrintError(BAD_CONDITION);
@@ -535,7 +523,7 @@ while(*currentptr != 0) {
 
 		do {
     		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-		if(*currentptr == 0) return;
+		if(*currentptr == 0) return(0);
 
 		ExecuteLine(buf);
 
@@ -547,7 +535,7 @@ while(*currentptr != 0) {
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
-			return;
+			return(0);
 		}
 
 	  } while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF") != 0)  && (strcmpi(tokens[0],"ELSE") != 0));
@@ -556,7 +544,7 @@ while(*currentptr != 0) {
   {
 		do {
     		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-		if(*currentptr == 0) return;
+		if(*currentptr == 0) return(0);
 	
 
 		tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
@@ -567,7 +555,7 @@ while(*currentptr != 0) {
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
-			return;
+			return(0);
 		}
 
 	  } while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF") != 0)  && (strcmpi(tokens[0],"ELSE") != 0));
@@ -580,7 +568,7 @@ while(*currentptr != 0) {
   if(saveexprtrue == 0) {
 	    do {
     		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-		if(*currentptr == 0) return;
+		if(*currentptr == 0) return(0);
 
 		ExecuteLine(buf);
 
@@ -592,7 +580,7 @@ while(*currentptr != 0) {
 
 		if(strcmpi(tokens[0],"ENDIF") == 0) {
 			currentfunction->stat |= IF_STATEMENT;
-			return;
+			return(0);
 		}
 
 	  } while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF")) != 0);
@@ -609,7 +597,8 @@ while(*currentptr != 0) {
 
 }
 
-//PrintError(ENDIF_NOIF);
+PrintError(ENDIF_NOIF);
+return(ENDIF_NOIF);
 }
 
 /*
@@ -703,12 +692,17 @@ exprone=doexpr(tokens,3,count);			/* start value */
 exprtwo=doexpr(tokens,count+1,countx);			/* end value */
 
 if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&loopx,split.fieldx,split.fieldy) == -1) {
- CreateVariable(split.name,vartypenames[VAR_NUMBER],split.x,split.y);
+ CreateVariable(split.name,"DOUBLE",split.x,split.y);
 }
 
 vartype=GetVariableType(split.name);			/* check if string */
 
 switch(vartype) {
+ case -1:
+  loopcount.d=exprone;
+  vartype=VAR_NUMBER;
+  break;
+
  case VAR_STRING: 
   PrintError(TYPE_ERROR);
   return(TYPE_ERROR);
@@ -724,7 +718,7 @@ switch(vartype) {
  case VAR_SINGLE:
   loopcount.f=exprone;
   break;
- }
+}
 
 UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
@@ -742,12 +736,12 @@ currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 do {	   
 	      returnvalue=ExecuteLine(buf);
 
- 	  //  if(returnvalue != 0) {
-	 //      ClearIsRunningFlag();
-	   //    return(returnvalue);
-	 //    }
+ 	//      if(returnvalue != 0) {
+	//  	 ClearIsRunningFlag();
+	//         return(returnvalue);
+	//      }
 
-             if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
+        //     if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
 	    
 	     d=*buf+(strlen(buf)-1);
              if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
@@ -772,7 +766,7 @@ do {
  	      if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += steppos;      
 	      if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=steppos;
  	      if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += steppos;      
-		
+
 	      UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
               if(*currentptr == 0) {
@@ -785,7 +779,6 @@ do {
 	    } 
 
        currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
-
      } while(
 	( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d > exprtwo)) ||
 	((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d < exprtwo)) ||
@@ -795,7 +788,7 @@ do {
 	((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f < exprtwo))
        );
 
-   return(NO_ERROR);
+   return(NO_ERROR);	
  }
 
 /*
@@ -846,40 +839,43 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 }
 
 
- retval.type=currentfunction->returntype;		/* get return type */
+ retval.val.type=currentfunction->type_int;		/* get return type */
 
- if(currentfunction->returntype == VAR_STRING) {		/* returning string */
-  ConatecateStrings(1,tc,tokens,&retval);		/* get strings */
-  return;
+ if(currentfunction->type_int == VAR_STRING) {		/* returning string */
+	  ConatecateStrings(1,tc,tokens,&retval.val);		/* get strings */
+	  return(0);
  }
- else if(currentfunction->returntype == VAR_INTEGER) {		/* returning integer */
-  retval.i=doexpr(tokens,1,tc);
+ else if(currentfunction->type_int == VAR_INTEGER) {		/* returning integer */
+	  retval.val.i=doexpr(tokens,1,tc);
  }
- else if(currentfunction->returntype == VAR_NUMBER) {		/* returning double */	 
-	 retval.d=doexpr(tokens,1,tc);
+ else if(currentfunction->type_int == VAR_NUMBER) {		/* returning double */	 
+	 retval.val.d=doexpr(tokens,1,tc);
  }
- else if(currentfunction->returntype == VAR_SINGLE) {		/* returning single */
-	 retval.f=doexpr(tokens,1,tc);	
+ else if(currentfunction->type_int == VAR_SINGLE) {		/* returning single */
+	 retval.val.f=doexpr(tokens,1,tc);	
  }
 
 ReturnFromFunction();			/* return */
-return;
+return(0);
 }
 
 int get_return_value(varval *val) {
- val=&retval;
+ val=&retval.val;
+ return(0);
 }
 
 int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if((currentfunction->stat & WHILE_STATEMENT) == 0) PrintError(WEND_NOWHILE);
- return;
+ return(0);
 }
 
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if((currentfunction->stat & FOR_STATEMENT) == 0) {
   PrintError(NEXT_WITHOUT_FOR);
-  return;
+  return(0);
  }
+
+ return(0);
 }
 
 /*
@@ -919,6 +915,7 @@ do {
       currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
       exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
+
       if(exprtrue == -1) {
        PrintError(BAD_CONDITION);
        return(BAD_CONDITION);
@@ -937,7 +934,7 @@ do {
         if(strcmpi(tokens[0],"WEND") == 0) {
          PopSaveInformation();               
          currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-	 return;
+	 return(0);
         }
        }
 
@@ -956,6 +953,7 @@ do {
       }
 
       returnvalue=ExecuteLine(buf);
+
       if(returnvalue != 0) {
         ClearIsRunningFlag();
         return(returnvalue);
@@ -966,7 +964,8 @@ do {
   } while(exprtrue == 1);
   
 
-PopSaveInformation();               
+PopSaveInformation(); 
+return(0);             
 }
 
 /*
@@ -1005,7 +1004,7 @@ int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   return(ELSE_WITHOUT_IF);
  }
 
-return;
+return(0);
 }
 
 /*
@@ -1022,7 +1021,7 @@ int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   return(ELSE_WITHOUT_IF);
  }
 
-return;
+return(0);
 }
 /*
  * Endfunction statement
@@ -1041,7 +1040,7 @@ if((currentfunction->stat & FUNCTION_STATEMENT) != FUNCTION_STATEMENT) {
 }
 
 currentfunction->stat|= FUNCTION_STATEMENT;
-return;
+return(0);
 }
 
 /*
@@ -1111,12 +1110,12 @@ int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
    if((strcmpi(tokens[1],"NEXT") == 0) && (currentfunction->stat & FOR_STATEMENT)){
   		currentfunction->stat &= FOR_STATEMENT;
-		return;
+		return(0);
    }
 
    if((strcmpi(tokens[1],"WEND") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
   		currentfunction->stat &= WHILE_STATEMENT;
-		return;
+		return(0);
    }
 
  } 
@@ -1136,7 +1135,6 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  varsplit split;
  int vartype;
  int count;
- int retval;
 
  ParseVariableName(tokens,1,tc,&split);
 
@@ -1151,10 +1149,11 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
   return(BAD_TYPE);
  }
 
- retval=CreateVariable(split.name,tokens[count+1],split.x,split.y);
+ retval.val.i=VAR_INTEGER;
+ retval.val.i=CreateVariable(split.name,tokens[count+3],split.x,split.y);
 
- if(retval != NO_ERROR) {
-  PrintError(retval);
+ if(retval.val.i != NO_ERROR) {
+  PrintError(retval.val.i);
  }
 
 
@@ -1247,7 +1246,7 @@ do {
   return(SYNTAX_ERROR); 
  }
 
- if(strcmpi(typetokens[0],"ENDTYPE") == 0) return;
+ if(strcmpi(typetokens[0],"ENDTYPE") == 0) return(0);
 
  if(strcmpi(typetokens[1],"AS") != 0) {			/* missing as */
   PrintError(SYNTAX_ERROR);
@@ -1520,7 +1519,7 @@ int touppercase(char *token) {
   z++;
  }
 
-return;
+return(0);
 }
 
 /*
@@ -1853,7 +1852,7 @@ int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(strlen(CurrentFile) == 0) {
   	printf("No file loaded\n");
-	return;
+	return(0);
  }
 
  ExecuteFile(CurrentFile);
@@ -1877,7 +1876,7 @@ int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 	 if(*currentptr == 0) {
 		printf("End reached\n");
-		return;
+		return(0);
 	 }
 
 	 ExecuteLine(linebuf);			/* run statement */
@@ -1894,11 +1893,11 @@ int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
 	set_breakpoint(atoi(tokens[2]),tokens[3]);
-	return;
+	return(0);
  }
 
  printf("Invalid sub-command\n");
- return;
+ return(0);
 }
 
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -1909,9 +1908,9 @@ int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
  if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
 	clear_breakpoint(atoi(tokens[2]),tokens[3]);
-	return;
+	return(0);
  }
 
  printf("Invalid sub-command\n");
- return;
+ return(0);
 }
