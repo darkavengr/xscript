@@ -28,6 +28,11 @@
 #include "define.h"
 #include "expr.h"
 
+double doexpr(char *tokens[][MAX_SIZE],int start,int end);
+int DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend);
+int EvaluateSingleCondition(char *tokens[][MAX_SIZE],int start,int end);
+int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end);
+
 /*
  * Evaluate expression
  *
@@ -99,13 +104,11 @@ for(count=start;count<end;count++) {
 
 }
 
-SubstituteVariables(0,exprcount,temp,temp);
-
 for(count=0;count<exprcount;count++) {
- if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
-  PrintError(TYPE_ERROR);
-  return(-1);
- }
+	if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
+		PrintError(TYPE_ERROR);
+ 		return(-1);
+ 	}
 }
 
 val.d=atof(temp[0]);
@@ -170,7 +173,7 @@ for(count=0;count<exprcount;count++)  {
  if(strcmp(temp[count],"**") == 0) {
 
   val.d += pow(atof(temp[count-1]),atof(temp[count+1]));
-  DeleteFromArray(temp,count,count+3);		/* remove rest */
+  DeleteFromArray(temp,start,end,count,count+3);		/* remove rest */
  } 
 
   count++;
@@ -321,9 +324,6 @@ varval firstval,secondval;
 	if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
 	 ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the line */
 	 ConatecateStrings(exprpos+1,end,tokens,&secondval);					/* join all the strings on the line */
-
-	 printf("first=%s\n",firstval.s);
-	 printf("second=%s\n",secondval.s);
 
 	 return(!strcmp(firstval.s,secondval.s));
 	}

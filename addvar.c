@@ -30,8 +30,37 @@
 #include <dlfcn.h>
 
 #include "define.h"
-#include "addvar.h"
 #include "dofile.h"
+
+int InitializeFunctions(void);
+void FreeFunctions(void);
+int CreateVariable(char *name,char *type,int xsize,int ysize);
+int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y);
+int ResizeArray(char *name,int x,int y);
+int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy);
+int GetVariableType(char *name);
+int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split);
+int RemoveVariable(char *name);
+int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount);
+int CheckFunctionExists(char *name);
+double CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end);
+int ReturnFromFunction(void);
+int atoi_base(char *hex,int base);
+int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE],char *out[][MAX_SIZE]);
+int ConatecateStrings(int start,int end,char *tokens[][MAX_SIZE],varval *val);
+int CheckVariableType(char *typename);
+int IsVariable(char *varname);
+int PushFunctionCallInformation(FUNCTIONCALLSTACK *func);
+int PopFunctionCallInformation(void);
+int FindFirstVariable(vars_t *var);
+int FindNextVariable(vars_t *var);
+int FindVariable(char *name,vars_t *var);
+int AddUserDefinedType(UserDefinedType *newudt);
+vars_t *GetVariablePointer(char *name);
+int GetFieldValueFromUserDefinedType(char *varname,char *fieldname,varval *val,int fieldx,int fieldy);
+int IsValidVariableType(char *type);
+int GetFieldTypeFromUserDefinedType(char *varname,char *fieldname);
+UserDefinedType *GetUDT(char *name);
 
 functions *funcs=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
@@ -51,7 +80,7 @@ int callpos=0;
  *
  * In: Nothing
  *
- * Returns: -1 On error or 0 on success
+ * Returns: -1 on error or 0 on success
  *
  */
 
@@ -84,7 +113,7 @@ void FreeFunctions(void) {
 }
 
 /*
- * Add variable
+ * Create variable
  *
  * In: name	Variable name
        type	Variable type
@@ -107,10 +136,9 @@ varsplit split;
 functions *funcnext;
 int statementcount;
 UserDefinedType *usertype;
-UserDefinedType *saveusertype;
+UserDefinedTypeField *udtfieldptr;
 UserDefinedTypeField *fieldptr;
 int count;
-UserDefinedTypeField *udtptr;
 
 /* Check if variable name is a reserved name */
 
@@ -143,6 +171,7 @@ else
   last=next;
 
   if(strcmpi(next->varname,name) == 0) return(VARIABLE_EXISTS);		/* variable exists */
+
   next=next->next;
  }
 
@@ -160,8 +189,8 @@ if(strcmpi(type,"DOUBLE") == 0) {		/* double precision */
 
 	next->type_int=VAR_NUMBER;
 }
-else if(strcmpi(type,"STRING") == 0) {	/* string */			
-	next->val=calloc(((xsize*MAX_SIZE)*(ysize*MAX_SIZE)),sizeof(char *));
+else if(strcmpi(type,"STRING") == 0) {	/* string */
+	next->val=calloc(((xsize*MAX_SIZE)+(ysize*MAX_SIZE)),sizeof(char *));
  	if(next->val == NULL) return(NO_MEM);
 
 	next->type_int=VAR_STRING;
@@ -184,30 +213,36 @@ else {					/* user-defined type */
 	usertype=GetUDT(type);
 	if(usertype == NULL) return(BAD_TYPE);
 
-	next->udt=malloc((xsize*sizeof(UserDefinedType))*(ysize*sizeof(UserDefinedType)));	/* allocate user-defined type */
+	next->udt=malloc((xsize*ysize)*sizeof(UserDefinedType));	/* allocate user-defined type */
+	if(next->udt == NULL) return(NO_MEM);
 
-	next->udt->field=malloc(sizeof(UserDefinedTypeField));		/* allocate field in user-defined type */
+	next->udt->field=malloc(sizeof(UserDefinedTypeField));
 	if(next->udt->field == NULL) return(NO_MEM);
 
-	udtptr=next->udt->field;
-
+	fieldptr=next->udt->field;	
+	udtfieldptr=udt->field;
+	
 	/* copy udt from type definition to variable */
 
 	for(count=0;count<(xsize*ysize);count++) {
-		fieldptr=usertype->field;		/* point to field */
-
-		while(fieldptr != NULL) {				
+		while(udtfieldptr != NULL) {
 			/* copy field entries */
-			strcpy(udtptr->fieldname,fieldptr->fieldname);
-			strcpy(udtptr->type,fieldptr->type);
-
-			udtptr->fieldval=malloc(udtptr->xsize*udtptr->ysize);
-			if(udtptr->fieldval == NULL) return(NO_MEM);
 		
-			udtptr->next=malloc(sizeof(UserDefinedTypeField));		/* allocate field in user-defined type */
-			if(udtptr->next == NULL) return(NO_MEM);
+			strcpy(fieldptr->fieldname,udtfieldptr->fieldname);
+			
+			fieldptr->type=udtfieldptr->type;
+		
+			memcpy(fieldptr,udtfieldptr,sizeof(UserDefinedTypeField));	/* copy udt */
+
+			fieldptr->fieldval=malloc(sizeof(vars_t));
+			if(fieldptr->fieldval == NULL) return(NO_MEM);
+
+			fieldptr->next=malloc(sizeof(UserDefinedTypeField));		/* allocate field in user-defined type */
+			if(fieldptr->next == NULL) return(NO_MEM);
 
 			fieldptr=fieldptr->next;
+			udtfieldptr=udtfieldptr->next;
+
 		}			
 	}
 }
@@ -241,6 +276,7 @@ char *strptr;
 varsplit split;
 UserDefinedType *udtptr;
 UserDefinedTypeField *fieldptr;
+UserDefinedTypeField *udtfield;
 
 /* Find variable */
 
@@ -253,6 +289,7 @@ while(next != NULL) {
 }
 
 if(next == NULL) return(VARIABLE_DOES_NOT_EXIST);
+
 if((x*y) > (next->xsize*next->ysize)) return(BAD_ARRAY);		/* outside array */
 
 /* update variable */
@@ -286,44 +323,50 @@ else if(strcmpi(next->type,"SINGLE") == 0) {	/* single */
        return(0);
 }
 else {					/* user-defined type */	
-	fieldptr=next->udt->field;	/* point to fields in udt */
+	next=GetVariablePointer(name);		/* get variable entry */
+	if(next == NULL) return(-1);
+	
+	udtfield=next->udt->field;
 
-	while(fieldptr != NULL) {		/* search fields */
-	 
-	  if(strcmpi(fieldptr->fieldname) == 0) {	/* found name */
-		if(fieldptr->type == VAR_INTEGER) {
-			fieldptr->fieldval->i=val->i;
-		        return(0);
-		}
-		else if(fieldptr->type == VAR_NUMBER) {
-			fieldptr->fieldval->d=val->d;
-		        return(0);
-		}
-		else if(fieldptr->type == VAR_SINGLE) {
-			fieldptr->fieldval->i=val->f;
-		        return(0);
-		}	
-		else if(fieldptr->type == VAR_STRING) {
-			if(next->val[( (y*next->ysize)+(next->xsize*x))].s == NULL) {		/* if string element not allocated */
-			 next->val[((y*next->ysize)+(next->xsize*x))].s=malloc(strlen(val->s));	/* allocate memory */
-		     	 strcpy(next->val[((y*next->ysize)+(next->xsize*x))].s,val->s);		/* assign value */
-		        } 
+	while(udtfield != NULL) {
+		if(strcmp(udtfield->fieldname,fieldname) == 0) {	/* found field */
+			val->type=udtfield->type;
 
-		        if( strlen(val->s) > strlen(next->val[( (y*next->ysize)+(next->xsize*x))].s)) {	/* if string element larger */
-			 realloc(next->val[((y*next->ysize)+(next->xsize*x))].s,strlen(val->s));	/* resize memory */	
-		     	 strcpy(next->val[((y*next->ysize)+(next->xsize*x))].s,val->s);		/* assign value */
-       			}
+			if(udtfield->type == VAR_NUMBER) {
+			        udtfield->fieldval[(next->ysize*y)+(next->xsize*x)].d=val->d;
+			        return(0);
+			 }
+			 else if(udtfield->type == VAR_STRING) {
+			 	if(udtfield->fieldval[( (y*next->ysize)+(next->xsize*x))].s == NULL) {		/* if string element not allocated */
+	 				udtfield->fieldval[((y*next->ysize)+(next->xsize*x))].s=malloc(strlen(val->s));	/* allocate memory */
+       				} 
 
-		        return(0);
-		}
-	     }
+       				if( strlen(val->s) > (strlen(udtfield->fieldval[(y*next->ysize)+(next->xsize*x)].s)+(next->xsize*x))) {	/* if string element larger */
+	 				realloc(udtfield->fieldval[((y*next->ysize)+(next->xsize*x))].s,strlen(val->s));	/* resize memory */
+       				}
+		
+			        strcpy(udtfield->fieldval[(next->ysize*y)+(next->xsize*x)].s,val->s);		/* assign value */
+			        return(0);
+			 }
+			 else if(udtfield->type == VAR_INTEGER) {
+			        udtfield->fieldval[(y*next->ysize)+(next->xsize*x)].i=val->i;
+				return(0);
+			 }
+			 else if(udtfield->type == VAR_SINGLE) {
+			        udtfield->fieldval[(next->ysize*y)+(next->xsize*x)].f=val->f;
+				return(0);
+			 }
+			 else {
+				return(-1);
+			}	
+		 }
 
-          fieldptr=fieldptr->next;
-       }
+		udtfield=udtfield->next;
+	}
+	
 }
 
-
-return(-1);
+return(0);
 }
 
 /*
@@ -346,20 +389,20 @@ int statementcount;
 
 next=currentfunction->vars;
 
- while(next != NULL) {
+while(next != NULL) {
 
-   if(strcmpi(next->varname,name) == 0) {		/* found variable */
-    if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) return(-1);	/* resize buffer */
+	if(strcmpi(next->varname,name) == 0) {		/* found variable */
+		if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) return(-1);	/* resize buffer */
    
-    next->xsize=x;		/* update x subscript */
-    next->ysize=y;		/* update y subscript */
-    return(0);
-  }
+    			next->xsize=x;		/* update x subscript */
+    			next->ysize=y;		/* update y subscript */
+    			return(0);
+  	}
 
-  next=next->next;
- }
+	next=next->next;
+}
 
- return(-1);
+return(-1);
 }
 
 /*
@@ -373,7 +416,6 @@ next=currentfunction->vars;
  */
 int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy) {
 vars_t *next;
-varsplit split;
 UserDefinedTypeField *udtfield;
 char c;
 
@@ -445,39 +487,11 @@ else if(strcmpi(next->type,"SINGLE") == 0) {
 	return(0);
 }
 else {					/* User-defined type */
-udtfield=next->udt;
-
-	while(udtfield != NULL) {
-	 	if(strcmp(udtfield->fieldname,fieldname) == 0) {	/* found field */
-			 if(strcmpi(next->type,"DOUBLE") == 0) {
-			        val->d=udtfield->fieldval[(y*fieldy)+(x*fieldx)].d;
-			        return(0);
-			 }
-			 else if(strcmpi(next->type,"STRING") == 0) {
-				val->s=malloc(strlen(next->val[( (y*fieldy)+(x*fieldx))].s));				/* allocate string */
-				if(val->s == NULL) return(NO_MEM);
-
-        			strcpy(val->s,udtfield->fieldval[( (y*fieldy)+(x*fieldx))].s);
-			        return(0);
-			 }
-			 else if(strcmpi(next->type,"INTEGER") == 0) {
-			        val->i=udtfield->fieldval[(y*fieldy)+(x*fieldx)].i;
-				return(0);
-			 }
-			 else if(strcmpi(next->type,"SINGLE") == 0) {
-			        val->f=next->val[(y*fieldy)+(x*fieldx)].f;
-				return(0);
-			 }
-			 else {
-			  return(BAD_TYPE);
-			 }	
-		}
-
-		udtfield=udtfield->next;
-	}
+	if(GetFieldValueFromUserDefinedType(next->varname,fieldname,val,x,y) == -1) return(-1);
+	return(0);
 }	
 
-return(-1);
+return(BAD_TYPE);
 }
 
 /*
@@ -491,7 +505,6 @@ return(-1);
 
 int GetVariableType(char *name) {
 vars_t *next;
-varsplit split;
 
 if(name == NULL) return(-1);				/* Variable does not exist */
 
@@ -502,7 +515,6 @@ if(*name == '"') return(VAR_STRING);			/* Literal string */
 /* Find variable name */
 
 next=currentfunction->vars;
-
 while(next != NULL) {  
  if(strcmpi(next->varname,name) == 0) return(next->type_int);		/* Found variable */
 
@@ -513,7 +525,7 @@ return(-1);
 }
 
 /*
- * Split variable into name and subscripts
+ * Split variable into name,subscripts, field and field subscripts
  *
  * In: char *name	Variable name
        varsplit *split	Variable split object
@@ -522,88 +534,96 @@ return(-1);
  *
  */
 int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split) {
-int exprparse=0;
+int count;
 int fieldstart=0;
-int subscriptend=0;
-int fieldsubscriptstart=0;
+int fieldend;
+int subscriptend;
+int commafound=FALSE;
+int parse_end=0;
+
+memset(split,0,sizeof(varsplit));
 
 strcpy(split->name,tokens[start]);		/* copy name */
 
-if(start == end) { /* no subscripts */
- split->x=0;
- split->y=0;
- return;
+split->x=1;
+split->y=1;
+split->fieldx=1;
+split->fieldy=1;
+
+for(count=start;count<end;count++) {			/* find field start, if any */
+	if(strcmp(tokens[count],".") == 0) {
+		fieldstart=count+1;
+		parse_end += 4;			/* skip name, . and field name */
+		break;
+	}
 }
 
+/* find end of a possible subscript */
 
-split->y=0;
-
-/* If array or slice */
+if(fieldstart == 0) {
+	subscriptend=end;
+}
 
 if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
-
- if(strcmp(tokens[start+1],"(") == 0) split->arraytype=ARRAY_SUBSCRIPT;
- if(strcmp(tokens[start+1],"[") == 0) split->arraytype=ARRAY_SLICE;
+	if(strcmp(tokens[start+1],"(") == 0) split->arraytype=ARRAY_SUBSCRIPT;
+	if(strcmp(tokens[start+1],"[") == 0) split->arraytype=ARRAY_SLICE;
  
-/* find end of array subscripts */
+	/* find end of array subscripts */
 
- for(subscriptend=start+1;subscriptend=end;subscriptend++) {
-   if(strcmp(tokens[subscriptend],")") == 0) break;
- }
+	for(subscriptend=start+2;count<subscriptend;count++) {
+	 	if(strcmp(tokens[subscriptend],")") == 0) break;
+	}
 
- for(exprparse=start+2;exprparse<end;exprparse++) {
-    if(strcmp(tokens[exprparse],",") == 0) {		 /* 2d array */
-     	 split->x=doexpr(tokens,start+2,exprparse);
-	 split->y=doexpr(tokens,exprparse+1,subscriptend);
-	 return;
-    }
- }
+	parse_end += (subscriptend-(start+1));
 
- split->x=doexpr(tokens,start+2,end+1);
- split->y=0;
-}
-else
-{
-	split->x=0;
-	split->y=1;
-}
+	commafound=FALSE;
 
-/* find start of field name */
+	for(count=start+2;count<subscriptend;count++) {
+		if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
+			split->x=doexpr(tokens,start+1,count);
+			split->y=doexpr(tokens,count+1,subscriptend);
 
-for(fieldstart=subscriptend+1;fieldstart<end;fieldstart++) {
-	 if(strcmp(tokens[fieldstart],".") == 0) {		 /* found start of field name */
+			commafound=TRUE;
+		 	break;
+		}
+	}
 
-  		if(fieldstart < end-2) return(SYNTAX_ERROR);
-
-/* find field subscripts */
-
-		  for(fieldsubscriptstart=fieldstart+1;fieldsubscriptstart<end;fieldsubscriptstart++) {
-			if((strcmp(tokens[fieldsubscriptstart],"(") == 0) || (strcmp(tokens[fieldsubscriptstart],"[") == 0)) {
-
-			  for(exprparse=start+2;exprparse<end;exprparse++) {
-    				if(strcmp(tokens[exprparse],",") == 0) {		 /* 3d array */
-				 split->x=doexpr(tokens,start+2,exprparse);
-				 split->y=doexpr(tokens,exprparse+1,subscriptend);
-				 return;
-				}
-			  }
-
-			  if(exprparse == end) {			/* 3d array */  
-		       	  	split->fieldx=doexpr(tokens,start+2,end+1);
-			        split->fieldy=0;
-			  }
-
-			break;
-		   }
-	 	  }
+	if(commafound == FALSE) {
+		split->x=doexpr(tokens,start+2,subscriptend+1);
+	 	split->y=1;
+	}
 	
+}
+
+if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
+	strcpy(split->fieldname,tokens[fieldstart]);	/* copy field name */
+
+	if((strcmp(tokens[fieldstart+1],"(") == 0) || (strcmp(tokens[fieldstart+1],"[") == 0)) {
+
+		for(fieldend=start+2;count<end;count++) {
+ 			if(strcmp(tokens[fieldend],")") == 0) {
+				parse_end=fieldend;
+				break;
+			}
+ 		}
+
+		for(count=fieldstart+1;count<end;count++) {
+    			if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
+				split->fieldx=doexpr(tokens,fieldstart+2,count);
+				split->fieldy=doexpr(tokens,count+1,end-1);
+				break;
+			}
+		  }
+
+		  if(count == end) {			/* 2d array */  
+		  	split->fieldx=doexpr(tokens,start+2,end-1);
+		        split->fieldy=1;
+		  }
 	 }
-
 }
 
-  strcpy(split->fieldname,tokens[fieldsubscriptstart+1]);	/* copy field name */
+return(parse_end);
 }
-
 
 /*
  * Remove variable
@@ -846,7 +866,7 @@ while(next != NULL) {
 
 if(next == NULL) return(INVALID_STATEMENT);
 
-SubstituteVariables(start+2,end,tokens,tokens);			/* substitute variables */
+if(SubstituteVariables(start+2,end,tokens,tokens) == -1) return(-1);			/* substitute variables */
 
 /* save information about the calling function. The calling function is already on the stack */
 
@@ -1025,168 +1045,181 @@ int countx;
 int outcount;
 varval val;
 int tokentype;
-int s;
-int countz;
 char *temp[MAX_SIZE][MAX_SIZE];
 varval subst_returnvalue;
+int s;
+int type;
+int skiptokens=0;
+int numberofouttokens=0;
+
+outcount=0;
 
 /* replace non-decimal numbers with decimal equivalents */
- for(count=start;count<end;count++) {
-   if(memcmp(tokens[count],"0x",2) == 0 ) {	/* hex number */  
-    valptr=tokens[count];
-    valptr=valptr+2;
+for(count=start;count<end;count++) {
+	if(memcmp(tokens[count],"0x",2) == 0 ) {	/* hex number */  
+	    valptr=tokens[count];
+	    valptr=valptr+2;
 
-    itoa(atoi_base(valptr,16),buf);
-    strcpy(tokens[count],buf);
-   }
+	    itoa(atoi_base(valptr,16),buf);
+	    strcpy(tokens[count],buf);   }
 
-   if(memcmp(tokens[count],"&",1) == 0) {				/* octal number */
-    valptr=tokens[count];
-    valptr=valptr+2;
+	if(memcmp(tokens[count],"&",1) == 0) {				/* octal number */
+	   valptr=tokens[count];
+	   valptr=valptr+2;
 
-    itoa(atoi_base(valptr,8),buf);
-    strcpy(tokens[count],buf);
-   }
+	  itoa(atoi_base(valptr,8),buf);
+    	  strcpy(tokens[count],buf);
+   	}
 
-   if(memcmp(tokens[count],"0b",2) == 0) {					/* binary number */
-    valptr=tokens[count];
-    valptr=valptr+2;
+      if(memcmp(tokens[count],"0b",2) == 0) {					/* binary number */
+	 valptr=tokens[count];
+    	 valptr=valptr+2;
 
-    itoa(atoi_base(valptr,2),tokens[count]);
-   }
+    	itoa(atoi_base(valptr,2),tokens[count]);
+     }
  }
 
 outcount=start;
 
 for(count=start;count<end;count++) { 
- tokentype=0;
+	tokentype=0;
 
- if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
-	  tokentype=SUBST_FUNCTION;
+	 if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
+	 	tokentype=SUBST_FUNCTION;
 
-	  s=count;	/* save start */
- 	  count++;		/* skip ( */
+	 	s=count;	/* save start */
+ 	 	count++;		/* skip ( */
 
-	  for(countx=count;countx<end;countx++) {		/* find end of function call */
-		if(strcmp(tokens[countx],")") == 0) {
-			countx++;
-			break;
-		}
-	  }
+	 	for(countx=count;countx<end;countx++) {		/* find end of function call */
+			if(strcmp(tokens[countx],")") == 0) {
+				countx++;
+				break;
+			}
+	 	 }
  
 
-	  CallFunction(tokens,s,countx-1);
+	  	CallFunction(tokens,s,countx-1);
 
-	  get_return_value(&subst_returnvalue);
+	  	get_return_value(&subst_returnvalue);
 
-	  if(retval.val.type == VAR_STRING) {		/* returning string */   
-	   sprintf(temp[outcount++],"\"%s\"",retval.val.s);
-	  }
-	  else if(retval.val.type == VAR_INTEGER) {		/* returning integer */
-		 sprintf(temp[outcount++],"%d",retval.val.i);
-  	  }
-	  else if(retval.val.type == VAR_NUMBER) {		/* returning double */
-		 sprintf(temp[outcount++],"%.6g",retval.val.d);		 		
-	  }
-	  else if(retval.val.type == VAR_SINGLE) {		/* returning single */
-		 sprintf(temp[outcount++],"%f",retval.val.f);
-	  }
+	  	if(retval.val.type == VAR_STRING) {		/* returning string */   
+	  		sprintf(temp[outcount++],"\"%s\"",retval.val.s);
+	  		numberofouttokens++;
+	  	}
+	  	else if(retval.val.type == VAR_INTEGER) {		/* returning integer */
+			sprintf(temp[outcount++],"%d",retval.val.i);
+			numberofouttokens++;
+  	  	}
+	  	else if(retval.val.type == VAR_NUMBER) {		/* returning double */
+			sprintf(temp[outcount++],"%.6g",retval.val.d);		 		
+			numberofouttokens++;	
+	  	}
+	  	else if(retval.val.type == VAR_SINGLE) {		/* returning single */
+			sprintf(temp[outcount++],"%f",retval.val.f);
+			numberofouttokens++;
+	  	}
 
-	  count=countx+1;
-	  continue;
-  }
+	  	count=countx+1;
+	  	continue;
+  	}
 
- if(IsVariable(tokens[count]) == 0) {
-    for(countx=count;countx<end;countx++) {		/* find end of function call */
-      if(strcmp(tokens[countx],")") == 0) break;
-    }
+	if(IsVariable(tokens[count]) == 0) {
+	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 
-    ParseVariableName(tokens,count,countx-1,&split);
+	    tokentype=SUBST_VAR;
 
-    tokentype=SUBST_VAR;
-   
-    GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+	    GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
 
-    switch(GetVariableType(split.name)) {
-	case VAR_STRING:
-	   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
-		GetVariableValue(split.name,split.fieldname,0,0,&val,split.fieldx,split.fieldy);
+	    type=GetVariableType(split.name); 	/* Get variable type */
+	    
+	    if(type == VAR_UDT) {
+		type=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);		/* get field type id udt */
 
-		b=&val.s;			/* get start */
-		b += split.x;
-
-		memset(temp[outcount],0,MAX_SIZE);
-		d=temp[outcount++];
-		*d++='"';
-
-		if(split.y == 0) split.y=1;
-
-		for(count=0;count < split.y;count++) {
-		 *d++=*b++;
+		if(type == -1) {
+	 		PrintError(TYPE_FIELD_DOES_NOT_EXIST);
+	  		return(-1);
 		}
-
-		break;
 	    }
-	    else
-	    {
-	      if(*tokens[count] == '"') {
-		strcpy(temp[outcount++],tokens[count]);
-	      }
-	      else
-	      {
-	        GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
-	  	sprintf(temp[outcount++],"\"%s\"",val.s);
-	      }
+
+	    switch(type) {
+		case VAR_STRING:
+
+		   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
+			GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+	
+			b=&val.s;			/* get start */
+			b += split.x;
+
+			memset(temp[outcount],0,MAX_SIZE);
+			d=temp[outcount++];
+			*d++='"';
+			numberofouttokens++;
+
+			if(split.y == 0) split.y=1;
+
+			for(count=0;count < split.y;count++) {
+			 *d++=*b++;
+			}
+
+			break;
+		    }
+		    else
+		    {
+		      if(*tokens[count] == '"') {
+			strcpy(temp[outcount++],tokens[count]);
+			numberofouttokens++;
+		      }
+		      else
+		      {
+		        GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+	
+		  	sprintf(temp[outcount++],"\"%s\"",val.s);
+			numberofouttokens++;
+
+		      }
 	      
-            }
+	            }
 
-	    break;
+		    break;
 	
-	case VAR_NUMBER:
-	    sprintf(temp[outcount++],"%.6g",val.d);          
-   	    break;
+		case VAR_NUMBER:
+		    sprintf(temp[outcount++],"%.6g",val.d);
+		    numberofouttokens++;
 
-	case VAR_INTEGER:	       
-	    sprintf(temp[outcount++],"%d",val.i);
-	    break;
+	   	    break;
 
-       case VAR_SINGLE:	     
-	    sprintf(temp[outcount++],"%f",val.f);
-            break;
+	        case VAR_INTEGER:	       
+		    sprintf(temp[outcount++],"%d",val.i);
+	  	    numberofouttokens++;
+	    	    break;
 
-       default:
-	    sprintf(temp[outcount++],"%.6g",val.d);          
-   	    break;
-       }
+	        case VAR_SINGLE:	     
+		    sprintf(temp[outcount++],"%f",val.f);
+		    numberofouttokens++;
+        	    break;			
+        	}
+
+	 	count += skiptokens;
+
+    	}
 	
-	countx=count;
+	if(tokentype == 0) {		/* is not variable or function */
+	  	strcpy(temp[outcount++],tokens[count]);
+	 	numberofouttokens++; 
+	}   
 
-	while(countx < end) {
-	  if(strcmp(tokens[countx],")") != 0) break;
-          
-          countx++;
-        }
-
-        if(countx > count) count=countx;
-
-	continue;
-    }
-
- if(tokentype == 0) {		/* is not variable or function */
-  strcpy(temp[outcount++],tokens[count]);  
- }   
+	if(count >= end) break;
 }
 
 /* copy tokens */
 
- memset(out,0,MAX_SIZE*MAX_SIZE);
+memset(out,0,MAX_SIZE*MAX_SIZE);
 
- for(count=0;count<outcount;count++) {
-//  printf("subst=%s\n",temp[count]);
-
+for(count=0;count<outcount;count++) {
   strcpy(out[count],temp[count]);
- }
+}
 
+return(outcount);
 }
 
 /*
@@ -1204,8 +1237,6 @@ int ConatecateStrings(int start,int end,char *tokens[][MAX_SIZE],varval *val) {
 int count;
 char *b;
 char *d;
-
-//SubstituteVariables(start,end,tokens,tokens);
 
 val->type=VAR_STRING;
 val->s=malloc(MAX_SIZE);		/* initial size */
@@ -1226,9 +1257,6 @@ while(*b != 0) {
 
 for(count=start+1;count<end;count++) {
  if(strcmpi(tokens[count],"+") == 0) { 
-
-    printf("%s %d\n",tokens[count+1],GetVariableType(tokens[count+1]));
-
     if(GetVariableType(tokens[count+1]) != VAR_STRING) {	/* not a string literal or string variable */
      PrintError(TYPE_ERROR);
      return(TYPE_ERROR);
@@ -1250,7 +1278,6 @@ for(count=start+1;count<end;count++) {
   }
 
 *d++=0;
-//*d++='"';
  return(0);
 }
 
@@ -1286,12 +1313,14 @@ int CheckVariableType(char *typename) {
  */
 int IsVariable(char *varname) {
 vars_t *next;
+varsplit split;
+int tc;
 
 next=currentfunction->vars;						/* point to variables */
 
 while(next != NULL) {
  if(strcmpi(next->varname,varname) == 0) return(0);		/* variable exists */
-
+ 
  next=next->next;
 }
 
@@ -1381,34 +1410,53 @@ UserDefinedType *GetUDT(char *name) {
  UserDefinedType *next=udt;
 
  while(next != NULL) {
-  if(strcmpi(next->name,name) == 0) return(next);	/* found UDT */
+ 	if(strcmpi(next->name,name) == 0) return(next);	/* found UDT */
 
-  next=next->next;
+ 	next=next->next;
  }
 
  return(NULL);
 }
 
 int AddUserDefinedType(UserDefinedType *newudt) {
- UserDefinedType *next=udt;
+ UserDefinedType *next;
  UserDefinedType *last;
 
- while(next != NULL) {
-  last=next;
+ if(udt == NULL) {			/* first entry */
+ 	udt=malloc(sizeof(UserDefinedType));		/* add link to the end */
+ 	if(udt == NULL) return(NO_MEM); 
 
-  if(strcmpi(next->name,newudt->name) == 0) return(-1);	/* udt exists */
+	last=udt;
+ }
+ else
+ {
+	/* find end and check if UDT exists */
 
-  next=next->next;
+	next=udt;
+
+ 	while(next != NULL) {
+  		last=next;
+
+  		if(strcmpi(next->name,newudt->name) == 0) return(-1);	/* udt exists */
+
+		next=next->next;
+	}
+
+	
+	/* add link to the end */
+
+	last->next=malloc(sizeof(UserDefinedType));
+ 	if(last->next == NULL) return(NO_MEM); 
+
+	last=last->next;
  }
 
- last->next=malloc(sizeof(UserDefinedType));		/* add link to the end */
- if(last->next == NULL) return(NO_MEM); 
+ memcpy(last,newudt,sizeof(UserDefinedType));
 
- memcpy(last->next,newudt,sizeof(UserDefinedType));
  return(0);
 }
 
-int CopyAllUDT(UserDefinedType *source,UserDefinedType *dest) {
+int CopyUDT(UserDefinedType *source,UserDefinedType *dest) {
 UserDefinedTypeField *sourcenext;
 UserDefinedTypeField *destnext;
 int count;
@@ -1480,3 +1528,114 @@ while(next != NULL) {
 return(NULL);
 }
 
+/*
+ * Get field value from user defined type field
+ *
+ * In:
+ *
+ * fieldname	Name of the UDT field to return value of
+ *
+ * val		Value buffer
+ * fieldx	field x subscript
+ * fieldy	field y subscript
+ *
+ * Returns: 0 in success or non-zero error code on failure
+ *
+ */
+
+int GetFieldValueFromUserDefinedType(char *varname,char *fieldname,varval *val,int fieldx,int fieldy) {
+UserDefinedTypeField *udtfield;
+vars_t *next;
+
+next=GetVariablePointer(varname);		/* get variable entry */
+if(next == NULL) return(-1);
+
+udtfield=next->udt->field;
+
+while(udtfield != NULL) {
+
+	if(strcmp(udtfield->fieldname,fieldname) == 0) {	/* found field */				
+		val->type=udtfield->type;
+		if(udtfield->type == VAR_NUMBER) {
+		        val->d=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].d;
+		        return(0);
+		 }
+		 else if(udtfield->type == VAR_STRING) {
+			val->s=malloc(strlen(udtfield->fieldval[(fieldy*next->ysize)+(next->xsize*fieldx)].s)+1);	/* allocate string */
+			if(val->s == NULL) return(-1);
+
+		        strcpy(val->s,udtfield->fieldval[(fieldy*next->ysize)+(next->xsize*fieldx)].s);
+		        return(0);
+		 }
+		 else if(udtfield->type == VAR_INTEGER) {
+		        val->i=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].i;
+			return(0);
+		 }
+		 else if(udtfield->type == VAR_SINGLE) {
+		        val->f=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].f;
+			return(0);
+		 }
+		 else {
+			return(-1);
+		}	
+	 }
+
+	udtfield=udtfield->next;
+	}
+
+return(-1);
+}	
+
+/*
+ * Check if valid variable type
+ *
+ * In: type	variable type name
+ *
+ * Returns 0 if valid type, -1 otherwise
+ *
+ */
+
+int IsValidVariableType(char *type) {
+int count=0;
+
+while(vartypenames[count] != NULL) {
+	if(strcmpi(vartypenames[count],type) == 0) return(count);
+	count++;
+}
+
+return(-1);
+}
+
+
+/*
+ * Get field typee from user defined type field
+ *
+ * In:
+ * varname	Variable
+ * fieldname	Name of the UDT field to return value of
+ *
+ * val		Value buffer
+ * x		x subscript
+ * y		y subscript
+ *
+ * Returns: field type on success or -1 on failure
+ *
+ */
+
+int GetFieldTypeFromUserDefinedType(char *varname,char *fieldname) {
+UserDefinedTypeField *udtfield;
+vars_t *next;
+
+next=GetVariablePointer(varname);		/* get variable entry */
+if(next == NULL) return(-1);
+
+udtfield=next->udt->field;
+
+while(udtfield != NULL) {
+	if(strcmpi(udtfield->fieldname,fieldname) == 0) return(udtfield->type);
+
+	udtfield=udtfield->next;
+}
+
+return(-1);
+}

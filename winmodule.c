@@ -19,8 +19,10 @@
 
 #include <windows.h>
 
+int LoadModule(char *filename);
+
 /*
- * Load windows
+ * Load windows module
  *
  * In: char *filename			Filename of file to load
  *

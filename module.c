@@ -19,6 +19,9 @@
 
 #include "define.h"
 
+int AddModule(char *modulename);
+intGetModuleHandle(char *module);
+
 /*
  * Module functions
  *

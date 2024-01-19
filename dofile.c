@@ -32,15 +32,92 @@
 #include "define.h"
 #include "dofile.h"
 
-char *errs[] = { "No error","File not found","Missing parameters in statement","Invalid expression",\
-		    "IF statement without ENDIF","FOR statement without NEXT",\
-		    "WHILE without WEND","ELSE without IF","ENDIF without IF","ENDFUNCTION without FUNCTION",\
-		    "Invalid variable name","Out of memory","BREAK outside FOR or WHILE loop","Read error","Syntax error",\
-		    "Error calling library function","Invalid statement","Nested function","ENDFUNCTION without FUNCTION",\
-		    "NEXT without FOR","WEND without WHILE","Duplicate function name","Too few arguments to function",\
-		    "Invalid array subscript","Type mismatch","Invalid variable type","CONTINUE without FOR or WHILE","ELSEIF without IF",\
-		    "Invalid condition","Invalid type in declaration","Missing XSCRIPT_MODULE_PATH path","Variable already exists",
-		    "Variable not found","EXIT FOR without FOR","EXIT WHILE without WHILE","FOR without NEXT","User-defined type already exists",
+int LoadFile(char *filename);
+int ExecuteFile(char *filename);
+int ExecuteLine(char *lbuf);
+int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int if_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int get_return_value(varval *val);
+int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int while_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
+int IsSeperator(char *token,char *sep);
+int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int end);
+int touppercase(char *token);
+int PrintError(int err);
+int strcmpi(char *source,char *dest);
+char *GetCurrentBufferAddress(void);
+char *SetCurrentBufferAddress(char *addr);
+int PushSaveInformation(void);
+int PopSaveInformation(void);
+void InteractiveMode(void);
+int GetInteractiveModeFlag(void);
+void SetInteractiveModeFlag(void);
+void SetIsRunningFlag(void);
+void ClearIsRunningFlag(void);
+int GetIsRunningFlag(void);
+void SetIsFileLoadedFlag(void);
+int GetIsFileLoadedFlag(void);
+int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+
+char *errs[] = { "No error",\
+		 "File not found",\
+		 "Missing parameters in statement",\
+		 "Invalid expression",\
+		 "IF statement without ENDIF",\
+		 "FOR statement without NEXT",\
+		 "WHILE without WEND",\
+		 "ELSE without IF",\
+		 "ENDIF without IF",\
+		 "ENDFUNCTION without FUNCTION",\
+		 "Invalid variable name",\
+		 "Out of memory",\
+		 "BREAK outside FOR or WHILE loop",\
+		 "Read error","Syntax error",\
+		 "Error calling library function",\
+		 "Invalid statement",\
+		 "Cannot declare a function inside another function",\
+		 "ENDFUNCTION without FUNCTION",\
+		 "NEXT without FOR","WEND without WHILE",\
+		 "Duplicate function name",\
+		 "Too few arguments to function call",\
+		 "Invalid array subscript",\
+		 "Type mismatch",\
+		 "Invalid variable type",\
+		 "CONTINUE without FOR or WHILE",\
+		 "ELSEIF without IF",\
+		 "Invalid condition",\
+		 "Invalid type in declaration",\
+		 "Missing XSCRIPT_MODULE_PATH path",\
+		 "Variable already exists",\
+		 "Variable not found",\
+		 "EXIT FOR without FOR",\
+		 "EXIT WHILE without WHILE",\
+		 "FOR without NEXT",\
+		 "User-defined type already exists",\
+		 "Field in user-defined type does not exist",\
              };
 
 int saveexprtrue=0;
@@ -90,7 +167,6 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
 
 extern FUNCTIONCALLSTACK *currentfunction;
 extern FUNCTIONCALLSTACK *funcs;
-extern char *vartypenames[];
 extern jmp_buf savestate;
 extern functionreturnvalue retval;
 
@@ -99,7 +175,7 @@ char *endptr=NULL;		/* end of buffer */
 char *readbuf=NULL;		/* buffer */
 int bufsize=0;			/* size of buffer */
 int ic=0;			/* number of included files */
-char *TokenCharacters="+-*/<>=!%~|& \t()[],{};";
+char *TokenCharacters="+-*/<>=!%~|& \t()[],{};.";
 int Flags=0;
 char *CurrentFile[MAX_SIZE];
 int returnvalue=0;
@@ -240,6 +316,7 @@ int ExecuteLine(char *lbuf) {
  char *d;
  int start;
  vars_t *varptr;
+ vars_t *assignvarptr;
 
  currentfunction->lc++;						/* increment line counter */
 
@@ -310,25 +387,36 @@ if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
 for(count=1;count<tc;count++) {
 
   if(strcmpi(tokens[count],"=") == 0) {
-	  if(CheckSyntax(tokens,1,tc) == FALSE) {		/* check syntax */
-   	   PrintError(SYNTAX_ERROR);
-	   return(0);
+
+	  if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) {		/* check syntax */
+   	  	PrintError(SYNTAX_ERROR);
+	  	return(0);
 	  }
 
 	 ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
-	 vartype=GetVariableType(split.name);
 
+	 tc=SubstituteVariables(count+1,tc,tokens,tokens);
+
+	 if(strlen(split.fieldname) == 0) {			/* use variable name */
+	 	vartype=GetVariableType(split.name);
+	}
+	else
+	{
+	 	vartype=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);
+
+		if(vartype == -1) {
+	 		PrintError(TYPE_FIELD_DOES_NOT_EXIST);
+	  		return(-1);
+		}
+	}
+	
 	 c=*tokens[count+1];
 
-	 if((c == '"') || (vartype == VAR_STRING)) {			/* string */  
+	 if( ((c == '"') || (vartype == VAR_STRING))) {			/* string */  
 	  if(vartype == -1) {	
-		CreateVariable(split.name,vartypenames[VAR_STRING],split.x,split.y);		/* new variable */ 
+		CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
 	  }
-	  else if(vartype != VAR_STRING) {
-	   PrintError(TYPE_ERROR);
-	   return(TYPE_ERROR);
-	  }
-
+	 
 	  ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
 
 	  UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);		/* set variable */
@@ -339,42 +427,49 @@ for(count=1;count<tc;count++) {
 	/* number otherwise */
 
 	 if(vartype == VAR_STRING) {		/* not string */
-	  PrintError(TYPE_ERROR);
-	  return(TYPE_ERROR);
+	 	PrintError(TYPE_ERROR);
+	 	return(TYPE_ERROR);
 	 }
 	
 	 exprone=doexpr(tokens,count+1,tc);
 
 	 if(vartype == VAR_NUMBER) {
-	  val.d=exprone;
+	 	val.d=exprone;
 	 }
  	 else if(vartype == VAR_STRING) {
-	  SubstituteVariables(count+1,count+1,tokens,tokens); 
-	  strcpy(val.s,tokens[count+1]);  
+		tc=SubstituteVariables(count+1,count+1,tokens,tokens);
+
+	 	if(tc == -1) return(-1);
+
+	 	strcpy(val.s,tokens[count+1]);  
 	 }
 	 else if(vartype == VAR_INTEGER) {
-	  val.i=exprone;
+	 	val.i=exprone;
 	 }
 	 else if(vartype == VAR_SINGLE) {
-	  val.f=exprone;
+	 	val.f=exprone;
 	 }
-	 else			/* user-defined type */
-	 {
-	  varptr=GetVariablePointer(split.name);		/* point to variable entry */
+ 	 else if(vartype == VAR_UDT) {			/* user-defined type */	 
+		ParseVariableName(tokens,count+1,tc,&assignsplit);		/* split variable */  	
 
-	  ParseVariableName(tokens,count+1,tc,&assignsplit);
+	 	varptr=GetVariablePointer(split.name);		/* point to variable entry */
+		assignvarptr=GetVariablePointer(assignsplit.name);
 
-          
-	  //			int CopyUDT(UserDefinedType *source,UserDefinedType *dest) {
-		
+		if((varptr == NULL) || (assignvarptr == NULL)) {
+			PrintError(VARIABLE_DOES_NOT_EXIST);
+			return(-1);
+		}
+		   
+		CopyUDT(assignvarptr->udt,assignvarptr->udt);		/* copy UDT */
+
+		return(0);
 	 }
 
-	 if(vartype == -1) {		/* new variable */ 
-	  
-	  val.d=exprone;
-	  CreateVariable(split.name,vartypenames[VAR_NUMBER],split.x,split.y);			/* create variable */
-	  UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
-	  return(0);
+	 if(vartype == -1) {		/* new variable */ 	  
+	 	val.d=exprone;
+	 	CreateVariable(split.name,"DOUBLE",split.x,split.y);			/* create variable */
+	 	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
+	 	return(0);
 	 }
 
 	 UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
@@ -391,8 +486,8 @@ return(INVALID_STATEMENT);
 /*
  * Declare function statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -408,8 +503,8 @@ return(0);
 /*
  * Print statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -424,11 +519,11 @@ int countx;
 char *s[MAX_SIZE];
 char *sptr;
 int PrintFunctionFound;
+char *udttokens[2][MAX_SIZE];
 
-SubstituteVariables(1,tc,tokens);  
+SubstituteVariables(1,tc,tokens,tokens);
 
 for(count=1;count < tc;count++) {
-
  /* if string literal, string variable or function returning string */
 
  if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
@@ -440,9 +535,11 @@ for(count=1;count < tc;count++) {
 
     return(0);
 
- }
+ }	
 }
-  
+
+tc=SubstituteVariables(1,tc,tokens,tokens);
+
 retval.val.type=0;
 retval.val.d=doexpr(tokens,1,tc);
 
@@ -468,26 +565,23 @@ return(0);
 /*
  * Import statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
  */
 
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(AddModule(tokens[1]) > 0) {		/* load module */
- PrintError(retval.val);
-}
-
+AddModule(tokens[1]);		/* load module */
 return(0);
 }
 
 /*
  * If statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -604,8 +698,8 @@ return(ENDIF_NOIF);
 /*
  * Endif statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -618,8 +712,8 @@ int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 /*
  * For statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -794,8 +888,8 @@ do {
 /*
  * Return statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -881,8 +975,8 @@ int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 /*
  * While statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -971,8 +1065,8 @@ return(0);
 /*
  * End statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -993,8 +1087,8 @@ int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 /*
  * Else statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  */
 
@@ -1010,8 +1104,8 @@ return(0);
 /*
  * Elseif statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc	Token count
+       tokens	Tokens array
  *
  */
 
@@ -1026,8 +1120,8 @@ return(0);
 /*
  * Endfunction statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -1046,8 +1140,8 @@ return(0);
 /*
  * Include statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -1064,8 +1158,8 @@ int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 /*
  * Break statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -1073,7 +1167,6 @@ int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  char *buf[MAX_SIZE];
- char *d;
 
  if((strcmpi(tokens[1],"FOR") == 0) && (currentfunction->stat & FOR_STATEMENT)){
   PrintError(EXIT_FOR_WITHOUT_FOR);
@@ -1124,46 +1217,48 @@ int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 /*
  * Declare statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
  */
 
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- varsplit split;
- int vartype;
- int count;
+varsplit split;
+int vartype;
+int count;
 
- ParseVariableName(tokens,1,tc,&split);
+ParseVariableName(tokens,1,tc,&split);
 
- for(count=0;count<tc;count++) {  
-  if(strcmpi(tokens[count],"AS") == 0) break;		/* array as type */
-   break;
- }
+/* if there is a type in the declare statement */
 
-/* fixme */
- if(vartype == -1) {				/* invalid variable type */
-  PrintError(BAD_TYPE);
-  return(BAD_TYPE);
- }
+for(count=1;count<tc;count++) {
+	if(strcmpi(tokens[count],"AS") == 0) break;
+}
 
- retval.val.i=VAR_INTEGER;
- retval.val.i=CreateVariable(split.name,tokens[count+3],split.x,split.y);
+if(count < tc) {		/* found type */
+	retval.val.i=VAR_INTEGER;
+	retval.val.i=CreateVariable(split.name,tokens[count+1],split.x,split.y);
+}
+else
+{
+	retval.val.i=VAR_INTEGER;
+	retval.val.i=CreateVariable(split.name,"DOUBLE",split.x,split.y);
+}
 
- if(retval.val.i != NO_ERROR) {
+if(retval.val.i != NO_ERROR) {
   PrintError(retval.val.i);
- }
+}
 
-
+return;
 }
 
 /*
  * Iterate statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error on error or 0 on success
  *
@@ -1189,8 +1284,8 @@ info->lc=currentfunction->lc;
 /*
  * Type statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns error on error or 0 on success
  *
@@ -1204,22 +1299,9 @@ UserDefinedTypeField *fieldptr;
 UserDefinedType addudt;
 varsplit split;
 
-/* check if built-in type */
-
-count=0;
-
-while(vartypenames[count] != NULL) {
- if(strcmpi(tokens[1],vartypenames[count]) == 0) {
-  PrintError(BAD_TYPE);
-  return(BAD_TYPE); 
- }
-
- count++;
-}
-
 if(GetUDT(tokens[1]) != NULL) {		/* If type exists */
- PrintError(SYNTAX_ERROR);
- return(SYNTAX_ERROR); 
+ PrintError(TYPE_EXISTS);
+ return(TYPE_EXISTS); 
 }
 
 /* create user-defined type entry */
@@ -1246,7 +1328,10 @@ do {
   return(SYNTAX_ERROR); 
  }
 
- if(strcmpi(typetokens[0],"ENDTYPE") == 0) return(0);
+ if(strcmpi(typetokens[0],"ENDTYPE") == 0) {		/* end of statement */
+	AddUserDefinedType(&addudt);			/* add user-defined type */
+ 	return(0);
+ }
 
  if(strcmpi(typetokens[1],"AS") != 0) {			/* missing as */
   PrintError(SYNTAX_ERROR);
@@ -1255,49 +1340,42 @@ do {
 
 /* add field to user defined type */
  
- ParseVariableName(typetokens,0,typetc,split);		/* split variable name */
+ ParseVariableName(typetokens,0,typetc,&split);		/* split variable name */
 
  strcpy(fieldptr->fieldname,split.name);		/* copy name */
  
  fieldptr->xsize=split.x;				/* get x size of field variable */
  fieldptr->ysize=split.y;				/* get y size of field variable */
+ fieldptr->type=IsValidVariableType(typetokens[2]);
 
-/* get type */
+/* get type of field variable */
 
- count=0;
- 
- while(vartypenames[count] != NULL) {
-  if(strcmpi(vartypenames[count],typetokens[2]) == 0) {	/* bad type */
-   PrintError(BAD_TYPE);
-   return(BAD_TYPE); 
+ if(fieldptr->type == -1) {		/* is valid type */
+ 	PrintError(BAD_TYPE);
+ 	return(BAD_TYPE); 
   }
 
-  
-  count++;
- }
-
- fieldptr->type=count;
-
+ if(*currentptr == 0) break;		/* at end */
  
 /* add link to next field */
  fieldptr->next=malloc(sizeof(UserDefinedTypeField));
  if(fieldptr->next == NULL) {
-  PrintError(NO_MEM);
-  return(NO_MEM); 
+ 	PrintError(NO_MEM);
+ 	return(NO_MEM); 
  }
+
+ fieldptr=fieldptr->next;
 
 } while(*currentptr != 0);
 
-AddUserDefinedType(&addudt);			/* add user-defined type */
-
-return(0);
+return(-1);
 }
 
 /*
  * Non-statement keyword as statement
  *
- * In: int tc				Token count
-       char *tokens[MAX_SIZE][MAX_SIZE]	Tokens array
+ * In: tc Token count
+       tokens Tokens array
  *
  * Returns nothing
  *
@@ -1334,10 +1412,10 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
 /* tokenize line */
 
  tc=0;
- memset(tokens,0,10*MAX_SIZE);				/* clear line */
  
  d=tokens[0];
-
+ memset(d,0,MAX_SIZE);				/* clear line */
+ 
  while(*token != 0) {
   IsSeperator=FALSE;
 
@@ -1367,6 +1445,8 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
      
 		    IsSeperator=TRUE;
 		    d=tokens[tc]; 			
+
+		    memset(d,0,MAX_SIZE);				/* clear line */
 
 		    if(*token != ' ') {
 		      *d=*token++;

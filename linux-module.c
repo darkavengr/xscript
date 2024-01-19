@@ -19,6 +19,8 @@
 
 #include <dlfcn.h>
 
+int LoadModule(char *filename);
+
 /*
  * Open Linux module
  *
