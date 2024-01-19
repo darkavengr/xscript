@@ -110,7 +110,7 @@ return(0);
  *
  */
 
-intGetModuleHandle(char *module) {
+int GetModuleHandle(char *module) {
 MODULES *next;
 next=modules;
 

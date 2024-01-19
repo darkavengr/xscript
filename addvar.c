@@ -609,6 +609,9 @@ if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
 
 		for(count=fieldstart+1;count<end;count++) {
     			if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
+				SubstituteVariables(fieldstart+2,count,tokens,tokens);
+				SubstituteVariables(count+1,end-1,tokens,tokens);
+
 				split->fieldx=doexpr(tokens,fieldstart+2,count);
 				split->fieldy=doexpr(tokens,count+1,end-1);
 				break;
@@ -616,6 +619,8 @@ if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
 		  }
 
 		  if(count == end) {			/* 2d array */  
+			SubstituteVariables(start+2,end-1,tokens,tokens);
+
 		  	split->fieldx=doexpr(tokens,start+2,end-1);
 		        split->fieldy=1;
 		  }

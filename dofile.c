@@ -118,7 +118,7 @@ char *errs[] = { "No error",\
 		 "FOR without NEXT",\
 		 "User-defined type already exists",\
 		 "Field in user-defined type does not exist",\
-             };
+		      };
 
 int saveexprtrue=0;
 
@@ -487,7 +487,7 @@ return(INVALID_STATEMENT);
  * Declare function statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -504,7 +504,7 @@ return(0);
  * Print statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -566,7 +566,7 @@ return(0);
  * Import statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -581,7 +581,7 @@ return(0);
  * If statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -699,7 +699,7 @@ return(ENDIF_NOIF);
  * Endif statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -713,7 +713,7 @@ int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * For statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -772,15 +772,20 @@ for(countx=1;countx<tc;countx++) {
 }
 
 if(countx == tc) {
- steppos=1;
+	steppos=1;
 }
 else
 {
- steppos=doexpr(tokens,countx+1,tc);
+	SubstituteVariables(countx+1,tc,tokens,tokens);
+
+	steppos=doexpr(tokens,countx+1,tc);
 }
 
 //  0   1    2 3 4  5
 // for count = 1 to 10
+
+SubstituteVariables(3,count,tokens,tokens);
+SubstituteVariables(count+1,countx,tokens,tokens);
 
 exprone=doexpr(tokens,3,count);			/* start value */
 exprtwo=doexpr(tokens,count+1,countx);			/* end value */
@@ -832,14 +837,14 @@ do {
 
  	//      if(returnvalue != 0) {
 	//  	 ClearIsRunningFlag();
-	//         return(returnvalue);
+	//		  return(returnvalue);
 	//      }
 
-        //     if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
+		 //     if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
 	    
 	     d=*buf+(strlen(buf)-1);
-             if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
-             if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
+		      if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
+		      if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
  	     tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	     if(tc == -1) {
@@ -863,16 +868,16 @@ do {
 
 	      UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
-              if(*currentptr == 0) {
-	       PopSaveInformation();               
-	       currentfunction->stat &= FOR_STATEMENT;
+				if(*currentptr == 0) {
+			PopSaveInformation();				 
+			currentfunction->stat &= FOR_STATEMENT;
 
-	       PrintError(SYNTAX_ERROR);
-	       return(SYNTAX_ERROR);
-              }
+			PrintError(SYNTAX_ERROR);
+			return(SYNTAX_ERROR);
+				}
 	    } 
 
-       currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
+		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
      } while(
 	( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d > exprtwo)) ||
 	((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d < exprtwo)) ||
@@ -880,7 +885,7 @@ do {
 	((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i < exprtwo)) ||
 	((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f > exprtwo)) ||
 	((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f < exprtwo))
-       );
+		);
 
    return(NO_ERROR);	
  }
@@ -889,7 +894,7 @@ do {
  * Return statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -940,12 +945,18 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	  return(0);
  }
  else if(currentfunction->type_int == VAR_INTEGER) {		/* returning integer */
+	  SubstituteVariables(1,tc,tokens,tokens);
+
 	  retval.val.i=doexpr(tokens,1,tc);
  }
  else if(currentfunction->type_int == VAR_NUMBER) {		/* returning double */	 
+	 SubstituteVariables(1,tc,tokens,tokens);
+
 	 retval.val.d=doexpr(tokens,1,tc);
  }
  else if(currentfunction->type_int == VAR_SINGLE) {		/* returning single */
+	 SubstituteVariables(1,tc,tokens,tokens);
+
 	 retval.val.f=doexpr(tokens,1,tc);	
  }
 
@@ -976,7 +987,7 @@ int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * While statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -1011,46 +1022,48 @@ do {
       exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
 
       if(exprtrue == -1) {
-       PrintError(BAD_CONDITION);
-       return(BAD_CONDITION);
+      	PrintError(BAD_CONDITION);
+      	return(BAD_CONDITION);
       }
 
       if(exprtrue == 0) {
-       while(*currentptr != 0) {
+      		while(*currentptr != 0) {
 
-        currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-	if(tc == -1) {
-	 PrintError(SYNTAX_ERROR);
-	 return(SYNTAX_ERROR);
-	}
+      		  	currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+			tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
-        if(strcmpi(tokens[0],"WEND") == 0) {
-         PopSaveInformation();               
-         currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-	 return(0);
-        }
-       }
+			if(tc == -1) {
+				PrintError(SYNTAX_ERROR);
+		 		return(SYNTAX_ERROR);
+			}
+
+			if(strcmpi(tokens[0],"WEND") == 0) {
+				PopSaveInformation();				 
+
+				currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+				return(0);
+			}
+		}
 
       }
 
       tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-       if(tc == -1) {
-	 PrintError(SYNTAX_ERROR);
-	 return(SYNTAX_ERROR);
+		if(tc == -1) {
+		PrintError(SYNTAX_ERROR);
+		return(SYNTAX_ERROR);
      }
 
       if(strcmpi(tokens[0],"WEND") == 0) {
-       info=currentfunction->saveinformation_top;
-       currentptr=info->bufptr;
-       currentfunction->lc=info->lc;
+		info=currentfunction->saveinformation_top;
+		currentptr=info->bufptr;
+		currentfunction->lc=info->lc;
       }
 
       returnvalue=ExecuteLine(buf);
 
       if(returnvalue != 0) {
-        ClearIsRunningFlag();
-        return(returnvalue);
+      		ClearIsRunningFlag();
+		return(returnvalue);
       }
 
       if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
@@ -1059,14 +1072,14 @@ do {
   
 
 PopSaveInformation(); 
-return(0);             
+return(0);		      
 }
 
 /*
  * End statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -1088,15 +1101,15 @@ int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * Else statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  */
 
 int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- if((currentfunction->stat& IF_STATEMENT) != IF_STATEMENT) {
-  PrintError(ELSE_WITHOUT_IF);
-  return(ELSE_WITHOUT_IF);
- }
+if((currentfunction->stat& IF_STATEMENT) != IF_STATEMENT) {
+	PrintError(ELSE_WITHOUT_IF);
+	return(ELSE_WITHOUT_IF);
+}
 
 return(0);
 }
@@ -1105,15 +1118,15 @@ return(0);
  * Elseif statement
  *
  * In: tc	Token count
-       tokens	Tokens array
+		tokens	Tokens array
  *
  */
 
 int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- if((currentfunction->stat& IF_STATEMENT) != IF_STATEMENT) {
-  PrintError(ELSE_WITHOUT_IF);
-  return(ELSE_WITHOUT_IF);
- }
+if((currentfunction->stat& IF_STATEMENT) != IF_STATEMENT) {
+	PrintError(ELSE_WITHOUT_IF);
+	return(ELSE_WITHOUT_IF);
+}
 
 return(0);
 }
@@ -1121,7 +1134,7 @@ return(0);
  * Endfunction statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -1129,8 +1142,8 @@ return(0);
 
 int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if((currentfunction->stat & FUNCTION_STATEMENT) != FUNCTION_STATEMENT) {
- PrintError(ENDFUNCTION_NO_FUNCTION);
- return(ENDFUNCTION_NO_FUNCTION);
+	PrintError(ENDFUNCTION_NO_FUNCTION);
+	return(ENDFUNCTION_NO_FUNCTION);
 }
 
 currentfunction->stat|= FUNCTION_STATEMENT;
@@ -1141,7 +1154,7 @@ return(0);
  * Include statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -1149,8 +1162,8 @@ return(0);
 
 int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  if(LoadFile(tokens[1]) == -1) {
- PrintError(FILE_NOT_FOUND);
- return(FILE_NOT_FOUND);
+	 PrintError(FILE_NOT_FOUND);
+	 return(FILE_NOT_FOUND);
 }
  
 }
@@ -1159,66 +1172,66 @@ int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * Break statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
  */
 
 int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
- char *buf[MAX_SIZE];
+char *buf[MAX_SIZE];
 
- if((strcmpi(tokens[1],"FOR") == 0) && (currentfunction->stat & FOR_STATEMENT)){
-  PrintError(EXIT_FOR_WITHOUT_FOR);
-  return(EXIT_FOR_WITHOUT_FOR);
- }
+if((strcmpi(tokens[1],"FOR") == 0) && (currentfunction->stat & FOR_STATEMENT)){
+	PrintError(EXIT_FOR_WITHOUT_FOR);
+	return(EXIT_FOR_WITHOUT_FOR);
+}
 
- if((strcmpi(tokens[1],"WHILE") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
-  PrintError(EXIT_WHILE_WITHOUT_WHILE);
-  return(EXIT_WHILE_WITHOUT_WHILE);
- }
+if((strcmpi(tokens[1],"WHILE") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
+	PrintError(EXIT_WHILE_WITHOUT_WHILE);
+	return(EXIT_WHILE_WITHOUT_WHILE);
+}
 
 /* find end of loop */
- while(*currentptr != 0) {
-   currentptr=ReadLineFromBuffer(currentptr,buf,MAX_SIZE);			/* get data */
+while(*currentptr != 0) {
+	currentptr=ReadLineFromBuffer(currentptr,buf,MAX_SIZE);			/* get data */
    
-   if(*currentptr == 0) {			/* at end without next or wend */   
+	if(*currentptr == 0) {			/* at end without next or wend */   
 
-	if((strcmpi(tokens[1],"FOR") == 0) && (currentfunction->stat & FOR_STATEMENT)){
-  		PrintError(FOR_WITHOUT_NEXT);
-		return(FOR_WITHOUT_NEXT);
+		if((strcmpi(tokens[1],"FOR") == 0) && (currentfunction->stat & FOR_STATEMENT)){
+			PrintError(FOR_WITHOUT_NEXT);
+			return(FOR_WITHOUT_NEXT);
+		}
+	
+		if((strcmpi(tokens[1],"WHILE") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
+			PrintError(WHILE_WITHOUT_WEND);
+			return(WHILE_WITHOUT_WEND);
+		}
 	}
 
-	if((strcmpi(tokens[1],"WHILE") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
-  		PrintError(WHILE_WITHOUT_WEND);
-		return(WHILE_WITHOUT_WEND);
-	}
-   }
+	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+	if(tc == -1) {
+		PrintError(SYNTAX_ERROR);
+		return(SYNTAX_ERROR);
+   	}
 
-   tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-   if(tc == -1) {
-	    PrintError(SYNTAX_ERROR);
-	    return(SYNTAX_ERROR);
-   }
-
-   if((strcmpi(tokens[1],"NEXT") == 0) && (currentfunction->stat & FOR_STATEMENT)){
+	if((strcmpi(tokens[1],"NEXT") == 0) && (currentfunction->stat & FOR_STATEMENT)){
   		currentfunction->stat &= FOR_STATEMENT;
 		return(0);
-   }
+   	}
 
-   if((strcmpi(tokens[1],"WEND") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
+	if((strcmpi(tokens[1],"WEND") == 0) && (currentfunction->stat & WHILE_STATEMENT)){
   		currentfunction->stat &= WHILE_STATEMENT;
 		return(0);
-   }
+   	}
 
- } 
+   } 
 }
 
 /*
  * Declare statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error number on error or 0 on success
  *
@@ -1258,7 +1271,7 @@ return;
  * Iterate statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error on error or 0 on success
  *
@@ -1285,7 +1298,7 @@ info->lc=currentfunction->lc;
  * Type statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns error on error or 0 on success
  *
@@ -1375,7 +1388,7 @@ return(-1);
  * Non-statement keyword as statement
  *
  * In: tc Token count
-       tokens Tokens array
+		tokens Tokens array
  *
  * Returns nothing
  *
@@ -1389,7 +1402,7 @@ int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * Tokenize string
  *
  * In: char *linebuf			Line to tokenize
-       char *tokens[MAX_SIZE][MAX_SIZE]	Token array output
+		char *tokens[MAX_SIZE][MAX_SIZE]	Token array output
  *
  * Returns -1 on error or token count on success
  *
@@ -1474,7 +1487,7 @@ return(tc);
  * Check if is seperator
  *
  * In: token		Token to check
-       sep		Seperator characters to check against
+		sep		Seperator characters to check against
  *
  * Returns TRUE or FALSE
  *
@@ -1508,9 +1521,9 @@ do {
  * Check syntax
  *
  * In: tokens		Tokens to check
-       separators	Seperator characters to check against
-       start		Start in array
-       end		End in array
+		separators	Seperator characters to check against
+		start		Start in array
+		end		End in array
  *
  * Returns TRUE or FALSE
  *
@@ -1606,8 +1619,8 @@ return(0);
  * Read line from buffer
  *
  * In: char *buf	Buffer to read from
-       char *linebuf	Buffer to store line
-       int size		Maximum size of line
+		char *linebuf	Buffer to store line
+		int size		Maximum size of line
  *
  * Returns -1 on error or address of next address in buffer for success
  *
@@ -1672,7 +1685,7 @@ int PrintError(int err) {
  * Compare string case insensitively
  *
  * In: char *source		First string
-       char *dest		Second string
+		char *dest		Second string
  *
  * Returns: 0 if matches, positive or negative number otherwise
  *
@@ -1944,6 +1957,8 @@ int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  char *linebuf[MAX_SIZE];
 
  if(strlen(tokens[1]) > 0) {
+	SubstituteVariables(1,tc,tokens,tokens);
+
 	StepCount=doexpr(tokens,1,tc);
  }
  else
