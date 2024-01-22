@@ -16,13 +16,9 @@
     You should have received a copy of the GNU General Public License
     along with XScript.  If not, see <https://www.gnu.org/licenses/>.
 */
+#define LINE_SIZE 256
+#define MAX_SIZE 256
 
-#include "define.h"
-
-int ec;
-int lc[MAX_SIZE];
-int l;
-int ic;
-int fc;
-double retval;
+#define TRUE 1
+#define FALSE 0
 

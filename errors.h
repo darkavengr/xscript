@@ -1,0 +1,43 @@
+void SetLastError(int errornumber);
+int GetLastError(void);
+int PrintError(int err);
+
+#define NO_ERROR	    0
+#define FILE_NOT_FOUND	    1
+#define NO_PARAMS	    2
+#define BAD_EXPRESSION	    3
+#define IF_NO_ENDIF	    4
+#define FOR_NO_NEXT	    5
+#define WHILE_WITHOUT_WEND  6
+#define ELSE_WITHOUT_IF     7
+#define ENDIF_NOIF          8
+#define ENDFUNCTION_NO_FUNCTION 9
+#define BAD_VARNAME	    10
+#define NO_MEM		    11
+#define EXIT_FOR_WITHOUT_FOR 12
+#define READ_ERROR	    13
+#define SYNTAX_ERROR	    14
+#define MISSING_LIBSYM	    15
+#define INVALID_STATEMENT   16
+#define NESTED_FUNCTION	    17
+#define FUNCTION_NO_ENDFUNCTION 18
+#define NEXT_WITHOUT_FOR    19
+#define WEND_NOWHILE	    20
+#define FUNCTION_IN_USE	    21
+#define TOO_FEW_ARGS	    22
+#define BAD_ARRAY	    23
+#define TYPE_ERROR	    24
+#define BAD_TYPE	    25
+#define CONTINUE_NO_LOOP    26
+#define ELSEIF_NOIF	    27
+#define BAD_CONDITION	    28
+#define BAD_TYPE	    29
+#define NO_MODULE_PATH 	    30
+#define VARIABLE_EXISTS	    31
+#define VARIABLE_DOES_NOT_EXIST 32
+#define EXIT_WHILE_WITHOUT_WHILE 33
+#define FOR_WITHOUT_NEXT   34
+#define TYPE_EXISTS	   35
+#define TYPE_NO_ENDTYPE	   36
+#define TYPE_FIELD_DOES_NOT_EXIST 37
+

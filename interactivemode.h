@@ -17,24 +17,21 @@
     along with XScript.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <dlfcn.h>
-#include "size.h"
-#include "module.h"
+#define INTERACTIVE_BUFFER_SIZE 65536
+#define INITIAL_BUFFERSIZE 1024
+#define INTERACTIVE_MODE_FLAG	1
 
-/*
- * Open Linux module
- *
- * In: char *filename	Filename to open
- * Returns -1 on error or module handle
- *
- */
-
-int LoadModule(char *filename) {
-int dlhandle;
-
-dlhandle=dlopen(filename,RTLD_LAZY);			/* open library */
-if(dlhandle == -1) return(-1);		/* can't open */
-
-return(dlhandle);
-}
-
+void InteractiveMode(void);
+int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+typedef struct {
+ int linenumber;
+ char *functionname[MAX_SIZE];
+ struct BREAKPOINT *next;
+} BREAKPOINT;

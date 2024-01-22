@@ -1,0 +1,4 @@
+#define INTERACTIVE_MODE_FLAG	1
+#define IS_RUNNING_FLAG		2
+#define IS_FILE_LOADED_FLAG	4
+

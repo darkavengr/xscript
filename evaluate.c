@@ -1,20 +1,20 @@
 /*  XScript Version 0.0.1
-	   (C) Matthew Boote 2020
+   (C) Matthew Boote 2020
 
-	   This file is part of XScript.
+   This file is part of XScript.
 
-	   XScript is free software: you can redistribute it and/or modify
-	   it under the terms of the GNU General Public License as published by
-	   the Free Software Foundation, either version 3 of the License, or
-	   (at your option) any later version.
+   XScript is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-	   XScript is distributed in the hope that it will be useful,
-	   but WITHOUT ANY WARRANTY; without even the implied warranty of
-	   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	   GNU General Public License for more details.
+   XScript is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-	   You should have received a copy of the GNU General Public License
-	   along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License
+   along with XScript.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
@@ -24,25 +24,21 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdbool.h>
-
-#include "define.h"
-#include "expr.h"
-
-double doexpr(char *tokens[][MAX_SIZE],int start,int end);
-int DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend);
-int EvaluateSingleCondition(char *tokens[][MAX_SIZE],int start,int end);
-int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end);
+#include "size.h"
+#include "variablesandfunctions.h"
+#include "evaluate.h"
+#include "errors.h"
 
 /*
-	* Evaluate expression
-	*
-	* In: char *tokens[][MAX_SIZE]		Tokens array containing expression
-	*     int start			Start in array
-	      int end				End in array
-	
-	* Returns result of expression
-	*
-	*/
+* Evaluate expression
+*
+* In: tokens[][MAX_SIZE]	Tokens array containing expression
+*     start			Start in array
+*     end			End in array
+*
+* Returns: result of expression
+*
+*/
 
 double doexpr(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
@@ -65,37 +61,37 @@ exprcount=0;
 
 for(count=start;count<end;count++) {
 	if((strcmp(tokens[count],"(") == 0)) {				/* start of expression */ 
-	if(CheckFunctionExists(tokens[count-1]) == 0) {
-		while(count < end) {
-		 if(strcmp(tokens[count] ,")") == 0) break;
-		 count++;
+		if(CheckFunctionExists(tokens[count-1]) == 0) {
+			while(count < end) {
+				if(strcmp(tokens[count] ,")") == 0) break;
+		 		count++;
+			}
+		
+			continue;
+		}
+		else if(IsVariable(tokens[count-1]) == 0) {
+			for(countx=count+1;countx<end;countx++) {
+	 		 if(strcmp(tokens[countx] ,")") == 0) break;
 		}
 		
 		continue;
-	}
-	else if(IsVariable(tokens[count-1]) == 0) {
-		for(countx=count+1;countx<end;countx++) {
-	 	 if(strcmp(tokens[countx] ,")") == 0) break;
 		}
-		
-		continue;
-	}
-	else
-	{
-		startexpr=count+1;
+		else
+		{
+			startexpr=count+1;
 
-		while(count < end) {
-		 if(strcmp(tokens[count] ,")") == 0) break;
-		 count++;
-		}
+			while(count < end) {
+		 		if(strcmp(tokens[count] ,")") == 0) break;
+
+		 		count++;
+			}
 		
-		SubstituteVariables(startexpr,count,tokens,subexpr);
+			SubstituteVariables(startexpr,count,tokens,subexpr);
 	
-		exprone=doexpr(subexpr,startexpr,count);
+			exprone=doexpr(subexpr,startexpr,count);
 	
-		sprintf(temp[exprcount++],"%.6g",exprone);
-	}
-			
+			sprintf(temp[exprcount++],"%.6g",exprone);
+		}			
 	}
 	else
 	{		
@@ -107,7 +103,7 @@ for(count=start;count<end;count++) {
 for(count=0;count<exprcount;count++) {
 	if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
 		PrintError(TYPE_ERROR);
-			return(-1);
+		return(-1);
 		}
 }
 
@@ -135,10 +131,10 @@ for(count=0;count<exprcount;count++)  {
 
 for(count=0;count<exprcount;count++)  {
 	if(strcmp(temp[count],"*") == 0) { 
-	 val.d *= atof(temp[count+1]);
+		val.d *= atof(temp[count+1]);
 
-	 //DeleteFromArray(temp,count,count+2);		/* remove rest */
-//  count++;
+		//DeleteFromArray(temp,count,count+2);		/* remove rest */
+		count++;
 	
 	} 
 }
@@ -148,7 +144,7 @@ for(count=0;count<exprcount;count++)  {
 
 		val.d += atof(temp[count+1]);
 
-		//  //DeleteFromArray(temp,count,count+2);		/* remove rest */
+		//DeleteFromArray(temp,count,count+2);		/* remove rest */
 
 		count++;
 	 } 
@@ -234,6 +230,9 @@ for(count=0;count<exprcount;count++)  {
 
 	count++;
 }
+
+
+printf("val.d=%.6g\n",val.d);
 
 return(val.d);
 }

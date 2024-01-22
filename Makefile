@@ -1,5 +1,5 @@
 CC = gcc
-OBJFILES = debug.o module.o dofile.o addvar.o expr.o itoa.o xscript.o
+OBJFILES = debug.o module.o  variablesandfunctions.o dofile.o evaluate.o itoa.o xscript.o error.o statements.o interactivemode.o
 OUTFILE  = xscript
 FLAGS    = -lm
 
@@ -14,14 +14,17 @@ endif
 xscript: $(OBJFILES)
 	$(CC) $(OBJFILES) -o $(OUTFILE) $(FLAGS)
 
-addvar.o:
-	$(CC) -c -w addvar.c
+statements.o:
+	$(CC) -c -w statements.c
+
+variablesandfunctions.o:
+	$(CC) -c -w variablesandfunctions.c
 
 dofile.o:
 	$(CC) -c -w dofile.c
 
-expr.o:
-	$(CC) -c -w expr.c
+evaluate.o:
+	$(CC) -c -w evaluate.c
 
 itoa.o:
 	$(CC) -c -w itoa.c
@@ -34,6 +37,12 @@ xscript.o:
 
 debug.o:
 	$(CC) -c -w debug.c
+
+error.o:
+	$(CC) -c -w error.c
+
+interactivemode.o:
+	$(CC) -c -w interactivemode.c
 
 ifeq ($(OS),Windows_NT)
 winmodule.o:

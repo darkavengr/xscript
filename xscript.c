@@ -26,58 +26,12 @@
 #include <signal.h>
 #include <unistd.h>
 #include <setjmp.h>
-#include "define.h"
-
-int LoadFile(char *filename);
-int ExecuteFile(char *filename);
-int ExecuteLine(char *lbuf);
-int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int if_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int get_return_value(varval *val);
-int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int while_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
-int IsSeperator(char *token,char *sep);
-int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int end);
-int touppercase(char *token);
-int PrintError(int err);
-int strcmpi(char *source,char *dest);
-char *GetCurrentBufferAddress(void);
-char *SetCurrentBufferAddress(char *addr);
-int PushSaveInformation(void);
-int PopSaveInformation(void);
-void InteractiveMode(void);
-int GetInteractiveModeFlag(void);
-void SetInteractiveModeFlag(void);
-void SetIsRunningFlag(void);
-void ClearIsRunningFlag(void);
-int GetIsRunningFlag(void);
-void SetIsFileLoadedFlag(void);
-int GetIsFileLoadedFlag(void);
-int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-
+#include "size.h"
+#include "variablesandfunctions.h"
+#include "xscript.h"
+#include "modeflags.h"
+#include "version.h"
+#include "interactivemode.h"
 
 /*
  * Main function
@@ -108,43 +62,43 @@ InitializeFunctions();						/* Initialize functions */
 CreateVariable("argc","INTEGER",0,0);
 
 if(argc == 1) {					/* no arguments */ 
- signal(SIGINT,signalhandler);		/* register signal handler */
+	signal(SIGINT,signalhandler);		/* register signal handler */
 
-/* add argv[0] = executable and argc=1 */
+	/* add argv[0] = executable and argc=1 */
 
- CreateVariable("argv","STRING",1,0);			/* add command line arguments variable */
+	CreateVariable("argv","STRING",1,0);			/* add command line arguments variable */
 
- cmdargs.s=malloc(strlen(argv[0]));				/* allocate string */
- if(cmdargs.s == NULL) return(-1);
+	cmdargs.s=malloc(strlen(argv[0]));				/* allocate string */
+	if(cmdargs.s == NULL) return(-1);
 
- strcpy(cmdargs.s,argv[0]);
+	strcpy(cmdargs.s,argv[0]);
 
- UpdateVariable("argv",NULL,&cmdargs,0,0);
+	UpdateVariable("argv",NULL,&cmdargs,0,0);
 
- cmdargs.i=1;
- UpdateVariable("argc",NULL,&cmdargs,0,0);
+	cmdargs.i=1;
+	UpdateVariable("argc",NULL,&cmdargs,0,0);
 
- printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
+	printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
- InteractiveMode();
+	InteractiveMode();
 }
 else
 {
- cmdargs.i=argc;
+	cmdargs.i=argc;
 
- UpdateVariable("argc",NULL,&cmdargs,count,0);
+	UpdateVariable("argc",NULL,&cmdargs,count,0);
 
- for(count=0;count<argc;count++) {
-  cmdargs.s=malloc(sizeof(argv[count]));
+	for(count=0;count<argc;count++) {
+		cmdargs.s=malloc(sizeof(argv[count]));
 
-  strcpy(cmdargs.s,argv[count]);
-  UpdateVariable("argv",NULL,&cmdargs,count,0);
+		strcpy(cmdargs.s,argv[count]);
+		UpdateVariable("argv",NULL,&cmdargs,count,0);
 
-  free(cmdargs.s);
+		free(cmdargs.s);
 
- }
+	}
 
- ExecuteFile(argv[1]);						/* execute file */
+	ExecuteFile(argv[1]);						/* execute file */
 }
 
 FreeFunctions();
@@ -153,25 +107,22 @@ exit(0);
 }
 
 void signalhandler(int sig) {
- switch(sig) {	
-  case SIGINT:			/* ctrl-c */
-   if(GetIsRunningFlag() == TRUE) {		/* is running */
-	printf("Program suspended. Type continue to resume\n");
-	SetIsRunningFlag();
 
-	setjmp(savestate);		/* save program state */
-   }
-   else
-   {
-	printf("\nCtrl-C. Type QUIT to leave.\n");
-   }
+if(sig == SIGINT) {			/* ctrl-c */
+	if(GetIsRunningFlag() == TRUE) {		/* is running */
+		printf("Program suspended. Type continue to resume\n");
+		SetIsRunningFlag();
 
-   return;
+		setjmp(savestate);		/* save program state */
+   	}
+   	else
+   	{
+		printf("\nCtrl-C. Type QUIT to leave.\n");
+   	}
 
-  default:
-   printf("Signal %d recieved\n",sig);
-  return;
-  }
+   	return;
 }
 
+printf("Signal %d received\n",sig);
+}
 

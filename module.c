@@ -16,8 +16,10 @@
     You should have received a copy of the GNU General Public License
     along with XScript.  If not, see <https://www.gnu.org/licenses/>.
 */
-
-#include "define.h"
+#include <stdio.h>
+#include "errors.h"
+#include "size.h"
+#include "module.h"
 
 int AddModule(char *modulename);
 intGetModuleHandle(char *module);
