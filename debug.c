@@ -49,8 +49,8 @@ int set_breakpoint(int linenumber,char *functionname) {
  
    while(next != NULL) {
     if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) {	/* breakpoint already set */  
-	printf("Breakpoint already set\n"); 
-	return;
+	SetLastError(BREAKPOINT_DOES_NOT_EXIST);
+	return(-1);
     }
 
     next=next->next;
@@ -62,6 +62,8 @@ int set_breakpoint(int linenumber,char *functionname) {
 
  breakpointend->linenumber=linenumber;
  strcpy(breakpointend->functionname,functionname);
+
+ return;
 }
 
 
@@ -96,6 +98,7 @@ int clear_breakpoint(int linenumber,char *functionname) {
     next=next->next;
  }
 
+ return;
 }
 
 int check_breakpoint(int linenumber,char *functionname) {
@@ -173,8 +176,8 @@ vars_t var;
 
 if(strlen(name) > 0) {
 	if(FindVariable(name,&var) == -1) {
-		PrintError(VARIABLE_DOES_NOT_EXIST);	
-		return;
+		SetLastError(VARIABLE_DOES_NOT_EXIST);	
+		return(-1);
 	}
 
 	PrintVariable(&var);

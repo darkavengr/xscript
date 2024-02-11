@@ -102,7 +102,7 @@ for(count=start;count<end;count++) {
 
 for(count=0;count<exprcount;count++) {
 	if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
-		PrintError(TYPE_ERROR);
+		SetLastError(TYPE_ERROR);
 		return(-1);
 		}
 }
@@ -230,9 +230,6 @@ for(count=0;count<exprcount;count++)  {
 
 	count++;
 }
-
-
-printf("val.d=%.6g\n",val.d);
 
 return(val.d);
 }

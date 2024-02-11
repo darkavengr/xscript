@@ -190,8 +190,6 @@ vars_t *varptr;
 vars_t *assignvarptr;
 int lc;
 
-printf("lbuf=%s\n",lbuf);
-
 /* increment line counter */
 
 lc=GetCurrentFunctionLine();
@@ -217,8 +215,6 @@ if(tc == -1) {
 	PrintError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
 }
-
-printf("token=%s\n",tokens[0]);
 
 //if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
 //	PrintError(SYNTAX_ERROR);
@@ -377,33 +373,22 @@ char *sptr;
 int PrintFunctionFound;
 char *udttokens[2][MAX_SIZE];
 
-for(count=1;count < tc;count++) {
-	printf("token=%s\n",tokens[count]);
-}
+/* if string literal, string variable or function returning string */
 
-SubstituteVariables(1,tc,tokens,tokens);
+if(((char) *tokens[1] == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExists(tokens[1]) == VAR_STRING) ) {
+	count += ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
 
-for(count=1;count < tc;count++) {
-	/* if string literal, string variable or function returning string */
+	printf("%s",val.s);
 
-	if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
-	   count += ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
+	if(strcmp(tokens[tc-1],";") != 0) printf("\n");
 
-	   printf("%s",val.s);
-
-	   if(strcmp(tokens[tc-1],";") != 0) printf("\n");
-
-	   return(0);
-
-	}	
+	return(0);
 }
 
 tc=SubstituteVariables(1,tc,tokens,tokens);
 
 retval.val.type=0;
 retval.val.d=doexpr(tokens,1,tc);
-
-printf("retval.val.d=%.6g\n",retval.val.d);
 
 /* if it's a condition print True or False */
 
@@ -1237,8 +1222,8 @@ do {
 /* get type of field variable */
 
 	if(fieldptr->type == -1) {		/* is valid type */
-		PrintError(BAD_TYPE);
-		return(BAD_TYPE); 
+		PrintError(INVALID_ARRAY_SUBSCRIPT);
+		return(INVALID_ARRAY_SUBSCRIPT); 
 	 }
 
 	if(*currentptr == 0) break;		/* at end */

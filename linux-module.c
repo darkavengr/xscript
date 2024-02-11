@@ -20,6 +20,7 @@
 #include <dlfcn.h>
 #include "size.h"
 #include "module.h"
+#include "errors.h"
 
 /*
  * Open Linux module
@@ -33,7 +34,10 @@ int LoadModule(char *filename) {
 int dlhandle;
 
 dlhandle=dlopen(filename,RTLD_LAZY);			/* open library */
-if(dlhandle == -1) return(-1);		/* can't open */
+if(dlhandle == -1) {
+	SetLastError(MISSING_LIBSYM);
+	return(-1);
+}
 
 return(dlhandle);
 }

@@ -116,7 +116,7 @@ statementcount=0;
 do {
 	if(statements[statementcount].statement == NULL) break;
 
-	if(strcmpi(statements[statementcount].statement,name) == 0) return(BAD_VARNAME);
+	if(strcmpi(statements[statementcount].statement,name) == 0) return(INVALID_VARIABLE_NAME);
 	
 	statementcount++;
 
@@ -180,7 +180,7 @@ else {					/* user-defined type */
 	next->type_int=VAR_UDT;
 
 	usertype=GetUDT(type);
-	if(usertype == NULL) return(BAD_TYPE);
+	if(usertype == NULL) return(INVALID_VARIABLE_TYPE);
 
 	next->udt=malloc((xsize*ysize)*sizeof(UserDefinedType));	/* allocate user-defined type */
 	if(next->udt == NULL) return(NO_MEM);
@@ -462,7 +462,7 @@ else {					/* User-defined type */
 	return(0);
 }	
 
-return(BAD_TYPE);
+return(INVALID_VARIABLE_TYPE);
 }
 
 /*
@@ -701,7 +701,7 @@ for(count=2;count<next->funcargcount-1;count++) {
 
 	 if(vartypenames[typecount] == NULL) {		/* user-defined type */
 		//	udtptr=GetUDT(tokens[count+2]);
-		//	if(udtptr == NULL) return(BAD_TYPE);
+		//	if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
 		//	strcpy(vartype,tokens[count+2]);
 	}
 }
@@ -747,7 +747,7 @@ for(count=2;count<next->funcargcount-1;count++) {
 	if(strcmpi(tokens[count+1], ")") == 0) break;		/* at end */
 
 	if(strcmpi(tokens[count+1], "AS") == 0) {
-		count += 4;		/* skip "AS", type and "," */
+		count += 3;		/* skip "AS", type and "," */
 	}
 	else
 	{
@@ -771,7 +771,7 @@ for(count=2;count<next->funcargcount-1;count++) {
 
 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
 	 udtptr=GetUDT(tokens[count+1]);
-	 if(udtptr == NULL) return(BAD_TYPE);
+	 if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
 	}
 
 	strcpy(next->returntype,tokens[funcargcount-1]);
@@ -847,7 +847,7 @@ while(next != NULL) {
 
 if(next == NULL) return(INVALID_STATEMENT);
 
-if(SubstituteVariables(start+2,end,tokens,tokens) == -1) return(-1);			/* substitute variables */
+//if(SubstituteVariables(start+2,end,tokens,tokens) == -1) return(-1);			/* substitute variables */
 
 /* save information about the calling function. The calling function is already on the stack */
 
@@ -1101,11 +1101,9 @@ for(count=start;count<end;count++) {
 			numberofouttokens++;
 	  	}
 
-	  	count=countx+1;
-	  	continue;
-	 	}
-
-	if(IsVariable(tokens[count]) == 0) {
+	  	count=countx-1;
+	 }
+	 else if(IsVariable(tokens[count]) == 0) {
 	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 
 	    tokentype=SUBST_VAR;
@@ -1185,12 +1183,12 @@ for(count=start;count<end;count++) {
 
 	 	count += skiptokens;
 
-	   	}
-	
-	if(tokentype == 0) {		/* is not variable or function */
+	 }
+	 else
+	 {
 	  	strcpy(temp[outcount++],tokens[count]);
 	 	numberofouttokens++; 
-	}   
+	 }   
 
 	if(count >= end) break;
 }
@@ -1200,6 +1198,8 @@ for(count=start;count<end;count++) {
 memset(out,0,MAX_SIZE*MAX_SIZE);
 
 for(count=0;count<outcount;count++) {
+//	 printf("temp[%d]=%s\n",count,temp[count]);
+
 	 strcpy(out[count],temp[count]);
 }
 

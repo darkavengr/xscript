@@ -33,21 +33,17 @@
 #include "version.h"
 #include "interactivemode.h"
 
+jmp_buf savestate;
+
 /*
  * Main function
  *
- * In: int argc		Number of arguments
- *     char **argv	Arguments
+ * In: argc	Number of arguments
+ *     argv	Arguments
  *
  * Returns: Nothing
  *
  */
-
-extern char *TokenCharacters;
-
-void signalhandler(int sig);
-extern char *currentptr;
-jmp_buf savestate;
 
 int main(int argc, char **argv) {
 int count;
@@ -78,9 +74,7 @@ if(argc == 1) {					/* no arguments */
 	cmdargs.i=1;
 	UpdateVariable("argc",NULL,&cmdargs,0,0);
 
-	printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
-
-	InteractiveMode();
+	InteractiveMode();			/* run interpreter in interactive mode */
 }
 else
 {

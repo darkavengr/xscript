@@ -1,0 +1,332 @@
+==6749== Memcheck, a memory error detector
+==6749== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==6749== Using Valgrind-3.13.0 and LibVEX; rerun with -h for copyright info
+==6749== Command: ./xscript test/typefunc.xsc
+==6749== 
+==6749== Invalid write of size 8
+==6749==    at 0x10AB2E: UpdateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10E8AB: InitializeBuiltInVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10A337: InitializeFunctions (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1132DA: main (in /home/matt/programs/xscript/xscript)
+==6749==  Address 0x57d3140 is 0 bytes after a block of size 0 alloc'd
+==6749==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10A539: CreateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10E87B: InitializeBuiltInVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10A337: InitializeFunctions (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1132DA: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Invalid write of size 8
+==6749==    at 0x10AB2E: UpdateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10E8F4: InitializeBuiltInVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10A337: InitializeFunctions (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1132DA: main (in /home/matt/programs/xscript/xscript)
+==6749==  Address 0x57d41f0 is 0 bytes after a block of size 0 alloc'd
+==6749==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10A539: CreateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10E8C8: InitializeBuiltInVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10A337: InitializeFunctions (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1132DA: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Invalid write of size 8
+==6749==    at 0x10AB2E: UpdateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10E93D: InitializeBuiltInVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10A337: InitializeFunctions (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1132DA: main (in /home/matt/programs/xscript/xscript)
+==6749==  Address 0x57d52a0 is 0 bytes after a block of size 0 alloc'd
+==6749==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10A539: CreateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10E911: InitializeBuiltInVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10A337: InitializeFunctions (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1132DA: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Use of uninitialised value of size 8
+==6749==    at 0x10AE1A: UpdateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x11342D: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Invalid write of size 4
+==6749==    at 0x10AE1A: UpdateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x11342D: main (in /home/matt/programs/xscript/xscript)
+==6749==  Address 0x57d6360 is 16 bytes after a block of size 0 alloc'd
+==6749==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10A64A: CreateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1132F7: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Invalid write of size 1
+==6749==    at 0x4C34E00: strcpy (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x113479: main (in /home/matt/programs/xscript/xscript)
+==6749==  Address 0x57d6398 is 0 bytes after a block of size 8 alloc'd
+==6749==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x113443: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Invalid write of size 1
+==6749==    at 0x4C34E0D: strcpy (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x113479: main (in /home/matt/programs/xscript/xscript)
+==6749==  Address 0x57d6399 is 1 bytes after a block of size 8 alloc'd
+==6749==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x113443: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10C014: DeclareFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10F2D1: function_statement (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x113731: CallIfStatement (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EDEE: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x4C34DEC: strcpy (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10A888: CreateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x110D08: declare_statement (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x113731: CallIfStatement (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EDEE: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10A959: CreateVariable (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x110D08: declare_statement (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x113731: CallIfStatement (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EDEE: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10C497: CheckFunctionExists (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE15: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10C497: CheckFunctionExists (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10CF11: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EEC7: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x4C34DEC: strcpy (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10D64B: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EEC7: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10C497: CheckFunctionExists (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10CF11: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10E26B: GetFieldValueFromUserDefinedType (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10B71F: GetVariableValue (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10D1BF: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10D211: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10D216: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x10D21A: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x543F178: __printf_fp_l (printf_fp.c:392)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x543F199: __printf_fp_l (printf_fp.c:392)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x5434A10: __mpn_extract_double (dbl2mpn.c:56)
+==6749==    by 0x543F1C8: __printf_fp_l (printf_fp.c:392)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x5434A15: __mpn_extract_double (dbl2mpn.c:60)
+==6749==    by 0x543F1C8: __printf_fp_l (printf_fp.c:392)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x543FADD: __printf_fp_l (printf_fp.c:974)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x543FAFE: __printf_fp_l (printf_fp.c:977)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x5440BFD: __printf_fp_l (printf_fp.c:987)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x5440C18: __printf_fp_l (printf_fp.c:987)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x544028C: round_away (rounding-mode.h:52)
+==6749==    by 0x544028C: __printf_fp_l (printf_fp.c:994)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x543FB7B: __printf_fp_l (printf_fp.c:1093)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x543FC71: __printf_fp_l (printf_fp.c:1162)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x543FD64: __printf_fp_l (printf_fp.c:1169)
+==6749==    by 0x543C9D6: vfprintf (vfprintf.c:1642)
+==6749==    by 0x5461680: vsprintf (iovsprintf.c:42)
+==6749==    by 0x5445053: sprintf (sprintf.c:32)
+==6749==    by 0x10D4CC: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Conditional jump or move depends on uninitialised value(s)
+==6749==    at 0x4C34DEC: strcpy (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10D64B: SubstituteVariables (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C569: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749== 
+==6749== Invalid write of size 8
+==6749==    at 0x4C38657: memset (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10DA0F: PushFunctionCallInformation (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C642: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==6749== 
+==6749== 
+==6749== Process terminating with default action of signal 11 (SIGSEGV)
+==6749==  Access not within mapped region at address 0x0
+==6749==    at 0x4C38657: memset (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==6749==    by 0x10DA0F: PushFunctionCallInformation (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10C642: CallFunction (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EE34: ExecuteLine (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x10EB9B: ExecuteFile (in /home/matt/programs/xscript/xscript)
+==6749==    by 0x1134E5: main (in /home/matt/programs/xscript/xscript)
+==6749==  If you believe this happened as a result of a stack
+==6749==  overflow in your program's main thread (unlikely but
+==6749==  possible), you can try to increase the size of the
+==6749==  main thread stack using the --main-stacksize= flag.
+==6749==  The main thread stack size used in this run was 8388608.
+==6749== 
+==6749== HEAP SUMMARY:
+==6749==     in use at exit: 133,484 bytes in 49 blocks
+==6749==   total heap usage: 52 allocs, 3 frees, 134,524 bytes allocated
+==6749== 
+==6749== LEAK SUMMARY:
+==6749==    definitely lost: 4,168 bytes in 1 blocks
+==6749==    indirectly lost: 0 bytes in 0 blocks
+==6749==      possibly lost: 0 bytes in 0 blocks
+==6749==    still reachable: 129,316 bytes in 48 blocks
+==6749==         suppressed: 0 bytes in 0 blocks
+==6749== Rerun with --leak-check=full to see details of leaked memory
+==6749== 
+==6749== For counts of detected and suppressed errors, rerun with: -v
+==6749== Use --track-origins=yes to see where uninitialised values come from
+==6749== ERROR SUMMARY: 51 errors from 32 contexts (suppressed: 0 from 0)

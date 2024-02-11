@@ -34,7 +34,10 @@ int LoadModule(char *filename) {
 int dlhandle;
 
 dlhandle=LoadLibrary(filename);			/* open library */
-if(dlhandle == NULL) return(-1);		/* can't open */
+if(dlhandle == NULL) {
+	SetLastError(MISSING_LIBSYM);
+	return(-1);		/* can't open */
+}
 
 return(dlhandle);
 }

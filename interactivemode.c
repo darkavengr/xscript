@@ -27,6 +27,7 @@
 #include "variablesandfunctions.h"
 #include "dofile.h"
 #include "statements.h"
+#include "version.h"
 
 extern jmp_buf savestate;
 
@@ -57,6 +58,8 @@ if(buffer == NULL) {
 bufptr=buffer;
 
 SetCurrentBufferPosition(buffer);		/* set buffer positoon to start */
+
+printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
 while(1) {
 

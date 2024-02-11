@@ -53,7 +53,7 @@ int count;
 modpath=getenv("XSCRIPT_MODULE_PATH");				/* get module path */
 
 if(modpath == NULL)  {
- PrintError(NO_MODULE_PATH);	/* no module path warning */
+ SetLastError(NO_MODULE_PATH);	/* no module path warning */
 
  strcpy(modpath,".");		/* use currnet directory */
 }
@@ -73,8 +73,8 @@ for(count=0;count<tc;count++) {			/* loop through path array */
  if(modules == NULL) {			/* first in list */
   modules=malloc(sizeof(MODULES));
   if(modules == NULL) {
-   PrintError(NO_MEM);
-   return(-1);
+  	SetLastError(NO_MEM);
+  	return(-1);
   }
 
   last=modules;
@@ -91,8 +91,8 @@ for(count=0;count<tc;count++) {			/* loop through path array */
 
  last->next=malloc(sizeof(MODULES));
  if(modules == NULL) {
-  PrintError(NO_MEM);
-  return(-1);
+ 	SetLastError(NO_MEM);
+ 	return(-1);
  }
 
  next=last->next;

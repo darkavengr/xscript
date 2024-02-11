@@ -36,13 +36,15 @@ char *errs[] = { "No error",\
 		 "ENDFUNCTION without FUNCTION",\
 		 "Invalid variable name",\
 		 "Out of memory",\
-		 "BREAK outside FOR or WHILE loop",\
-		 "Read error","Syntax error",\
+		 "EXIT outside FOR or WHILE loop",\
+		 "Read error",
+		 "Syntax error",\
 		 "Error calling library function",\
 		 "Invalid statement",\
 		 "Cannot declare a function inside another function",\
 		 "ENDFUNCTION without FUNCTION",\
-		 "NEXT without FOR","WEND without WHILE",\
+		 "NEXT without FOR",
+		 "WEND without WHILE",\
 		 "Duplicate function name",\
 		 "Too few arguments to function call",\
 		 "Invalid array subscript",\
@@ -51,7 +53,6 @@ char *errs[] = { "No error",\
 		 "CONTINUE without FOR or WHILE",\
 		 "ELSEIF without IF",\
 		 "Invalid condition",\
-		 "Invalid type in declaration",\
 		 "Missing XSCRIPT_MODULE_PATH path",\
 		 "Variable already exists",\
 		 "Variable not found",\
