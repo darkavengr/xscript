@@ -45,6 +45,7 @@ void SetIsFileLoadedFlag(void);
 int GetIsFileLoadedFlag(void);
 int GetInteractiveModeFlag(void);
 void SetInteractiveModeFlag(void);
+void ClearInteractiveModeFlag(void);
 void GetCurrentFile(char *buf);
 void SetCurrentFile(char *buf);
 void SetCurrentBufferPosition(char *pos);

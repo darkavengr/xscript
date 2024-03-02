@@ -32,6 +32,7 @@
 #include "modeflags.h"
 #include "version.h"
 #include "interactivemode.h"
+#include "dofile.h"
 
 jmp_buf savestate;
 

@@ -279,6 +279,8 @@ int exprpos=0;
 int count=0;
 varval firstval,secondval;
 
+printf("single condition\n");
+
 /* check kind of expression */
 
 	exprone=0;
@@ -323,8 +325,7 @@ varval firstval,secondval;
 	exprone=doexpr(tokens,start,exprpos);				/* do expression */
 	exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
 
-
-       exprtrue=0;
+        exprtrue=0;
 
  	switch(ifexpr) {
 
@@ -375,7 +376,7 @@ struct {
 
 // Evaluate sub-conditions
 
-exprend=SubstituteVariables(start,end,tokens,evaltokens);
+SubstituteVariables(start,end,tokens,evaltokens);
 
 startcount=start;
 count=start;
@@ -384,7 +385,7 @@ count=start;
 // Do conditions in brackets first
 //
 
-while(count < exprend) {
+while(count < end) {
 	 if(strcmp(evaltokens[count],"(") == 0) {		// if sub-expression
 
 	  subcount++;
