@@ -1,7 +1,3 @@
-void SetLastError(int errornumber);
-int GetLastError(void);
-int PrintError(int err);
-
 #define NO_ERROR	    0
 #define FILE_NOT_FOUND	    1
 #define NO_PARAMS	    2
@@ -18,7 +14,7 @@ int PrintError(int err);
 #define READ_ERROR	    13
 #define SYNTAX_ERROR	    14
 #define MISSING_LIBSYM	    15
-#define INVALID_STATEMENT   16
+#define INVALID_STATEMENT	16
 #define NESTED_FUNCTION	    17
 #define FUNCTION_NO_ENDFUNCTION 18
 #define NEXT_WITHOUT_FOR    19

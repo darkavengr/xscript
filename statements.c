@@ -93,7 +93,7 @@ int IsStatement(char *statement) {
 int statementcount=0;
 
 do {
-	if(statements[statementcount].statement == NULL) break;
+	if(statements[statementcount].statement == NULL) return(FALSE);
 
 	if(strcmpi(statements[statementcount].statement,statement) == 0) return(TRUE);
 

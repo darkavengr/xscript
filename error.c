@@ -97,20 +97,20 @@ int GetLastError(void) {
  *
  */
 
-int PrintError(int err) {
+int PrintError(int errornumber) {
 char *functionname[MAX_SIZE];
 
 GetCurrentFunctionName(functionname);
 
-if(GetIsRunningFlag() == TRUE) {
-	printf("Error in function (line %d): %s %s\n",GetCurrentFunctionLine(),functionname,errs[err]);
+if(GetInteractiveModeFlag() == FALSE) {
+	printf("Error in function (line %d): %s %s\n",GetCurrentFunctionLine(),functionname,errs[errornumber]);
 }
 else
 {
 
-	printf("Error in function %s: %s\n",functionname,errs[err]);  
+	printf("%s\n",errs[errornumber]);  
 }
 
-if(GetInteractiveModeFlag() == FALSE) exit(err);
+if(GetInteractiveModeFlag() == FALSE) exit(errornumber);
 }
 

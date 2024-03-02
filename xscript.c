@@ -49,48 +49,23 @@ int main(int argc, char **argv) {
 int count;
 char *args[MAX_SIZE];
 char *filename=NULL;
-varval cmdargs;
 
 InitializeFunctions();						/* Initialize functions */
 
 /* intialize command-line arguments */
 
-CreateVariable("argc","INTEGER",0,0);
+signal(SIGINT,signalhandler);		/* register signal handler */
 
 if(argc == 1) {					/* no arguments */ 
-	signal(SIGINT,signalhandler);		/* register signal handler */
-
-	/* add argv[0] = executable and argc=1 */
-
-	CreateVariable("argv","STRING",1,0);			/* add command line arguments variable */
-
-	cmdargs.s=malloc(strlen(argv[0]));				/* allocate string */
-	if(cmdargs.s == NULL) return(-1);
-
-	strcpy(cmdargs.s,argv[0]);
-
-	UpdateVariable("argv",NULL,&cmdargs,0,0);
-
-	cmdargs.i=1;
-	UpdateVariable("argc",NULL,&cmdargs,0,0);
+	SetArguments(&argv[2],0);		/* add command-line arguments */
 
 	InteractiveMode();			/* run interpreter in interactive mode */
 }
 else
 {
-	cmdargs.i=argc;
+	ClearInteractiveModeFlag();
 
-	UpdateVariable("argc",NULL,&cmdargs,count,0);
-
-	for(count=0;count<argc;count++) {
-		cmdargs.s=malloc(sizeof(argv[count]));
-
-		strcpy(cmdargs.s,argv[count]);
-		UpdateVariable("argv",NULL,&cmdargs,count,0);
-
-		free(cmdargs.s);
-
-	}
+	SetArguments(&argv[2],argc-2);		/* add command-line arguments */
 
 	ExecuteFile(argv[1]);						/* execute file */
 }
@@ -100,19 +75,36 @@ FreeFunctions();
 exit(0);
 }
 
+/*
+ * Signal handler
+ *
+ * In: sig	Signal number
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 void signalhandler(int sig) {
 
 if(sig == SIGINT) {			/* ctrl-c */
-	if(GetIsRunningFlag() == TRUE) {		/* is running */
-		printf("Program suspended. Type continue to resume\n");
-		SetIsRunningFlag();
+	if(GetInteractiveModeFlag() == TRUE) {		/* if in interactive mode */
+		if(GetIsRunningFlag() == TRUE) {		/* is running */
+			printf("Program stopped. Type continue to resume\n");
+			//asm("int $3");
 
-		setjmp(savestate);		/* save program state */
-   	}
-   	else
-   	{
-		printf("\nCtrl-C. Type QUIT to leave.\n");
-   	}
+			ClearIsRunningFlag();
+
+			setjmp(savestate);		/* save program state */
+	   	}
+	   	else
+	   	{
+			printf("\nCtrl-C. Type QUIT to leave.\n");
+	   	}
+	}
+	else
+	{
+			printf("Terminated by Ctrl-C\n");
+			exit(0);
+	}
 
    	return;
 }

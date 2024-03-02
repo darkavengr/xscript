@@ -30,8 +30,16 @@ int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+
 typedef struct {
- int linenumber;
- char *functionname[MAX_SIZE];
- struct BREAKPOINT *next;
+	int linenumber;
+	char *functionname[MAX_SIZE];
+	struct BREAKPOINT *next;
 } BREAKPOINT;
+
+typedef struct {
+	char *token[MAX_SIZE];
+	struct BLOCKSTATEMENTSAVE *last;
+	struct BLOCKSTATEMENTSAVE *next;
+} BLOCKSTATEMENTSAVE;
+

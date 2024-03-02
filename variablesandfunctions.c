@@ -30,6 +30,7 @@
 #include "variablesandfunctions.h"
 #include "errors.h"
 #include "dofile.h"
+#include "evaluate.h"
 
 functions *funcs=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
@@ -38,7 +39,6 @@ UserDefinedType *udt=NULL;
 char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
 functionreturnvalue retval;
 
-extern statement statements[];
 extern char *currentptr;
 vars_t *findvar;
 
@@ -57,6 +57,8 @@ extern char *TokenCharacters;
 
 int InitializeFunctions(void) {
 FUNCTIONCALLSTACK newfunc;
+
+/* create main function */
 
 memset(&newfunc,0,sizeof(FUNCTIONCALLSTACK));
 strcpy(newfunc.name,"main");
@@ -103,7 +105,6 @@ char *arr[MAX_SIZE];
 int arrval;
 varsplit split;
 functions *funcnext;
-int statementcount;
 UserDefinedType *usertype;
 UserDefinedTypeField *udtfieldptr;
 UserDefinedTypeField *fieldptr;
@@ -111,18 +112,7 @@ int count;
 
 /* Check if variable name is a reserved name */
 
-statementcount=0;
-	
-do {
-	if(statements[statementcount].statement == NULL) break;
-
-	if(strcmpi(statements[statementcount].statement,name) == 0) return(INVALID_VARIABLE_NAME);
-	
-	statementcount++;
-
-} while(statements[statementcount].statement != NULL);
-
-statementcount=0;
+if(IsStatement(name) == TRUE) return(INVALID_VARIABLE_NAME);
 
 /* Add entry to variable list */
 
@@ -135,6 +125,7 @@ if(currentfunction->vars == NULL) {			/* first entry */
 else
 {
 	next=currentfunction->vars;						/* point to variables */
+	last=next;
 
 	while(next != NULL) {
 	 last=next;
@@ -177,6 +168,7 @@ else if(strcmpi(type,"SINGLE") == 0) {	/* single */
 	next->type_int=VAR_SINGLE;
 }
 else {					/* user-defined type */	 
+
 	next->type_int=VAR_UDT;
 
 	usertype=GetUDT(type);
@@ -259,12 +251,12 @@ while(next != NULL) {
 
 if(next == NULL) return(VARIABLE_DOES_NOT_EXIST);
 
-//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) {		/* outside array */
-//	PrintError(INVALID_ARRAY_SUBSCRIPT);
-//	return(-1);
-//}
+if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) {		/* outside array */
+	return(INVALID_ARRAY_SUBSCRIPT);
+}
 
 /* update variable */
+
 
 if(strcmpi(next->type,"DOUBLE") == 0) {		/* double precision */			
 	      next->val[(y*next->ysize)+(x*next->xsize)].d=val->d;
@@ -279,7 +271,7 @@ else if(strcmpi(next->type,"STRING") == 0) {	/* string */
 	      } 
 
 	      if( strlen(val->s) > strlen(next->val[( (y*next->ysize)+(next->xsize*x))].s)) {	/* if string element larger */
-	 realloc(next->val[((y*next->ysize)+(next->xsize*x))].s,strlen(val->s));	/* resize memory */
+	 	 realloc(next->val[((y*next->ysize)+(next->xsize*x))].s,strlen(val->s));	/* resize memory */
 
 	    	 strcpy(next->val[((y*next->ysize)+(next->xsize*x))].s,val->s);		/* assign value */
 	      }
@@ -436,25 +428,25 @@ while(next != NULL) {
 
 if(next == NULL) return(-1);
 
-//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(BAD_ARRAY);		/* outside array */
+if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
 
 if(strcmpi(next->type,"DOUBLE") == 0) {
-	       val->d=next->val[(y*next->ysize)+(x*next->xsize)].d;
-	       return(0);
+	val->d=next->val[(y*next->ysize)+(x*next->xsize)].d;
+	return(0);
 }
 else if(strcmpi(next->type,"STRING") == 0) {
 	val->s=malloc(strlen(next->val[( (y*next->ysize)+(next->xsize*x))].s));				/* allocate string */
 	if(val->s == NULL) return(-1);
 
-	       strcpy(val->s,next->val[( (y*next->ysize)+(next->xsize*x))].s);
-	       return(0);
+	strcpy(val->s,next->val[( (y*next->ysize)+(next->xsize*x))].s);
+	return(0);
 }
 else if(strcmpi(next->type,"INTEGER") == 0) {
-	       val->i=next->val[(y*next->ysize)+(x*next->xsize)].i;
+	val->i=next->val[(y*next->ysize)+(x*next->xsize)].i;
 	return(0);
 }
 else if(strcmpi(next->type,"SINGLE") == 0) {
-	       val->f=next->val[(y*next->ysize)+(x*next->xsize)].f;
+	val->f=next->val[(y*next->ysize)+(x*next->xsize)].f;
 	return(0);
 }
 else {					/* User-defined type */
@@ -847,7 +839,7 @@ while(next != NULL) {
 
 if(next == NULL) return(INVALID_STATEMENT);
 
-//if(SubstituteVariables(start+2,end,tokens,tokens) == -1) return(-1);			/* substitute variables */
+if(SubstituteVariables(start+2,end,tokens,tokens) == -1) return(-1);			/* substitute variables */
 
 /* save information about the calling function. The calling function is already on the stack */
 
@@ -1009,7 +1001,7 @@ return(num);
 	      int end			End of variables in tokens array
 	      char *tokens[][MAX_SIZE] Tokens array
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error number on error or 0 on success
  * 
   */
 
@@ -1032,6 +1024,7 @@ int s;
 int type;
 int skiptokens=0;
 int numberofouttokens=0;
+int returnvalue;
 
 outcount=0;
 
@@ -1108,25 +1101,23 @@ for(count=start;count<end;count++) {
 
 	    tokentype=SUBST_VAR;
 
-	    GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+	    returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+   	    if(returnvalue != NO_ERROR) return(returnvalue);
 
 	    type=GetVariableType(split.name); 	/* Get variable type */
 	    
 	    if(type == VAR_UDT) {
 		type=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);		/* get field type id udt */
-
-		if(type == -1) {
-	 		PrintError(TYPE_FIELD_DOES_NOT_EXIST);
-	  		return(-1);
-		}
+		if(type == -1) return(TYPE_FIELD_DOES_NOT_EXIST);	
 	    }
 
 	    switch(type) {
 		case VAR_STRING:
 
 		   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
-			GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
-	
+			returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+		      	if(returnvalue != NO_ERROR) return(returnvalue);
+
 			b=&val.s;			/* get start */
 			b += split.x;
 
@@ -1153,8 +1144,9 @@ for(count=start;count<end;count++) {
 		      }
 		      else
 		      {
-		        GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
-	
+		        returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+		   	if(returnvalue != NO_ERROR) return(returnvalue);
+
 		  	sprintf(temp[outcount++],"\"%s\"",val.s);
 			numberofouttokens++;
 
@@ -1198,12 +1190,10 @@ for(count=start;count<end;count++) {
 memset(out,0,MAX_SIZE*MAX_SIZE);
 
 for(count=0;count<outcount;count++) {
-//	 printf("temp[%d]=%s\n",count,temp[count]);
-
 	 strcpy(out[count],temp[count]);
 }
 
-return(outcount);
+return(0);
 }
 
 /*
@@ -1724,8 +1714,6 @@ char *ptr;
 //if(currentfunction->saveinformation_top->bufptr == NULL) return(NULL);
 
 ptr=currentfunction->saveinformation_top->bufptr;
-printf("ptr=%lX\n",ptr);
-
 return(ptr);
 }
 

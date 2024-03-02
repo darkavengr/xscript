@@ -34,6 +34,15 @@
 BREAKPOINT *breakpoints;
 BREAKPOINT *breakpointend;
 
+/*
+ * Set breakpoint
+ *
+ * In: linenumber	Line number to set breakpoint at
+ *     functionname	Function to set breakpoint in
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int set_breakpoint(int linenumber,char *functionname) {
  BREAKPOINT *next;
 
@@ -66,7 +75,15 @@ int set_breakpoint(int linenumber,char *functionname) {
  return;
 }
 
-
+/*
+ * Clear breakpoint
+ *
+ * In: linenumber	Line number to set breakpoint at
+ *     functionname	Function to set breakpoint in
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int clear_breakpoint(int linenumber,char *functionname) {
  BREAKPOINT *next;
  BREAKPOINT *last;
@@ -101,6 +118,15 @@ int clear_breakpoint(int linenumber,char *functionname) {
  return;
 }
 
+/*
+ * Check breakpoint
+ *
+ * In: linenumber	Line number to set breakpoint at
+ *     functionname	Function to set breakpoint in
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int check_breakpoint(int linenumber,char *functionname) {
  BREAKPOINT *next;
  next=breakpoints;
@@ -115,6 +141,14 @@ int check_breakpoint(int linenumber,char *functionname) {
  return(FALSE);
 }
 
+/*
+ * Print variable
+ *
+ * In: var		Variable to print
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 void PrintVariable(vars_t *var) {
 int count;
 int vartype=0;
@@ -124,8 +158,6 @@ int yinc=0;
 int xinc=0;
 
 printf("%s",var->varname);
-
-// asm("int $3");
 
  for(count=0;count<12-strlen(var->varname);count++) {
    printf(" ");
@@ -140,6 +172,8 @@ printf("%s",var->varname);
 
  xinc=var->xsize;
  if(xinc == 0) xinc++;
+
+ printf("size=%d %d\n",var->xsize,var->ysize);
 
  if((var->xsize >= 1) || (var->ysize >= 1)) printf("(");
 
@@ -171,6 +205,14 @@ printf("%s",var->varname);
   printf("\n");
 }
 
+/*
+ * List variables
+ *
+ * In: name		Variable to list. Empty string to print all variables
+ *
+ * Returns: error number on error or 0 on success
+ *
+ */
 void list_variables(char *name) {
 vars_t var;
 
@@ -190,5 +232,35 @@ do {
  PrintVariable(&var);
  } while(FindNextVariable(&var) != -1);
 
+}
+
+/*
+ * Set command-line arguments
+ *
+ * In: argp		Point to arguments
+ *
+ * Returns: Nothing
+ *
+ */
+void SetArguments(char *argp[MAX_SIZE][MAX_SIZE],int argcount) {
+varval cmdargs;
+int count;
+
+CreateVariable("argcount","INTEGER",0,0);
+
+cmdargs.i=argcount;
+UpdateVariable("argcount",NULL,&cmdargs,0,0);
+
+CreateVariable("args","STRING",argcount,1);
+
+cmdargs.s=malloc(MAX_SIZE);
+
+for(count=0;count<argcount;count++) {
+	strcpy(cmdargs.s,&argp[count]);
+
+	UpdateVariable("args",NULL,&cmdargs,count,0);
+}
+
+return;
 }
 

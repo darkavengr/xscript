@@ -31,6 +31,14 @@
 
 extern jmp_buf savestate;
 
+/*
+ * Run XScript in interactive mode
+ *
+ * In: Nothing
+ *
+ * Returns: Nothing
+ *
+ */
 void InteractiveMode(void) {
 char *tokens[MAX_SIZE][MAX_SIZE];
 char *endstatement[MAX_SIZE];
@@ -43,9 +51,12 @@ int statementcount;
 char *tokenchars[MAX_SIZE];
 char *functionname[MAX_SIZE];
 int tc;
-char *blockstatement[MAX_SIZE];
+BLOCKSTATEMENTSAVE *blockstatementsave_head=NULL;
+BLOCKSTATEMENTSAVE *blockstatementsave_end=NULL;
+BLOCKSTATEMENTSAVE *savelast;
 
 SetInteractiveModeFlag();
+ClearIsRunningFlag();
 
 SetCurrentFile("");				/* No file currently */
 
@@ -87,38 +98,86 @@ while(1) {
 	}
 
 	if(IsBlockStatement(tokens[0]) == TRUE) {	/* if block statement */
-		strcpy(blockstatement,tokens[0]);
+		if(blockstatementsave_head == NULL) {	/* first */
+			blockstatementsave_head=malloc(sizeof(BLOCKSTATEMENTSAVE));
+			if(blockstatementsave_head == NULL) {
+				PrintError(NO_MEM);
+				exit(NO_MEM);
+			}
 
+			blockstatementsave_end=blockstatementsave_head;
+			blockstatementsave_end->last=blockstatementsave_head;
+			blockstatementsave_end->next=NULL;
+		}
+		else
+		{
+//			printf("block statement token last=%lX\n",blockstatementsave_end);
+			blockstatementsave_end->next=malloc(sizeof(BLOCKSTATEMENTSAVE));
+			if(blockstatementsave_end->next == NULL) {
+				PrintError(NO_MEM);
+				exit(NO_MEM);
+			}
+
+			savelast=blockstatementsave_end->last;
+			blockstatementsave_end=blockstatementsave_end->next;
+			blockstatementsave_end->last=savelast;
+		}
+
+		strcpy(blockstatementsave_end->token,tokens[0]);
 		block_statement_nest_count++;
 	}
 
-	if(IsEndStatementForStatement(blockstatement,tokens[0]) == TRUE) {	/* if at end of block statement */
-		block_statement_nest_count--;
+	//printf("blockstatementsave_end=%lX\n",blockstatementsave_end);
 
-		bufptr=buffer;
+	if(blockstatementsave_end != NULL) {
+		if(IsEndStatementForStatement(blockstatementsave_end->token,tokens[0]) == TRUE) {	/* if at end of block statement */
+//			printf("END OF BLOCK STATEMENT=%s\n",tokens[0]);
+
+			block_statement_nest_count--;
+
+	//		printf("block_statement_nest_count=%d\n",block_statement_nest_count);
+
+	//		printf("blockstatementsave_end last=%lX\n",blockstatementsave_end->last);
+	//		printf("blockstatementsave_end=%lX\n",blockstatementsave_end);
+			blockstatementsave_end=blockstatementsave_end->last;	/* point to previous in list */
+
+	//		printf("blockstatementsave_end previous=%lX\n",blockstatementsave_end);
+	//		printf("block statement token=%s\n",blockstatementsave_end->token);
+
+			//free(blockstatementsave_end->next);
+			bufptr=buffer;
+		}
 	}
-	 
-	if(block_statement_nest_count == 0) {
+
+	if(block_statement_nest_count == 0) {			/* if at end of entering statements */
+		printf("%s\n",buffer);
+
 		bufptr=buffer;
 
 		GetCurrentFunctionName(functionname);		/* get current function name */
 
+		SetIsRunningFlag();
+
 		do {
 	   		if(check_breakpoint(GetCurrentFunctionLine(),functionname) == TRUE) {	/* breakpoint found */
 				printf("Breakpoint in function %s on line %d reached\n",functionname,GetCurrentFunctionLine());
-					ClearIsRunningFlag();
+				ClearIsRunningFlag();
 
-					setjmp(savestate);		/* save program state */
+				setjmp(savestate);		/* save program state */
 
-					break;
+				break;
 	   		}
-	
-			SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));
 
-	   		ExecuteLine(bufptr);
+			if(GetIsRunningFlag() == FALSE)	break;		/* not running */
+
+			SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));
+		
+	   		ExecuteLine(linebuf);
 
 	   		bufptr += strlen(bufptr);
 	 } while(*bufptr != 0);
+
+	   ClearIsRunningFlag();
 
 	   memset(buffer,0,INTERACTIVE_BUFFER_SIZE);
 
@@ -134,17 +193,35 @@ while(1) {
 	} 
 }
 
+/*
+ * Quit statement. Quits XScript.
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	exit(0);
 }
 
+/*
+ * Continue statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	if(GetIsRunningFlag() == FALSE) {
 		printf("No program running\n");
 	}
 	else
 	{
-	printf("Continuing\n");
+	printf("Continuing program\n");
 
 	SetIsRunningFlag();
 	longjmp(savestate,0);
@@ -153,10 +230,28 @@ int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 }
 
+/*
+ * Variables command
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 list_variables(tokens[1]);
 }
 
+/*
+ * Load statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	if(tc < 1) {						/* Not enough parameters */
 	 PrintError(SYNTAX_ERROR);
@@ -166,6 +261,15 @@ int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	LoadFile(tokens[1]);
 }
 
+/*
+ * Run statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *currentfile[MAX_SIZE];
 
@@ -180,6 +284,15 @@ if(strlen(currentfile) == 0) {		/* check if there is a file */
 ExecuteFile(currentfile);
 }
 
+/*
+ * Single step statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	int StepCount=0;
 	int count;
@@ -211,21 +324,39 @@ int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 }
 
+/*
+ * Set configuration
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	if(tc < 2) {						/* Not enough parameters */
-	 PrintError(SYNTAX_ERROR);
-	 return(SYNTAX_ERROR);
-	}
+if(tc < 2) {						/* Not enough parameters */
+	PrintError(SYNTAX_ERROR);
+	return(SYNTAX_ERROR);
+}
 
-	if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
+if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
 	set_breakpoint(atoi(tokens[2]),tokens[3]);
-	return(0);
-	}
-
-	printf("Invalid sub-command\n");
 	return(0);
 }
 
+printf("Invalid sub-command\n");
+return(-1);
+}
+
+/*
+ * Clear
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	if(tc < 2) {						/* Not enough parameters */
 	 PrintError(SYNTAX_ERROR);
