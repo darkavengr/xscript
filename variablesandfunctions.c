@@ -468,12 +468,15 @@ return(INVALID_VARIABLE_TYPE);
 
 int GetVariableType(char *name) {
 vars_t *next;
+char c;
 
 if(name == NULL) return(-1);				/* Variable does not exist */
 
-if(*name >= '0' && *name <= '9') return(VAR_NUMBER);	/* Literal number */
+c=*name;
 
-if(*name == '"') return(VAR_STRING);			/* Literal string */
+if(c >= '0' && c <= '9') return(VAR_NUMBER);	/* Literal number */
+
+if(c == '"') return(VAR_STRING);			/* Literal string */
 	
 /* Find variable name */
 
@@ -543,8 +546,8 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 
 	for(count=start+2;count<subscriptend;count++) {
 		if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
-			split->x=doexpr(tokens,start+1,count);
-			split->y=doexpr(tokens,count+1,subscriptend);
+			split->x=EvaluateExpression(tokens,start+1,count);
+			split->y=EvaluateExpression(tokens,count+1,subscriptend);
 
 			commafound=TRUE;
 		 	break;
@@ -552,7 +555,7 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	}
 
 	if(commafound == FALSE) {
-		split->x=doexpr(tokens,start+2,subscriptend+1);
+		split->x=EvaluateExpression(tokens,start+2,subscriptend+1);
 	 	split->y=1;
 	}
 	
@@ -575,8 +578,8 @@ if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
 				SubstituteVariables(fieldstart+2,count,tokens,tokens);
 				SubstituteVariables(count+1,end-1,tokens,tokens);
 
-				split->fieldx=doexpr(tokens,fieldstart+2,count);
-				split->fieldy=doexpr(tokens,count+1,end-1);
+				split->fieldx=EvaluateExpression(tokens,fieldstart+2,count);
+				split->fieldy=EvaluateExpression(tokens,count+1,end-1);
 				break;
 			}
 		  }
@@ -584,7 +587,7 @@ if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
 		  if(count == end) {			/* 2d array */  
 			SubstituteVariables(start+2,end-1,tokens,tokens);
 
-		  	split->fieldx=doexpr(tokens,start+2,end-1);
+		  	split->fieldx=EvaluateExpression(tokens,start+2,end-1);
 		        split->fieldy=1;
 		  }
 	 }

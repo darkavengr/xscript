@@ -9,7 +9,7 @@
 #define CONDITION_OR 1
 #define CONDITION_END 2
 
-double doexpr(char *tokens[][MAX_SIZE],int start,int end);
+double EvaluateExpression(char *tokens[][MAX_SIZE],int start,int end);
 int DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend);
 int EvaluateSingleCondition(char *tokens[][MAX_SIZE],int start,int end);
 int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end);

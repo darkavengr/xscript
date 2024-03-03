@@ -113,7 +113,7 @@ int LoadFile(char *filename) {
 int ExecuteFile(char *filename) {
 char *linebuf[MAX_SIZE];
 char *savecurrentptr;
-int lc;
+int lc=1;
 
 SetCurrentFunctionLine(0);
 	
@@ -149,8 +149,7 @@ do {
 	memset(linebuf,0,MAX_SIZE);
 
 	lc=GetCurrentFunctionLine();
-	lc++;
-	SetCurrentFunctionLine(lc);
+	SetCurrentFunctionLine(++lc);
 
 }    while(*currentptr != 0); 			/* until end */
 
@@ -190,12 +189,6 @@ vars_t *varptr;
 vars_t *assignvarptr;
 int lc;
 
-/* increment line counter */
-
-lc=GetCurrentFunctionLine();
-lc++;
-SetCurrentFunctionLine(lc);
-
 c=*lbuf;
 if(c == '\r' || c == '\n' || c == 0) return(0);			/* blank line */
 
@@ -216,10 +209,10 @@ if(tc == -1) {
 	return(SYNTAX_ERROR);
 }
 
-//if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
-//	PrintError(SYNTAX_ERROR);
-//	return(0);
-//}
+if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
+	PrintError(SYNTAX_ERROR);
+	return(0);
+}
 
 if(CallIfStatement(tc,tokens) == 0) return(0);			/* run statement if statement */
 
@@ -247,7 +240,7 @@ for(count=1;count<tc;count++) {
 
 	 	ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
 
-	 	tc=SubstituteVariables(count+1,tc,tokens,tokens);
+	 	SubstituteVariables(count+1,tc,tokens,tokens);
 
 	 	if(strlen(split.fieldname) == 0) {			/* use variable name */
 	 		vartype=GetVariableType(split.name);
@@ -283,13 +276,13 @@ for(count=1;count<tc;count++) {
 		 	return(TYPE_ERROR);
 		 }
 	
-		 exprone=doexpr(tokens,count+1,tc);
+		 exprone=EvaluateExpression(tokens,count+1,tc);
 
 		 if(vartype == VAR_NUMBER) {
 		 	val.d=exprone;
 		 }
 		 else if(vartype == VAR_STRING) {
-			tc=SubstituteVariables(count+1,count+1,tokens,tokens);
+			SubstituteVariables(count+1,count+1,tokens,tokens);
 
 		 	if(tc == -1) return(-1);
 
@@ -385,10 +378,10 @@ if(((char) *tokens[1] == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (
 	return(0);
 }
 
-tc=SubstituteVariables(1,tc,tokens,tokens);
+SubstituteVariables(1,tc,tokens,tokens);
 
 retval.val.type=0;
-retval.val.d=doexpr(tokens,1,tc);
+retval.val.d=EvaluateExpression(tokens,1,tc);
 
 /* if it's a condition print True or False */
 
@@ -442,15 +435,7 @@ char *d;
 int exprtrue;
 SAVEINFORMATION *info;
 
-printf("IF STATEMENT\n");
-
-for(count=0;count<tc;count++) {
-	printf("if=%s\n",tokens[count]);
-}
-
 if(tc < 1) {						/* not enough parameters */
-	printf("baaaaaaaaaad 0\n");
-
 	PrintError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
 }
@@ -462,10 +447,7 @@ while(*currentptr != 0) {
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
 		exprtrue=EvaluateCondition(tokens,1,tc);
 
-		if(exprtrue == -1) {
-			PrintError(BAD_CONDITION);
-	 		return(BAD_CONDITION);
-	 	}
+		if(exprtrue == -1) return;
 
 		if(exprtrue == 1) {
 			saveexprtrue=exprtrue;
@@ -478,8 +460,6 @@ while(*currentptr != 0) {
 
 				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 				if(tc == -1) {
-					printf("baaaaaaaaaaaaaaad\n");
-
 					PrintError(SYNTAX_ERROR);
 					return(SYNTAX_ERROR);
 				}
@@ -500,8 +480,6 @@ while(*currentptr != 0) {
 
 				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 				if(tc == -1) {
-					printf("baaaaaaaaaad 2\n");
-
 		 			PrintError(SYNTAX_ERROR);
 		 			return(SYNTAX_ERROR);
 				}
@@ -528,8 +506,6 @@ while(*currentptr != 0) {
 				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
 				if(tc == -1) {
-					printf("baaaaaaaaaad 3\n");
-
 		 			PrintError(SYNTAX_ERROR);
 					return(SYNTAX_ERROR);	
 				}
@@ -547,8 +523,6 @@ while(*currentptr != 0) {
 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
 	if(tc == -1) {
-		printf("baaaaaaaaaad 4\n");
-
 		PrintError(SYNTAX_ERROR);
 		return(SYNTAX_ERROR);
 	}
@@ -645,7 +619,7 @@ else
 {
 	SubstituteVariables(countx+1,tc,tokens,tokens);
 
-	steppos=doexpr(tokens,countx+1,tc);
+	steppos=EvaluateExpression(tokens,countx+1,tc);
 }
 
 //  0   1    2 3 4  5
@@ -653,8 +627,8 @@ else
 
 SubstituteVariables(1,tc,tokens,tokens);
 
-exprone=doexpr(tokens,3,count);			/* start value */
-exprtwo=doexpr(tokens,count+1,countx);			/* end value */
+exprone=EvaluateExpression(tokens,3,count);			/* start value */
+exprtwo=EvaluateExpression(tokens,count+1,countx);			/* end value */
 
 if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&loopx,split.fieldx,split.fieldy) == -1) {
 	CreateVariable(split.name,"DOUBLE",split.x,split.y);
@@ -810,17 +784,17 @@ if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
 	SubstituteVariables(1,tc,tokens,tokens);
 
-	retval.val.i=doexpr(tokens,1,tc);
+	retval.val.i=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 
 	 SubstituteVariables(1,tc,tokens,tokens);
 
-	 retval.val.d=doexpr(tokens,1,tc);
+	 retval.val.d=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
 	SubstituteVariables(1,tc,tokens,tokens);
 
-	retval.val.f=doexpr(tokens,1,tc);	
+	retval.val.f=EvaluateExpression(tokens,1,tc);	
 }
 
 ReturnFromFunction();			/* return */
@@ -1374,7 +1348,7 @@ int IsSeperator(char *token,char *sep) {
  * Check syntax
  *
  * In: tokens		Tokens to check
-		separators	Seperator characters to check against
+		separators	Separator characters to check against
 		start		Start in array
 		end		End in array
  *
@@ -1382,63 +1356,59 @@ int IsSeperator(char *token,char *sep) {
  *
  */ 
 int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int end) {
-	int count;
-	int bracketcount=0;
-	int squarebracketcount=0;
-	bool IsInBracket=FALSE;
-	int statementcount=0;
+int count;
+int bracketcount=0;
+int squarebracketcount=0;
+bool IsInBracket=FALSE;
+int statementcount=0;
 
 /* check if brackets are balanced */
 
-	for(count=start;count<end;count++) {
-	 if(strcmp(tokens[count],"(") == 0) bracketcount++;
-	 if(strcmp(tokens[count],")") == 0) bracketcount--;
+for(count=start;count<end;count++) {
+	if(strcmp(tokens[count],"(") == 0) bracketcount++;
+	if(strcmp(tokens[count],")") == 0) bracketcount--;
 
-	 if(strcmp(tokens[count],"[") == 0) squarebracketcount++;
-	 if(strcmp(tokens[count],"]") == 0) squarebracketcount--;
+	if(strcmp(tokens[count],"[") == 0) squarebracketcount++;
+	if(strcmp(tokens[count],"]") == 0) squarebracketcount--;
 
-	 if(strcmp(tokens[count],",") == 0) {
-	   if(strcmpi(tokens[0],"PRINT") == 0) return(TRUE);
-	   if(bracketcount == 0) return(FALSE);
-	  }
+	if(strcmp(tokens[count],",") == 0) {
+		if(strcmpi(tokens[0],"PRINT") == 0) return(TRUE);
+		if(bracketcount == 0) return(FALSE);
 	}
+}
 
-	if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
+if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
 
-	for(count=start;count<end;count++) {
+for(count=start;count<end;count += 2) {
 
 /* check if two separators are together */
 
-	  if(*tokens[count] == 0) break;
+	if(*tokens[count] == 0) break;
 
-	  if((IsSeperator(tokens[count],separators) == 1) && (IsSeperator(tokens[count+1],separators) == 1)) {
-
+	if((IsSeperator(tokens[count],separators) == 1) && (IsSeperator(tokens[count+1],separators) == 1)) {
 	   
-	    /* brackets can be next to separators */
+	/* brackets can be next to separators */
 
-	    if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
-	    if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
-	    if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
-	    if( (strcmp(tokens[count],")") != 0 && strcmp(tokens[count+1],")") == 0)) return(TRUE);
+		if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
+		if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
+		if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
+		if( (strcmp(tokens[count],")") != 0 && strcmp(tokens[count+1],")") == 0)) return(TRUE);
+		if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
+		if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
+		if( (strcmp(tokens[count],")") == 0) && (*tokens[count+1] == 0)) return(TRUE);
+		if( (strcmp(tokens[count],"]") == 0) && (*tokens[count+1] == 0)) return(TRUE);
 
-	    if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
-	    if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
-
-	    if( (strcmp(tokens[count],")") == 0) && (*tokens[count+1] == 0)) return(TRUE);
-	    if( (strcmp(tokens[count],"]") == 0) && (*tokens[count+1] == 0)) return(TRUE);
-
-	    return(FALSE);
-	  }
-	 }
-
+		return(FALSE);
+	}
+}
 
 	  /* check if two non-separator tokens are next to each other */
 
-	for(count=start;count<end;count++) {   
-	    if((IsSeperator(tokens[count],separators) == 0) && (count < end) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
-	}
+for(count=start;count<end;count++) {   
+	if((IsSeperator(tokens[count],separators) == 0) && (count < end) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
+}
 
-	return(TRUE);
+return(TRUE);
 }
 
 	 
@@ -1576,6 +1546,10 @@ return((Flags & INTERACTIVE_MODE_FLAG));
 
 void SetInteractiveModeFlag(void) {
 Flags |= INTERACTIVE_MODE_FLAG;
+}
+
+void ClearInteractiveModeFlag(void) {
+Flags |= ~INTERACTIVE_MODE_FLAG;
 }
 
 void GetCurrentFile(char *buf) {

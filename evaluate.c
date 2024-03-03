@@ -40,7 +40,7 @@
 *
 */
 
-double doexpr(char *tokens[][MAX_SIZE],int start,int end) {
+double EvaluateExpression(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
 char *token;
 double exprone;
@@ -88,7 +88,7 @@ for(count=start;count<end;count++) {
 		
 			SubstituteVariables(startexpr,count,tokens,subexpr);
 	
-			exprone=doexpr(subexpr,startexpr,count);
+			exprone=EvaluateExpression(subexpr,startexpr,count);
 	
 			sprintf(temp[exprcount++],"%.6g",exprone);
 		}			
@@ -279,8 +279,6 @@ int exprpos=0;
 int count=0;
 varval firstval,secondval;
 
-printf("single condition\n");
-
 /* check kind of expression */
 
 	exprone=0;
@@ -313,17 +311,24 @@ printf("single condition\n");
 	  }
 	}
 
-	if(ifexpr == -1) return(-1);
+	if(ifexpr == -1) {	/* evaluate non-zero or zero */
+		if(GetVariableType(tokens[start]) == VAR_STRING) {		/* comparing string */
+			PrintError(TYPE_ERROR);
+			return(-1);
+		}
 
-	if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	 ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the line */
-	 ConatecateStrings(exprpos+1,end,tokens,&secondval);					/* join all the strings on the line */
-
-	 return(!strcmp(firstval.s,secondval.s));
+		return(EvaluateExpression(tokens,start,end));
 	}
 
-	exprone=doexpr(tokens,start,exprpos);				/* do expression */
-	exprtwo=doexpr(tokens,exprpos+1,end);				/* do expression */
+	if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
+		ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the line */
+		ConatecateStrings(exprpos+1,end,tokens,&secondval);					/* join all the strings on the line */
+
+		return(!strcmp(firstval.s,secondval.s));
+	}
+
+	exprone=EvaluateExpression(tokens,start,exprpos);				/* do expression */
+	exprtwo=EvaluateExpression(tokens,exprpos+1,end);				/* do expression */
 
         exprtrue=0;
 

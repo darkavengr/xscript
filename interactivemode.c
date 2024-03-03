@@ -302,7 +302,7 @@ int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	if(strlen(tokens[1]) > 0) {
 	SubstituteVariables(1,tc,tokens,tokens);
 
-	StepCount=doexpr(tokens,1,tc);
+	StepCount=EvaluateExpression(tokens,1,tc);
 	}
 	else
 	{
