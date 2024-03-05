@@ -1,0 +1,7 @@
+a=12
+b=22
+
+for x=a+1 to b+2
+ print x
+next
+

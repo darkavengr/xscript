@@ -35,6 +35,7 @@
 #include "dofile.h"
 
 jmp_buf savestate;
+char *dirname[MAX_SIZE];
 
 /*
  * Main function
@@ -50,6 +51,19 @@ int main(int argc, char **argv) {
 int count;
 char *args[MAX_SIZE];
 char *filename=NULL;
+char *dptr;
+char *aptr;
+
+/* get executable directory name from argv[0] */
+
+memset(dirname,0,MAX_SIZE);
+
+aptr=argv[0];
+dptr=dirname;
+
+while(aptr != strrchr(argv[0],'/')) {		/* from first character to last / in filename */
+	*dptr++=*aptr++;
+}
 
 InitializeFunctions();						/* Initialize functions */
 
@@ -113,3 +127,7 @@ if(sig == SIGINT) {			/* ctrl-c */
 printf("Signal %d received\n",sig);
 }
 
+void GetExecutableDirectoryName(char *name) {
+	strcpy(name,dirname);
+}
+	

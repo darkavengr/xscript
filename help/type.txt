@@ -1,0 +1,12 @@
+TYPE [typename]
+name1 {AS type}
+name2 {AS type}
+.
+.
+.
+END TYPE
+
+Declare a user-defined type.
+
+See also: DATATYPES, DECLARE
+

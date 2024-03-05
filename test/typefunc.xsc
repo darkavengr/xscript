@@ -1,0 +1,22 @@
+type Person
+ id as integer
+ firstname as string
+ lastname as string
+ address as string
+ city as string
+ postcode as string
+ country as string
+ phonenumber as string
+ dob as string
+endtype
+
+function testfunc(someone as Person)
+ return someone.id
+endfunction
+
+declare somebody as Person
+
+somebody.id=666
+
+testfunc(somebody)
+

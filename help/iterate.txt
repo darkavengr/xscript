@@ -1,0 +1,6 @@
+ITERATE
+
+Go back to start of FOR or WHILE loop.
+
+See also: FOR, WHILE
+

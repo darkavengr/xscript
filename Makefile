@@ -1,5 +1,5 @@
 CC = gcc
-OBJFILES = debug.o module.o  variablesandfunctions.o dofile.o evaluate.o itoa.o xscript.o error.o statements.o interactivemode.o
+OBJFILES = debug.o module.o  variablesandfunctions.o dofile.o evaluate.o itoa.o xscript.o error.o statements.o interactivemode.o help.o
 OUTFILE  = xscript
 FLAGS    = -lm
 
@@ -43,6 +43,9 @@ error.o:
 
 interactivemode.o:
 	$(CC) -c -w interactivemode.c
+
+help.o:
+	$(CC) -c -w help.c
 
 ifeq ($(OS),Windows_NT)
 winmodule.o:

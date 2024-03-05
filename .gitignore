@@ -1,4 +1,4 @@
 *.o
-llc
-*.xsc
+xscript
+
 

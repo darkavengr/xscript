@@ -56,50 +56,50 @@ int returnvalue=0;
  *
  */
 int LoadFile(char *filename) {
-	FILE *handle; 
-	int filesize;
+FILE *handle; 
+int filesize;
 
-	handle=fopen(filename,"r");				/* open file */
-	if(!handle) {
+handle=fopen(filename,"r");				/* open file */
+if(!handle) {
 	PrintError(FILE_NOT_FOUND);
 	return(FILE_NOT_FOUND);
-	}
+}
 
-	fseek(handle,0,SEEK_END);				/* get file size */
-	filesize=ftell(handle);
+fseek(handle,0,SEEK_END);				/* get file size */
+filesize=ftell(handle);
 
-	fseek(handle,0,SEEK_SET);			/* seek back to start */
+fseek(handle,0,SEEK_SET);			/* seek back to start */
 	
-	if(readbuf == NULL) {				/* first time */
-	 readbuf=malloc(filesize+1);			/* allocate buffer */
+if(readbuf == NULL) {				/* first time */
+	readbuf=malloc(filesize+1);			/* allocate buffer */
 
-	 if(readbuf == NULL) {			/* no memory */
-	  PrintError(NO_MEM);
-	  return(NO_MEM);
+	if(readbuf == NULL) {			/* no memory */
+		PrintError(NO_MEM);
+		return(NO_MEM);
+	}
+}
+else
+{
+	if(realloc(readbuf,bufsize+filesize) == NULL) {		/* resize buffer */
+		PrintError(NO_MEM);
+		return(NO_MEM);
 	 }
-	}
-	else
-	{
-	 if(realloc(readbuf,bufsize+filesize) == NULL) {		/* resize buffer */
-	  PrintError(NO_MEM);
-	  return(NO_MEM);
-	 }
-	}
+}
 
-	currentptr=readbuf;
+currentptr=readbuf;
 
-	if(fread(readbuf,filesize,1,handle) != 1) {		/* read to buffer */
-	 PrintError(READ_ERROR);
-	 return(READ_ERROR);
-	}
+if(fread(readbuf,filesize,1,handle) != 1) {		/* read to buffer */
+	PrintError(READ_ERROR);
+	return(READ_ERROR);
+}
 		
-	endptr += filesize;		/* point to end */
-	bufsize += filesize;
+endptr += filesize;		/* point to end */
+bufsize += filesize;
 
-	strcpy(CurrentFile,filename);
+strcpy(CurrentFile,filename);
 
-	ClearIsRunningFlag();
-	return(0);
+ClearIsRunningFlag();
+return(0);
 }
 
 /*
@@ -115,7 +115,7 @@ char *linebuf[MAX_SIZE];
 char *savecurrentptr;
 int lc=1;
 
-SetCurrentFunctionLine(0);
+SetCurrentFunctionLine(lc);		/* set line number to 1 */
 	
 if(LoadFile(filename) == -1) {
 	PrintError(FILE_NOT_FOUND);
@@ -128,9 +128,7 @@ SetIsFileLoadedFlag();
 savecurrentptr=currentptr;		/* save current pointer */
 currentptr=readbuf;
 
-SetFunctionCallPtr(currentptr);
-
-SetCurrentFunctionLine(1);
+SetFunctionCallPtr(currentptr);		/* set start of current function to buffer start */
 
 do {
 	currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
@@ -211,17 +209,10 @@ if(tc == -1) {
 
 if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
 	PrintError(SYNTAX_ERROR);
-	return(0);
+	return(-1);
 }
 
 if(CallIfStatement(tc,tokens) == 0) return(0);			/* run statement if statement */
-
-/* call user function */
-
-
-if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
-	return(CallFunction(tokens,0,tc));
-} 
 
 /*
  *
@@ -231,98 +222,104 @@ if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
 
 for(count=1;count<tc;count++) {
 
-	if(strcmpi(tokens[count],"=") == 0) {
+//if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
+//	PrintError(SYNTAX_ERROR);
+//	return(0);
+//}
 
-		if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) {		/* check syntax */
-	  	  	PrintError(SYNTAX_ERROR);
-	  		return(0);
+if(strcmpi(tokens[count],"=") == 0) {
+	//if(CheckSyntax(tokens,TokenCharacters,0,count) == FALSE) {		/* check syntax */
+  	//  	PrintError(SYNTAX_ERROR);
+  	//	return(SYNTAX_ERROR);
+  	//}
+
+ 	ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
+
+ 	SubstituteVariables(count+1,tc,tokens,tokens);
+
+ 	if(strlen(split.fieldname) == 0) {			/* use variable name */
+ 		vartype=GetVariableType(split.name);
+	}
+	else
+	{
+ 		vartype=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);
+		if(vartype == -1) {
+	 		PrintError(TYPE_FIELD_DOES_NOT_EXIST);
+	  		return(-1);
+		}
+	}
+	
+	c=*tokens[count+1];
+
+	 if( ((c == '"') || (vartype == VAR_STRING))) {			/* string */  
+	 	if(vartype == -1) {	
+			CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
 	  	}
-
-	 	ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
-
-	 	SubstituteVariables(count+1,tc,tokens,tokens);
-
-	 	if(strlen(split.fieldname) == 0) {			/* use variable name */
-	 		vartype=GetVariableType(split.name);
-		}
-		else
-		{
-	 		vartype=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);
-
-			if(vartype == -1) {
-		 		PrintError(TYPE_FIELD_DOES_NOT_EXIST);
-		  		return(-1);
-			}
-		}
-	
-		c=*tokens[count+1];
-
-		 if( ((c == '"') || (vartype == VAR_STRING))) {			/* string */  
-		 	if(vartype == -1) {	
-				CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
-		  	}
 	 
-		  	ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
+	  	ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
 
-		  	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);		/* set variable */
+	  	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);		/* set variable */
+	  	return(0);
+	}
 
-		  	return(0);
-		}
+	/* number otherwise */
 
-		/* number otherwise */
-
-		 if(vartype == VAR_STRING) {		/* not string */
-		 	PrintError(TYPE_ERROR);
-		 	return(TYPE_ERROR);
-		 }
+	 if(vartype == VAR_STRING) {		/* not string */
+	 	PrintError(TYPE_ERROR);
+	 	return(TYPE_ERROR);
+	 }
 	
-		 exprone=EvaluateExpression(tokens,count+1,tc);
+	 exprone=EvaluateExpression(tokens,count+1,tc);
 
-		 if(vartype == VAR_NUMBER) {
-		 	val.d=exprone;
-		 }
-		 else if(vartype == VAR_STRING) {
-			SubstituteVariables(count+1,count+1,tokens,tokens);
+	 if(vartype == VAR_NUMBER) {
+	 	val.d=exprone;
+	 }
+	 else if(vartype == VAR_STRING) {
+		SubstituteVariables(count+1,count+1,tokens,tokens);
+	 	if(tc == -1) return(-1);
 
-		 	if(tc == -1) return(-1);
+	 	strcpy(val.s,tokens[count+1]);  
+	 }
+	 else if(vartype == VAR_INTEGER) {
+	 	val.i=exprone;
+	 }
+	 else if(vartype == VAR_SINGLE) {
+	 	val.f=exprone;
+	 }
+	 else if(vartype == VAR_UDT) {			/* user-defined type */	 
+		ParseVariableName(tokens,count+1,tc,&assignsplit);		/* split variable */  	
+ 		varptr=GetVariablePointer(split.name);		/* point to variable entry */
+		assignvarptr=GetVariablePointer(assignsplit.name);
 
-		 	strcpy(val.s,tokens[count+1]);  
-		 }
-		 else if(vartype == VAR_INTEGER) {
-		 	val.i=exprone;
-		 }
-		 else if(vartype == VAR_SINGLE) {
-		 	val.f=exprone;
-		 }
-		 else if(vartype == VAR_UDT) {			/* user-defined type */	 
-			ParseVariableName(tokens,count+1,tc,&assignsplit);		/* split variable */  	
-
-	 		varptr=GetVariablePointer(split.name);		/* point to variable entry */
-			assignvarptr=GetVariablePointer(assignsplit.name);
-
-			if((varptr == NULL) || (assignvarptr == NULL)) {
-				PrintError(VARIABLE_DOES_NOT_EXIST);
-				return(-1);
-			}
+		if((varptr == NULL) || (assignvarptr == NULL)) {
+			PrintError(VARIABLE_DOES_NOT_EXIST);
+			return(-1);
+		}
 		   
-			CopyUDT(assignvarptr->udt,assignvarptr->udt);		/* copy UDT */
+		CopyUDT(assignvarptr->udt,assignvarptr->udt);		/* copy UDT */
 
-			return(0);
-	 	}
+		return(0);
+ 	}
 
-		 if(vartype == -1) {		/* new variable */ 	  
-		 	val.d=exprone;
-		 	CreateVariable(split.name,"DOUBLE",split.x,split.y);			/* create variable */
-		 	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
-		 	return(0);
-		 }
+	if(vartype == -1) {		/* new variable */ 	  
+	 	val.d=exprone;
+	 	CreateVariable(split.name,"DOUBLE",split.x,split.y);			/* create variable */
+	 	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
+	
+	 	return(0);
+	 }
 
-		 UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
-
-		 return(0);
-	 } 
+	 UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
+	 return(0);
+ } 
 
 }
+
+/* call user function */
+
+if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
+	return(CallFunction(tokens,0,tc));
+} 
 
 PrintError(INVALID_STATEMENT);
 return(INVALID_STATEMENT);
@@ -435,7 +432,7 @@ char *d;
 int exprtrue;
 SAVEINFORMATION *info;
 
-if(tc < 1) {						/* not enough parameters */
+if(tc < 1) {						/* Too few parameters */
 	PrintError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
 }
@@ -572,7 +569,7 @@ int vartype;
 varsplit split;
 SAVEINFORMATION *info;
 
-if(tc < 4) {						/* Not enough parameters */
+if(tc < 4) {						/* Too few parameters */
 	PrintError(NO_PARAMS);
 	return(NO_PARAMS);
 }
@@ -671,7 +668,7 @@ else
 
 PushSaveInformation();					/* save line information */
 currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
-
+	
 do {	   
 	      returnvalue=ExecuteLine(buf);
 
@@ -840,7 +837,7 @@ char *condition_tokens_substituted[MAX_SIZE][MAX_SIZE];
 int condition_tc;
 SAVEINFORMATION *info;
 
-if(tc < 1) {						/* Not enough parameters */
+if(tc < 1) {						/* Too few parameters */
 	PrintError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
 }
@@ -1144,6 +1141,11 @@ UserDefinedTypeField *fieldptr;
 UserDefinedType addudt;
 varsplit split;
 
+if(tc < 1) {						/* Too few parameters */
+	PrintError(SYNTAX_ERROR);
+	return(SYNTAX_ERROR);
+}
+
 if((GetUDT(tokens[1]) != NULL) || (IsValidVariableType(tokens[1]) != -1)) {		/* If type exists */
 	PrintError(TYPE_EXISTS);
 	return(TYPE_EXISTS); 
@@ -1214,6 +1216,25 @@ do {
 } while(*currentptr != 0);
 
 return(-1);
+}
+
+/*
+ * Help statement
+ *
+ * In: tc Token count
+ *	tokens Tokens array
+ *
+ * Returns error on error or 0 on success
+ *
+ */
+int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *dirname[MAX_SIZE];
+
+GetExecutableDirectoryName(dirname);
+
+DisplayHelp(dirname,tokens[1]);		/* display help */
+
+return(0);
 }
 
 /*
@@ -1325,23 +1346,19 @@ return(tc);
  *
  */
 int IsSeperator(char *token,char *sep) {
-	char *s;
-	char *t=token;
-	int statementcount;
+char *s;
 
-	if(*token == 0) return(TRUE);
+if(*token == 0) return(TRUE);
 	
-	s=sep;
+s=sep;
 
-	 while(*s != 0) {
-	  if(*s++ == *token) return(TRUE);
-	 }
+while(*s != 0) {
+	if(*s++ == *token) return(TRUE);
+}
 
-	statementcount=0;
+if(IsStatement(token) == TRUE) return(TRUE);
 
-	if(IsStatement(token) == TRUE) return(TRUE);
-
-	return(FALSE);
+return(FALSE);
 }
 
 /*
@@ -1385,27 +1402,37 @@ for(count=start;count<end;count += 2) {
 
 	if(*tokens[count] == 0) break;
 
-	if((IsSeperator(tokens[count],separators) == 1) && (IsSeperator(tokens[count+1],separators) == 1)) {
+	if(strcmpi(tokens[0],"HELP") != 0) {
+		if((IsSeperator(tokens[count],separators) == 1) && (IsSeperator(tokens[count+1],separators) == 1)) {
 	   
-	/* brackets can be next to separators */
+		/* brackets can be next to separators */
 
-		if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
-		if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
-		if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
-		if( (strcmp(tokens[count],")") != 0 && strcmp(tokens[count+1],")") == 0)) return(TRUE);
-		if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
-		if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
-		if( (strcmp(tokens[count],")") == 0) && (*tokens[count+1] == 0)) return(TRUE);
-		if( (strcmp(tokens[count],"]") == 0) && (*tokens[count+1] == 0)) return(TRUE);
+			if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
+			if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
+			if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
+			if( (strcmp(tokens[count],")") != 0 && strcmp(tokens[count+1],")") == 0)) return(TRUE);
+			if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
+			if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
+			if( (strcmp(tokens[count],")") == 0) && (*tokens[count+1] == 0)) return(TRUE);
+			if( (strcmp(tokens[count],"]") == 0) && (*tokens[count+1] == 0)) return(TRUE);
 
-		return(FALSE);
+			return(FALSE);
+		}
 	}
 }
 
-	  /* check if two non-separator tokens are next to each other */
+  /* check if two non-separator tokens are next to each other */
 
 for(count=start;count<end;count++) {   
 	if((IsSeperator(tokens[count],separators) == 0) && (count < end) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
+}
+
+for(count=start;count<end;count++) {   		/* check if using keyword in statement */
+
+	if((IsStatement(tokens[count]) == TRUE) && (strcmpi(tokens[0],"HELP") != 0)) {
+	  	PrintError(SYNTAX_ERROR);
+  		return(SYNTAX_ERROR);
+	}
 }
 
 return(TRUE);
@@ -1571,5 +1598,4 @@ return(currentptr);
 void GetTokenCharacters(char *tbuf) {
 strcpy(tbuf,TokenCharacters);
 }
-
 

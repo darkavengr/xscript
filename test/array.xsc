@@ -1,0 +1,10 @@
+declare a(3) as string
+
+a(0)="Test 1"
+a(1)="Test 2";
+a(2)="Test 3";
+
+print a(0)
+print a(1)
+print a(2)
+

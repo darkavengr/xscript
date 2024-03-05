@@ -1,0 +1,10 @@
+Xscript supports the following types:
+
+single		Single-precision number
+double		Double-precision number
+integer		Integer
+string		String
+"Data"		String literals
+
+See also: TYPE, DECLARE
+

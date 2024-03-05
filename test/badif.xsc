@@ -1,0 +1,4 @@
+if "test" then
+ print "yes"
+endif
+

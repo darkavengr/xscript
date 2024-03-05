@@ -1,0 +1,8 @@
+LOAD filename
+
+Load program.
+
+Unlike INCLUDE, this statement replaces the current program.
+
+See also: INCLUDE, IMPORT
+

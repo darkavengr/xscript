@@ -1,0 +1,16 @@
+IF [condition] THEN
+.
+.
+.
+ELSEIF [condition]
+.
+.
+.
+ELSE
+.
+.
+.
+ENDIF
+
+Conditionally execute statements if [condition] is true; multiple conditions may be used with IF and ELSEIF.
+

@@ -98,6 +98,9 @@ while(1) {
 	}
 
 	if(IsBlockStatement(tokens[0]) == TRUE) {	/* if block statement */
+
+		/* save start of block statement in linked list */
+
 		if(blockstatementsave_head == NULL) {	/* first */
 			blockstatementsave_head=malloc(sizeof(BLOCKSTATEMENTSAVE));
 			if(blockstatementsave_head == NULL) {
@@ -111,7 +114,6 @@ while(1) {
 		}
 		else
 		{
-//			printf("block statement token last=%lX\n",blockstatementsave_end);
 			blockstatementsave_end->next=malloc(sizeof(BLOCKSTATEMENTSAVE));
 			if(blockstatementsave_end->next == NULL) {
 				PrintError(NO_MEM);
@@ -127,31 +129,15 @@ while(1) {
 		block_statement_nest_count++;
 	}
 
-	//printf("blockstatementsave_end=%lX\n",blockstatementsave_end);
-
 	if(blockstatementsave_end != NULL) {
 		if(IsEndStatementForStatement(blockstatementsave_end->token,tokens[0]) == TRUE) {	/* if at end of block statement */
-//			printf("END OF BLOCK STATEMENT=%s\n",tokens[0]);
-
 			block_statement_nest_count--;
-
-	//		printf("block_statement_nest_count=%d\n",block_statement_nest_count);
-
-	//		printf("blockstatementsave_end last=%lX\n",blockstatementsave_end->last);
-	//		printf("blockstatementsave_end=%lX\n",blockstatementsave_end);
 			blockstatementsave_end=blockstatementsave_end->last;	/* point to previous in list */
-
-	//		printf("blockstatementsave_end previous=%lX\n",blockstatementsave_end);
-	//		printf("block statement token=%s\n",blockstatementsave_end->token);
-
-			//free(blockstatementsave_end->next);
 			bufptr=buffer;
 		}
 	}
 
 	if(block_statement_nest_count == 0) {			/* if at end of entering statements */
-		printf("%s\n",buffer);
-
 		bufptr=buffer;
 
 		GetCurrentFunctionName(functionname);		/* get current function name */
@@ -203,7 +189,7 @@ while(1) {
  *
  */
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	exit(0);
+exit(0);
 }
 
 /*
@@ -325,7 +311,7 @@ int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 }
 
 /*
- * Set configuration
+ * Set breakpoint
  *
  * In: tc Token count
  * tokens Tokens array

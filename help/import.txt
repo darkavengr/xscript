@@ -1,0 +1,8 @@
+IMPORT name
+
+Import module.
+
+Modules are imported from the standard module directory $XSCRIPT_MODULE_PATH.
+
+See also: INCLUDE
+

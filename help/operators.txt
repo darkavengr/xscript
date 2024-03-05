@@ -1,0 +1,30 @@
+Xscript supports the following operators:
+
+=		Assignment.
+		
+		variablename = [expression]
+		variablename(x) = [expression]
+		variablename(x,y) = [expression]
+
+/		Division
+*		Multiplication
++		Addition
+-		Subtraction
+**		Power
+
+Comparisons use the following operators:
+
+=		Equality
+!=		Non-equality
+>		Greater than
+<		Less than
+>=		Greater than or equal
+<=		Less than or equal
+{expression}	Zero or non-zero
+
+Conditional expressions may evaluate multiple conditions:
+
+[condition1] AND [condition2]		True if both [condition1] and [condition2] are true.
+[condition1] OR [condition2]		True if both [condition1] or [condition2] is true or [condition1] is true or [condition2] is true.
+[condition1] XOR [condition2]		True if only [condition1] is true or only [condition2] is true.
+

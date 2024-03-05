@@ -1,0 +1,11 @@
+FOR variable = start TO end { STEP expression }
+.
+.
+.
+NEXT
+
+Loop a set number of times from expressions [start] to [end],
+optionally modifying the variable by [increment].
+
+See also: WHILE
+

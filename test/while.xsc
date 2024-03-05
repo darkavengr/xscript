@@ -1,0 +1,7 @@
+a=1
+b=100
+
+while a < b - 20
+ print a
+ a=a+1
+wend

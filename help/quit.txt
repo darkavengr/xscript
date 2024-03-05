@@ -1,0 +1,4 @@
+Quit the Xscript interpreter.
+
+QUIT
+

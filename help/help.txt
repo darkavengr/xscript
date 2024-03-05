@@ -1,0 +1,6 @@
+Display help.
+
+HELP {word}
+
+Displays help on {word}.
+

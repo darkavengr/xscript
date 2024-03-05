@@ -1,0 +1,9 @@
+The following are keywords. Type help {word} to get help on {word}
+
+AND          AS              CONTINUE       DECLARE      DOUBLE      ELSE
+ELSEIF       END             ENDFUNCTION    ENDIF        ENDTYPE     EXIT
+FOR          FUNCTION        IF 	    IMPORT       INCLUDE     INTEGER
+ITERATE      LOAD            NEXT	    OR           PRINT       QUIT
+RETURN       RUN             SET            SINGLE       STEP        STRING
+THEN         TO              TYPE           VARIABLES    WEND
+

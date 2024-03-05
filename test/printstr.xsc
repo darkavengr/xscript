@@ -1,0 +1,10 @@
+declare a(2) as string
+
+a(0) = "abc"
+a(1) = "def"
+
+
+
+
+
+

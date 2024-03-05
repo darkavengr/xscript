@@ -1,0 +1,4 @@
+if "Test"+"AAA"="Test"+"AAA" then
+ print "Yes"
+endif
+

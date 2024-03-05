@@ -1,0 +1,8 @@
+a=2
+b=1
+c=1
+
+if a=2 then
+ print "Yes"
+endif
+

@@ -1,0 +1,20 @@
+type Person
+	id as integer
+	firstname as string
+	lastname as string
+	address as string
+	city as string
+	postcode as string
+	country as string
+	phonenumber as string
+	dob as string
+endtype
+
+declare someone(3) as Person
+
+someone(2).id=666
+
+print someone(2).id
+
+
+

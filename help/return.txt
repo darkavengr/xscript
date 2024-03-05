@@ -1,0 +1,5 @@
+RETURN {expression}
+
+Return from function.
+
+

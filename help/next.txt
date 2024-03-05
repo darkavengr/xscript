@@ -1,0 +1,6 @@
+NEXT
+
+Closes a FOR loop.
+
+See also: FOR
+

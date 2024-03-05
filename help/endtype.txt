@@ -1,0 +1,6 @@
+ENDTYPE
+
+End a TYPE statement.
+
+See also: TYPE
+

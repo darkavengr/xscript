@@ -1,0 +1,7 @@
+function test(a as integer,b as integer)
+return a + b
+endfunction
+
+print test(22,34) * test(22,34) *2
+
+

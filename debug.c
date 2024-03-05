@@ -38,41 +38,50 @@ BREAKPOINT *breakpointend;
  * Set breakpoint
  *
  * In: linenumber	Line number to set breakpoint at
- *     functionname	Function to set breakpoint in
+ *     functionname	Optional function to set breakpoint in
  *
  * Returns error number on error or 0 on success
  *
  */
 int set_breakpoint(int linenumber,char *functionname) {
- BREAKPOINT *next;
+BREAKPOINT *next;
+char *funcname[MAX_SIZE];
+
+if(strlen(functionname) == 0) {		/* no function */
+	GetCurrentFunctionName(funcname);
+}
+else
+{
+	strcpy(funcname,functionname);
+}
 
 /* check if breakpoint set */
 
- if(breakpoints == NULL) {
-   breakpoints=malloc(sizeof(BREAKPOINT));
-   breakpointend=breakpoints;
- }
- else
- {
-   next=breakpoints;
+if(breakpoints == NULL) {
+	breakpoints=malloc(sizeof(BREAKPOINT));
+	breakpointend=breakpoints;
+}
+else
+{
+	next=breakpoints;
  
-   while(next != NULL) {
-    if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) {	/* breakpoint already set */  
-	SetLastError(BREAKPOINT_DOES_NOT_EXIST);
-	return(-1);
-    }
+	while(next != NULL) {
+		if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) {	/* breakpoint already set */  
+			SetLastError(BREAKPOINT_DOES_NOT_EXIST);
+			return(-1);
+    		}
 
-    next=next->next;
-   }
+    		next=next->next;
+   	}
 
-   breakpointend->next=malloc(sizeof(BREAKPOINT));
-   breakpointend=breakpointend->next;
- }
+	breakpointend->next=malloc(sizeof(BREAKPOINT));
+	breakpointend=breakpointend->next;
+}
 
- breakpointend->linenumber=linenumber;
- strcpy(breakpointend->functionname,functionname);
+breakpointend->linenumber=linenumber;
+strcpy(breakpointend->functionname,funcname);
 
- return;
+return;
 }
 
 /*
