@@ -104,7 +104,7 @@ for(count=0;count<exprcount;count++) {
 	if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
 		SetLastError(TYPE_ERROR);
 		return(-1);
-		}
+	}
 }
 
 val.d=atof(temp[0]);
@@ -162,13 +162,12 @@ for(count=0;count<exprcount;count++)  {
 /* power */
 
 for(count=0;count<exprcount;count++)  {
-	if(strcmp(temp[count],"**") == 0) {
+	if((strcmp(temp[count],"*") == 0) && (strcmp(temp[count+1],"*") == 0)) {
+		val.d += pow(atof(temp[count-1]),atof(temp[count+2]));
+		DeleteFromArray(temp,start,end,count,count+3);		/* remove rest */
 
-	 val.d += pow(atof(temp[count-1]),atof(temp[count+1]));
-	 DeleteFromArray(temp,start,end,count,count+3);		/* remove rest */
+	 	count++;
 	} 
-
-	 count++;
 }
 
 
@@ -259,15 +258,15 @@ return;
 
 
 /*
-	* Evalue a single condition
-	*
-	* In: char *tokens[][MAX_SIZE]		Tokens array containing expression
-	*     int start			Start in array
-	      int end				End in array
-
-	* Returns TRUE or FALSE
-	*
-	*/
+ * Evalue a single condition
+ *
+ * In: char *tokens[][MAX_SIZE]		Tokens array containing expression
+ *     int start			Start in array
+ *     int end				End in array
+ *
+ * Returns TRUE or FALSE
+ *
+ */
 
 int EvaluateSingleCondition(char *tokens[][MAX_SIZE],int start,int end) {
 int inverse;
@@ -355,6 +354,17 @@ varval firstval,secondval;
 
 	
 }
+
+/*
+ * Evalue condition
+ *
+ * In: char *tokens[][MAX_SIZE]		Tokens array containing expression
+ *     int start			Start in array
+ *     int end				End in array
+ *
+ * Returns: zero or non-zero
+ *
+ */
 
 int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end) {
 int startcount;
@@ -483,4 +493,37 @@ while(count < resultcount) {
 
 return(overallresult);
 }
+
+/*
+ * Check if expression is valid
+ *
+ * In: char *tokens[][MAX_SIZE]		Tokens array containing expression
+ *     int start			Start in array
+ *     int end				End in array
+ *
+ * Returns TRUE or FALSE
+ *
+ */
+
+int IsValidExpression(char *tokens[][MAX_SIZE],int start,int end) {
+int count;
+
+for(count=start+1;count<end;count += 2) {
+	if( (strcmp(tokens[count],"+") != 0) && (strcmp(tokens[count],"-") != 0) && (strcmp(tokens[count],"*") != 0) && \
+	    (strcmp(tokens[count],"/") != 0) && (strcmp(tokens[count],"<") != 0) && (strcmp(tokens[count],">") != 0) && \
+	    (strcmp(tokens[count],"=") != 0) && (strcmp(tokens[count],"&") != 0) && (strcmp(tokens[count],"|") != 0) && \
+	    (strcmp(tokens[count],"!") != 0) && (strcmp(tokens[count],"%") != 0)) {
+
+	    	if((strcmp(tokens[count],"*") == 0) && (strcmp(tokens[count+1],"*") == 0)) {
+			count++;
+			return(TRUE);		/* power is an exception */
+		}
+
+		return(FALSE);
+	}
+}
+
+return(TRUE);
+}
+
 

@@ -45,7 +45,6 @@ int ic=0;			/* number of included files */
 char *TokenCharacters="+-*/<>=!%~|& \t()[],{};.";
 int Flags=0;
 char *CurrentFile[MAX_SIZE];
-int returnvalue=0;
 
 /*
  * Load file
@@ -114,6 +113,7 @@ int ExecuteFile(char *filename) {
 char *linebuf[MAX_SIZE];
 char *savecurrentptr;
 int lc=1;
+int returnvalue;
 
 SetCurrentFunctionLine(lc);		/* set line number to 1 */
 	
@@ -274,6 +274,11 @@ if(strcmpi(tokens[count],"=") == 0) {
 	 	return(TYPE_ERROR);
 	 }
 	
+	 if(IsValidExpression(tokens,count+1,tc) == FALSE) {	/* invalid expression */
+	 	PrintError(SYNTAX_ERROR);
+		return(SYNTAX_ERROR);
+	 }
+	
 	 exprone=EvaluateExpression(tokens,count+1,tc);
 
 	 if(vartype == VAR_NUMBER) {
@@ -388,6 +393,11 @@ returnvalue=SubstituteVariables(1,tc,tokens,tokens);
 if(returnvalue > 0) {
 	PrintError(returnvalue);
 	return(returnvalue);
+}
+
+if(IsValidExpression(tokens,1,tc) == FALSE) {	/* invalid expression */
+	PrintError(SYNTAX_ERROR);
+	return(SYNTAX_ERROR);
 }
 
 retval.val.type=0;
@@ -634,6 +644,11 @@ else
 		return(returnvalue);
 	}
 
+	if(IsValidExpression(tokens,countx+1,tc) == FALSE) {	/* invalid expression */
+		PrintError(SYNTAX_ERROR);
+		return(SYNTAX_ERROR);
+	}
+
 	steppos=EvaluateExpression(tokens,countx+1,tc);
 }
 
@@ -644,6 +659,16 @@ returnvalue=SubstituteVariables(1,tc,tokens,tokens);
 if(returnvalue > 0) {
 	PrintError(returnvalue);
 	return(returnvalue);
+}
+
+if(IsValidExpression(tokens,3,count) == FALSE) {	/* invalid expression */
+	PrintError(SYNTAX_ERROR);
+	return(SYNTAX_ERROR);
+}
+
+if(IsValidExpression(tokens,count+1,countx) == FALSE) {	/* invalid expression */
+	PrintError(SYNTAX_ERROR);
+	return(SYNTAX_ERROR);
 }
 
 exprone=EvaluateExpression(tokens,3,count);			/* start value */
@@ -761,6 +786,7 @@ return(NO_ERROR);
 int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;
 int vartype;
+int substreturnvalue;
 
 SetFunctionFlags(FUNCTION_STATEMENT);
 
@@ -796,33 +822,44 @@ for(count=1;count<tc;count++) {
 
 retval.val.type=GetFunctionReturnType();		/* get return type */
 
+if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
+	if(IsValidExpression(tokens,1,tc) == FALSE) {	/* invalid expression */
+		PrintError(SYNTAX_ERROR);
+		return(SYNTAX_ERROR);
+	}
+}
+
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 	ConatecateStrings(1,tc,tokens,&retval.val);		/* get strings */
+
 	return(0);
 }
 else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
-	returnvalue=SubstituteVariables(1,tc,tokens,tokens);
-	if(returnvalue > 0) {
+	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
+
+	if(substreturnvalue > 0) {
 		PrintError(retval);
-		return(returnvalue);
+		return(substreturnvalue);
 	}
 
 	retval.val.i=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 
-	returnvalue=SubstituteVariables(1,tc,tokens,tokens);
-	if(returnvalue > 0) {
+	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
+
+	if(substreturnvalue > 0) {
 		PrintError(retval);
-		return(returnvalue);
+		return(substreturnvalue);
 	}
 
 	 retval.val.d=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
-	returnvalue=SubstituteVariables(1,tc,tokens,tokens);
-	if(returnvalue > 0) {
+	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
+
+	if(substreturnvalue > 0) {
 		PrintError(retval);
-		return(returnvalue);
+		return(substreturnvalue);
 	}
 
 	retval.val.f=EvaluateExpression(tokens,1,tc);	
@@ -870,6 +907,7 @@ char *condition_tokens[MAX_SIZE][MAX_SIZE];
 char *condition_tokens_substituted[MAX_SIZE][MAX_SIZE];
 int condition_tc;
 SAVEINFORMATION *info;
+int substreturnvalue;
 
 if(tc < 1) {						/* Too few parameters */
 	PrintError(SYNTAX_ERROR);
@@ -887,6 +925,11 @@ SetFunctionFlags(WHILE_STATEMENT);
 do {
 	     currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
+	     if(IsValidExpression(tokens,1,condition_tc) == FALSE) {	/* invalid expression */
+	     	PrintError(SYNTAX_ERROR);
+		return(SYNTAX_ERROR);
+	     }
+
 	     exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
 
 	     if(exprtrue == -1) {
@@ -898,20 +941,20 @@ do {
 	     		while(*currentptr != 0) {
 
 	     		  	currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-			tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
-			if(tc == -1) {
-				PrintError(SYNTAX_ERROR);
-		 		return(SYNTAX_ERROR);
+				if(tc == -1) {
+					PrintError(SYNTAX_ERROR);
+			 		return(SYNTAX_ERROR);
+				}
+
+				if(strcmpi(tokens[0],"WEND") == 0) {
+					PopSaveInformation();				 
+
+					currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+					return(0);
+				}
 			}
-
-			if(strcmpi(tokens[0],"WEND") == 0) {
-				PopSaveInformation();				 
-
-				currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
-				return(0);
-			}
-		}
 
 	     }
 
@@ -925,11 +968,11 @@ do {
 		SetCurrentFunctionLine(GetSaveInformationLineCount());
 	     }
 
-	     returnvalue=ExecuteLine(buf);
+	     substreturnvalue=ExecuteLine(buf);
 
-	     if(returnvalue != 0) {
-	     		ClearIsRunningFlag();
-		return(returnvalue);
+	     if(substreturnvalue != 0) {
+	     	ClearIsRunningFlag();
+		return(substreturnvalue);
 	     }
 
 	     if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
@@ -1398,10 +1441,10 @@ return(FALSE);
 /*
  * Check syntax
  *
- * In: tokens		Tokens to check
+ * In: tokens	Tokens to check
 		separators	Separator characters to check against
-		start		Start in array
-		end		End in array
+		start		Array start
+		end		Array end
  *
  * Returns TRUE or FALSE
  *

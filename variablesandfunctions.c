@@ -547,6 +547,12 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 
 	for(count=start+2;count<subscriptend;count++) {
 		if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
+
+			if((IsValidExpression(tokens,1,count) == FALSE) || (IsValidExpression(tokens,count+1,subscriptend) == FALSE)) {  /* invalid expression */
+				PrintError(SYNTAX_ERROR);
+				return(SYNTAX_ERROR);
+			}
+
 			split->x=EvaluateExpression(tokens,start+1,count);
 			split->y=EvaluateExpression(tokens,count+1,subscriptend);
 
@@ -556,6 +562,11 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	}
 
 	if(commafound == FALSE) {
+		if(IsValidExpression(tokens,start+2,subscriptend+1) == FALSE) {	/* invalid expression */
+			PrintError(SYNTAX_ERROR);
+			return(SYNTAX_ERROR);
+		}
+
 		split->x=EvaluateExpression(tokens,start+2,subscriptend+1);
 	 	split->y=1;
 	}
@@ -568,30 +579,40 @@ if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
 	if((strcmp(tokens[fieldstart+1],"(") == 0) || (strcmp(tokens[fieldstart+1],"[") == 0)) {
 
 		for(fieldend=start+2;count<end;count++) {
-				if(strcmp(tokens[fieldend],")") == 0) {
+			if(strcmp(tokens[fieldend],")") == 0) {
 				parse_end=fieldend;
 				break;
 			}
-			}
+		}
 
 		for(count=fieldstart+1;count<end;count++) {
-	   			if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
+	   		if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
 				SubstituteVariables(fieldstart+2,count,tokens,tokens);
 				SubstituteVariables(count+1,end-1,tokens,tokens);
+
+				if((IsValidExpression(tokens,fieldstart+2,count) == FALSE) || (IsValidExpression(tokens,count+1,end-1) == FALSE)) {  /* invalid expression */
+					PrintError(SYNTAX_ERROR);
+					return(SYNTAX_ERROR);
+				}
 
 				split->fieldx=EvaluateExpression(tokens,fieldstart+2,count);
 				split->fieldy=EvaluateExpression(tokens,count+1,end-1);
 				break;
 			}
-		  }
+	      }
 
-		  if(count == end) {			/* 2d array */  
-			SubstituteVariables(start+2,end-1,tokens,tokens);
+	      if(count == end) {			/* 2d array */  
+	      		SubstituteVariables(start+2,end-1,tokens,tokens);
+
+			if(IsValidExpression(tokens,start+2,end-1) == FALSE) {  /* invalid expression */
+				PrintError(SYNTAX_ERROR);
+				return(SYNTAX_ERROR);
+			}
 
 		  	split->fieldx=EvaluateExpression(tokens,start+2,end-1);
 		        split->fieldy=1;
-		  }
-	 }
+	   }
+   }
 }
 
 return(parse_end);
