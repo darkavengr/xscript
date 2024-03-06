@@ -168,48 +168,51 @@ int xinc=0;
 
 printf("%s",var->varname);
 
- for(count=0;count<12-strlen(var->varname);count++) {
-   printf(" ");
- }
+	
+for(count=0;count<12-strlen(var->varname);count++) {	/* pad out with spaces */
+	printf(" ");
+}
 
- printf(" = ");
+printf(" = ");
 
- vartype=GetVariableType(var->varname);
+vartype=GetVariableType(var->varname);
 
- yinc=var->ysize;
- if(yinc == 0) yinc++;
+yinc=var->ysize;
+if(yinc == 0) yinc++;
 
- xinc=var->xsize;
- if(xinc == 0) xinc++;
+xinc=var->xsize;
+if(xinc == 0) xinc++;
 
- printf("size=%d %d\n",var->xsize,var->ysize);
+if((var->xsize > 1) || (var->ysize > 1)) printf("(");
 
- if((var->xsize >= 1) || (var->ysize >= 1)) printf("(");
+for(count=0;count<(xinc*yinc);count++) {
 
- for(count=0;count<(xinc*yinc);count++) {
 	 switch(vartype) {
-	  case VAR_NUMBER:				/* double precision */			
-		printf("%.6g",var->val[count].d);
-	        break;
 
-	  case VAR_STRING:				/* string */
-		printf("\"%s\"",var->val[count].s);
-	        break;
+		 case VAR_NUMBER:				/* double precision */			
+			printf("%.6g",&var->val[count].d);
+			asm("int $3");
 
-	  case VAR_INTEGER:	 			/* integer */
-		printf("%d",var->val[count].i);
-        	break;
+		        break;
 
-	  case VAR_SINGLE:				/* single */	     
-		printf("%f",var->val[count].f);
-	        break;
+		  case VAR_STRING:				/* string */
+			printf("\"%s\"",var->val[count].s);
+		        break;
+
+		  case VAR_INTEGER:	 			/* integer */
+			printf("%d",var->val[count].i);
+        		break;
+
+		  case VAR_SINGLE:				/* single */	     
+			printf("%f",var->val[count].f);
+		        break;
   	  }
 
 	  if(count < ((xinc*yinc)-1)) printf(",");		 
 	
   }
 
-  if((var->xsize >= 1) || (var->ysize >= 1)) printf(")");
+  if((var->xsize > 1) || (var->ysize >= 1)) printf(")");
   
   printf("\n");
 }

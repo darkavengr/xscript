@@ -186,6 +186,7 @@ int start;
 vars_t *varptr;
 vars_t *assignvarptr;
 int lc;
+int returnvalue;
 
 c=*lbuf;
 if(c == '\r' || c == '\n' || c == 0) return(0);			/* blank line */
@@ -207,10 +208,10 @@ if(tc == -1) {
 	return(SYNTAX_ERROR);
 }
 
-if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
-	PrintError(SYNTAX_ERROR);
-	return(-1);
-}
+//if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) {		/* check syntax */
+	//PrintError(SYNTAX_ERROR);
+//	return(-1);
+//}
 
 if(CallIfStatement(tc,tokens) == 0) return(0);			/* run statement if statement */
 
@@ -235,7 +236,11 @@ if(strcmpi(tokens[count],"=") == 0) {
 
  	ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
 
- 	SubstituteVariables(count+1,tc,tokens,tokens);
+	returnvalue=SubstituteVariables(count+1,tc,tokens,tokens);
+ 	if(returnvalue > 0) {
+		PrintError(retval);
+		return(returnvalue);
+	}
 
  	if(strlen(split.fieldname) == 0) {			/* use variable name */
  		vartype=GetVariableType(split.name);
@@ -275,8 +280,11 @@ if(strcmpi(tokens[count],"=") == 0) {
 	 	val.d=exprone;
 	 }
 	 else if(vartype == VAR_STRING) {
-		SubstituteVariables(count+1,count+1,tokens,tokens);
-	 	if(tc == -1) return(-1);
+		returnvalue=SubstituteVariables(count+1,count+1,tokens,tokens);
+ 		if(returnvalue > 0) {
+			PrintError(retval);
+			return(returnvalue);
+		}
 
 	 	strcpy(val.s,tokens[count+1]);  
 	 }
@@ -362,6 +370,7 @@ char *s[MAX_SIZE];
 char *sptr;
 int PrintFunctionFound;
 char *udttokens[2][MAX_SIZE];
+int returnvalue;
 
 /* if string literal, string variable or function returning string */
 
@@ -375,7 +384,11 @@ if(((char) *tokens[1] == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (
 	return(0);
 }
 
-SubstituteVariables(1,tc,tokens,tokens);
+returnvalue=SubstituteVariables(1,tc,tokens,tokens);
+if(returnvalue > 0) {
+	PrintError(returnvalue);
+	return(returnvalue);
+}
 
 retval.val.type=0;
 retval.val.d=EvaluateExpression(tokens,1,tc);
@@ -568,6 +581,7 @@ char *buf[MAX_SIZE];
 int vartype;
 varsplit split;
 SAVEINFORMATION *info;
+int returnvalue;
 
 if(tc < 4) {						/* Too few parameters */
 	PrintError(NO_PARAMS);
@@ -614,7 +628,11 @@ if(countx == tc) {
 }
 else
 {
-	SubstituteVariables(countx+1,tc,tokens,tokens);
+	returnvalue=SubstituteVariables(countx+1,tc,tokens,tokens);
+	if(returnvalue > 0) {
+		PrintError(retval);
+		return(returnvalue);
+	}
 
 	steppos=EvaluateExpression(tokens,countx+1,tc);
 }
@@ -622,12 +640,16 @@ else
 //  0   1    2 3 4  5
 // for count = 1 to 10
 
-SubstituteVariables(1,tc,tokens,tokens);
+returnvalue=SubstituteVariables(1,tc,tokens,tokens);
+if(returnvalue > 0) {
+	PrintError(returnvalue);
+	return(returnvalue);
+}
 
 exprone=EvaluateExpression(tokens,3,count);			/* start value */
 exprtwo=EvaluateExpression(tokens,count+1,countx);			/* end value */
 
-if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&loopx,split.fieldx,split.fieldy) == -1) {
+if(IsVariable(split.name) == -1) {				/* create variable if it doesn't exist */
 	CreateVariable(split.name,"DOUBLE",split.x,split.y);
 }
 
@@ -715,12 +737,12 @@ do {
 
 		currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */	
 	    } while(
-		   ( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d > exprtwo)) ||
-		   ((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d < exprtwo)) ||
-		   ((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i > exprtwo)) ||
-		   ((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i < exprtwo)) ||
-		   ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f > exprtwo)) ||
-	    	   ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f < exprtwo))
+		   ( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d >= exprtwo)) ||
+		   ((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d <= exprtwo)) ||
+		   ((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i >= exprtwo)) ||
+		   ((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i <= exprtwo)) ||
+		   ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f >= exprtwo)) ||
+	    	   ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f <= exprtwo))
 		   );
 
 return(NO_ERROR);	
@@ -779,17 +801,29 @@ if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 	return(0);
 }
 else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
-	SubstituteVariables(1,tc,tokens,tokens);
+	returnvalue=SubstituteVariables(1,tc,tokens,tokens);
+	if(returnvalue > 0) {
+		PrintError(retval);
+		return(returnvalue);
+	}
 
 	retval.val.i=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 
-	 SubstituteVariables(1,tc,tokens,tokens);
+	returnvalue=SubstituteVariables(1,tc,tokens,tokens);
+	if(returnvalue > 0) {
+		PrintError(retval);
+		return(returnvalue);
+	}
 
 	 retval.val.d=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
-	SubstituteVariables(1,tc,tokens,tokens);
+	returnvalue=SubstituteVariables(1,tc,tokens,tokens);
+	if(returnvalue > 0) {
+		PrintError(retval);
+		return(returnvalue);
+	}
 
 	retval.val.f=EvaluateExpression(tokens,1,tc);	
 }

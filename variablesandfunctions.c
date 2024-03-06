@@ -171,6 +171,8 @@ else {					/* user-defined type */
 
 	next->type_int=VAR_UDT;
 
+	strcpy(next->udt_type,type);		/* set udt type */
+
 	usertype=GetUDT(type);
 	if(usertype == NULL) return(INVALID_VARIABLE_TYPE);
 
@@ -211,7 +213,6 @@ else {					/* user-defined type */
 next->xsize=xsize;				/* set size */
 next->ysize=ysize;
 
-strcpy(next->type,type);		/* set type */
 strcpy(next->varname,name);		/* set name */
 next->next=NULL;
 
@@ -258,12 +259,12 @@ if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) {		/* outside array */
 /* update variable */
 
 
-if(strcmpi(next->type,"DOUBLE") == 0) {		/* double precision */			
+if(next->type_int == VAR_NUMBER) {		/* double precision */			
 	      next->val[(y*next->ysize)+(x*next->xsize)].d=val->d;
 	      return(0);
 
 }
-else if(strcmpi(next->type,"STRING") == 0) {	/* string */			
+else if(next->type_int == VAR_STRING) {	/* string */			
 	      if(next->val[( (y*next->ysize)+(next->xsize*x))].s == NULL) {		/* if string element not allocated */
 
 	 next->val[((y*next->ysize)+(next->xsize*x))].s=malloc(strlen(val->s));	/* allocate memory */
@@ -278,11 +279,11 @@ else if(strcmpi(next->type,"STRING") == 0) {	/* string */
 
 	      return(0);
 }
-else if(strcmpi(next->type,"INTEGER") == 0) {	/* integer */
+else if(next->type_int == VAR_INTEGER) {	/* integer */
 	      next->val[(y*next->ysize)+(x*next->xsize)].i=val->i;
 	      return(0);
 }
-else if(strcmpi(next->type,"SINGLE") == 0) {	/* single */
+else if(next->type_int == VAR_SINGLE) {	/* single */
 	      next->val[x*sizeof(float)+(y*sizeof(float))].f=val->f;
 	      return(0);
 }
@@ -428,24 +429,24 @@ while(next != NULL) {
 
 if(next == NULL) return(-1);
 
-if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
 
-if(strcmpi(next->type,"DOUBLE") == 0) {
+if(next->type_int == VAR_NUMBER) {
 	val->d=next->val[(y*next->ysize)+(x*next->xsize)].d;
 	return(0);
 }
-else if(strcmpi(next->type,"STRING") == 0) {
+else if(next->type_int == VAR_STRING) {
 	val->s=malloc(strlen(next->val[( (y*next->ysize)+(next->xsize*x))].s));				/* allocate string */
 	if(val->s == NULL) return(-1);
 
 	strcpy(val->s,next->val[( (y*next->ysize)+(next->xsize*x))].s);
 	return(0);
 }
-else if(strcmpi(next->type,"INTEGER") == 0) {
+else if(next->type_int == VAR_INTEGER) {
 	val->i=next->val[(y*next->ysize)+(x*next->xsize)].i;
 	return(0);
 }
-else if(strcmpi(next->type,"SINGLE") == 0) {
+else if(next->type_int == VAR_SINGLE) {
 	val->f=next->val[(y*next->ysize)+(x*next->xsize)].f;
 	return(0);
 }
@@ -605,25 +606,25 @@ return(parse_end);
  * 
   */
 int RemoveVariable(char *name) {
-	vars_t *next;
-	vars_t *last;
+vars_t *next;
+vars_t *last;
 
-	next=currentfunction->vars;						/* point to variables */
+next=currentfunction->vars;						/* point to variables */
 	
-	while(next != NULL) {
-	  last=next;
+while(next != NULL) {
+	last=next;
 	 
-	  if(strcmpi(next->varname,name) == 0) {			/* found variable */
-	    last->next=next->next;				/* point over link */
+	if(strcmpi(next->varname,name) == 0) {			/* found variable */
+	  	last->next=next->next;				/* point over link */
 
-//    free(next);
-	   return(0);    
+       	  	free(next);
+   		return(0);    
 	  }
 
 	 next=next->next;
-	}
+}
 
-	return(-1);
+return(-1);
 }
 
 /*
@@ -687,18 +688,18 @@ for(count=2;count<next->funcargcount-1;count++) {
 
 		while(vartypenames[typecount] != NULL) {
 			if(strcmpi(vartypenames[typecount],tokens[count+2]) == 0) { 		/* found type */
-			strcpy(vartype,vartypenames[typecount]);
-			break;
-   		}
+				strcpy(vartype,vartypenames[typecount]);
+				break;
+   			}
 
-		typecount++;
-	 }
+			typecount++;
+		 }
 
-	 if(vartypenames[typecount] == NULL) {		/* user-defined type */
-		//	udtptr=GetUDT(tokens[count+2]);
-		//	if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
-		//	strcpy(vartype,tokens[count+2]);
-	}
+	 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
+			//	udtptr=GetUDT(tokens[count+2]);
+			//	if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
+			//	strcpy(vartype,tokens[count+2]);
+		}
 }
 	  
 /* add parameter */
@@ -725,12 +726,15 @@ for(count=2;count<next->funcargcount-1;count++) {
 
 	strcpy(paramsptr->varname,tokens[count]);
 
-	if(vartypenames[typecount] != NULL) {
-		 strcpy(paramsptr->type,vartypenames[typecount]);
+	/* get parameter type */
+
+	if(vartypenames[typecount] != NULL) {			/* built-in type */
+		 paramsptr->type_int=typecount;
 	}
 	else
 	{
-		strcpy(paramsptr->type,tokens[count+2]);
+		paramsptr->type_int=VAR_UDT;
+		strcpy(paramsptr->udt_type,tokens[count+2]);	/* user-defined type */
 	}
 
 	paramsptr->xsize=0;
@@ -868,18 +872,24 @@ parameters=next->parameters;
 count=start+2;		/* skip function name and ( */
 
 while(parameters != NULL) {
-	CreateVariable(parameters->varname,parameters->type,split.x,split.y);
-	
-	if(strcmpi(parameters->type,"DOUBLE") == 0) {
+	if(parameters->type_int == VAR_UDT) {			/* user defined type */
+		CreateVariable(parameters->varname,parameters->udt_type,split.x,split.y);
+	}
+	else							/* built-in type */
+	{
+		CreateVariable(parameters->varname,vartypenames[parameters->type_int],split.x,split.y);
+	}
+
+	if(parameters->type_int == VAR_NUMBER) {
 		val.d=atof(tokens[count]);
 	}
-	else if(strcmpi(parameters->type,"STRING") == 0) {
+	else if(parameters->type_int == VAR_STRING) {
 		strcpy(val.s,tokens[count]);
 	}
-	else if(strcmpi(parameters->type,"INTEGER") == 0) {
+	else if(parameters->type_int == VAR_INTEGER) {
 		val.i=atoi(tokens[count]);
 	}
-	else if(strcmpi(parameters->type,"SINGLE") == 0) {
+	else if(parameters->type_int == VAR_SINGLE) {
 		val.f=atof(tokens[count]);
 	}
 	else {
@@ -899,9 +909,10 @@ while(*currentptr != 0) {
 	currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
 
 	tc=TokenizeLine(buf,argbuf,TokenCharacters);			/* tokenize line */
+
 	if(tc == -1) {
-	 PrintError(SYNTAX_ERROR);
-	 return(-1);
+		PrintError(SYNTAX_ERROR);
+		return(-1);
 	}
 
 	if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
@@ -1028,6 +1039,7 @@ int type;
 int skiptokens=0;
 int numberofouttokens=0;
 int returnvalue;
+int arraysize;
 
 outcount=0;
 
@@ -1104,8 +1116,10 @@ for(count=start;count<end;count++) {
 
 	    tokentype=SUBST_VAR;
 
-	    returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
-   	    if(returnvalue != NO_ERROR) return(returnvalue);
+	    arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
+	    if(((split.x*split.y) > arraysize) || (arraysize < 0)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	
+	    GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
 
 	    type=GetVariableType(split.name); 	/* Get variable type */
 	    
@@ -1118,6 +1132,9 @@ for(count=start;count<end;count++) {
 		case VAR_STRING:
 
 		   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
+	    	   	arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
+	    		if(((split.x*split.y) > arraysize) || arraysize < 0) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	
 			returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
 		      	if(returnvalue != NO_ERROR) return(returnvalue);
 
@@ -1147,8 +1164,10 @@ for(count=start;count<end;count++) {
 		      }
 		      else
 		      {
-		        returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
-		   	if(returnvalue != NO_ERROR) return(returnvalue);
+	    	      	arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
+	    		if(((split.x*split.y) > arraysize) || arraysize < 0) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	
+		        GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
 
 		  	sprintf(temp[outcount++],"\"%s\"",val.s);
 			numberofouttokens++;
@@ -1804,5 +1823,51 @@ else
 	currentfunction->lc=currentfunction->saveinformation_top->lc;
 }
 
+}
+
+/*
+*  Get variable X size
+* 
+*  In: Nothing
+* 
+*  Returns: return variable type
+* 
+*/
+
+int GetVariableXSize(char *name) {
+vars_t *next;
+
+next=currentfunction->vars;
+
+while(next != NULL) {
+	if(strcmpi(next->varname,name) == 0) return(next->xsize);
+	 
+	next=next->next;
+}
+
+return(-1);
+}
+
+/*
+*  Get variable Y size
+* 
+*  In: Nothing
+* 
+*  Returns: return variable type
+* 
+*/
+
+int GetVariableYSize(char *name) {
+vars_t *next;
+
+next=currentfunction->vars;
+
+while(next != NULL) {
+	if(strcmpi(next->varname,name) == 0) return(next->ysize);
+	 
+	next=next->next;
+}
+
+return(-1);
 }
 

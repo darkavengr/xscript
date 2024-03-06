@@ -48,7 +48,7 @@ typedef struct {
  UserDefinedType *udt;
  int xsize;
  int ysize;
- char *type[MAX_SIZE];
+ char *udt_type[MAX_SIZE];
  int type_int;
  struct vars_t *next;
 } vars_t;
@@ -144,5 +144,6 @@ int GetSaveInformationLineCount(void);
 int GetFunctionReturnType(void);
 int PushSaveInformation(void);
 int PopSaveInformation(void);
-
+int GetVariableXSize(char *name);
+int GetVariableYSize(char *name);
 

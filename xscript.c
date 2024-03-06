@@ -80,7 +80,7 @@ else
 {
 	ClearInteractiveModeFlag();
 
-	SetArguments(&argv[2],argc-2);		/* add command-line arguments */
+	SetArguments(&argv[2],argc);		/* add command-line arguments */
 
 	ExecuteFile(argv[1]);						/* execute file */
 }
