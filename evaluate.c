@@ -508,20 +508,21 @@ return(overallresult);
 int IsValidExpression(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
 
-for(count=start+1;count<end;count += 2) {
-	if( (strcmp(tokens[count],"+") != 0) && (strcmp(tokens[count],"-") != 0) && (strcmp(tokens[count],"*") != 0) && \
-	    (strcmp(tokens[count],"/") != 0) && (strcmp(tokens[count],"<") != 0) && (strcmp(tokens[count],">") != 0) && \
-	    (strcmp(tokens[count],"=") != 0) && (strcmp(tokens[count],"&") != 0) && (strcmp(tokens[count],"|") != 0) && \
-	    (strcmp(tokens[count],"!") != 0) && (strcmp(tokens[count],"%") != 0)) {
+//for(count=start+1;count<end;count += 2) {
+//	if( (strcmp(tokens[count],"+") != 0) && (strcmp(tokens[count],"-") != 0) && (strcmp(tokens[count],"*") != 0) && \
+//	    (strcmp(tokens[count],"/") != 0) && (strcmp(tokens[count],"<") != 0) && (strcmp(tokens[count],">") != 0) && \
+//	    (strcmp(tokens[count],"=") != 0) && (strcmp(tokens[count],"&") != 0) && (strcmp(tokens[count],"|") != 0) && \
+//	    (strcmp(tokens[count],"!") != 0) && (strcmp(tokens[count],"%") != 0)) {
 
-	    	if((strcmp(tokens[count],"*") == 0) && (strcmp(tokens[count+1],"*") == 0)) {
-			count++;
-			return(TRUE);		/* power is an exception */
-		}
+//	   	if((strcmp(tokens[count],"*") == 0) && (strcmp(tokens[count+1],"*") == 0)) {
+//			count++;
+//			return(TRUE);		/* power is an exception */
+//		}
 
-		return(FALSE);
-	}
-}
+//		return(FALSE);
+//	}
+
+//}
 
 return(TRUE);
 }

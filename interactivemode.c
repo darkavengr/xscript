@@ -30,6 +30,8 @@
 #include "version.h"
 
 extern jmp_buf savestate;
+char *InteractiveModeBuffer=NULL;
+char *InteractiveModeBufferPosition=NULL;
 
 /*
  * Run XScript in interactive mode
@@ -45,8 +47,6 @@ char *endstatement[MAX_SIZE];
 int block_statement_nest_count=0;
 char *b;
 char *linebuf[MAX_SIZE];
-char *buffer;
-char *bufptr;
 int statementcount;
 char *tokenchars[MAX_SIZE];
 char *functionname[MAX_SIZE];
@@ -54,21 +54,20 @@ int tc;
 BLOCKSTATEMENTSAVE *blockstatementsave_head=NULL;
 BLOCKSTATEMENTSAVE *blockstatementsave_end=NULL;
 BLOCKSTATEMENTSAVE *savelast;
+char *SaveBufferAddress;
 
 SetInteractiveModeFlag();
 ClearIsRunningFlag();
 
 SetCurrentFile("");				/* No file currently */
 
-buffer=malloc(INTERACTIVE_BUFFER_SIZE);		/* allocate buffer for interactive mode */
-if(buffer == NULL) {
+InteractiveModeBuffer=malloc(INTERACTIVE_BUFFER_SIZE);		/* allocate buffer for interactive mode */
+if(InteractiveModeBuffer == NULL) {
 	 perror("xscript");
 	 exit(NO_MEM);
 }
 
-bufptr=buffer;
-
-SetCurrentBufferPosition(buffer);		/* set buffer positoon to start */
+InteractiveModeBufferPosition=InteractiveModeBuffer;		/* set buffer positoon to start */
 
 printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
@@ -82,11 +81,11 @@ while(1) {
 		printf("...");
 	}
 
-	fgets(bufptr,MAX_SIZE,stdin);			/* read line */
+	fgets(InteractiveModeBufferPosition,MAX_SIZE,stdin);			/* read line */
 
 	GetTokenCharacters(tokenchars);			/* get token characters */
 
-	tc=TokenizeLine(bufptr,tokens,tokenchars);	/* tokenize line */
+	tc=TokenizeLine(InteractiveModeBufferPosition,tokens,tokenchars);	/* tokenize line */
 
 	/* remove newline */
 
@@ -133,12 +132,18 @@ while(1) {
 		if(IsEndStatementForStatement(blockstatementsave_end->token,tokens[0]) == TRUE) {	/* if at end of block statement */
 			block_statement_nest_count--;
 			blockstatementsave_end=blockstatementsave_end->last;	/* point to previous in list */
-			bufptr=buffer;
+
+			InteractiveModeBufferPosition=InteractiveModeBuffer;	/* point to start */
 		}
 	}
 
 	if(block_statement_nest_count == 0) {			/* if at end of entering statements */
-		bufptr=buffer;
+		InteractiveModeBufferPosition=InteractiveModeBuffer;	/* point to start */
+
+		/* this is a kludge to force it to use the interactive buffer to execute statements */
+
+		SaveBufferAddress=GetCurrentBufferPosition();		/* save buffer buffer position */
+		SetCurrentBufferPosition(InteractiveModeBuffer);	/* force it to use interactive buffer */
 
 		GetCurrentFunctionName(functionname);		/* get current function name */
 
@@ -156,27 +161,29 @@ while(1) {
 
 			if(GetIsRunningFlag() == FALSE)	break;		/* not running */
 
-			SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));
+			SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));	/* read line from buffer */
 		
 	   		ExecuteLine(linebuf);
 
-	   		bufptr += strlen(bufptr);
-	 } while(*bufptr != 0);
+			InteractiveModeBufferPosition=GetCurrentBufferPosition();
+			InteractiveModeBufferPosition += strlen(InteractiveModeBufferPosition);	/* point to next statement */
+			SetCurrentBufferPosition(InteractiveModeBufferPosition);
 
-	   ClearIsRunningFlag();
+	 	} while(*InteractiveModeBufferPosition != 0);
 
-	   memset(buffer,0,INTERACTIVE_BUFFER_SIZE);
+		SetCurrentBufferPosition(SaveBufferAddress);	/* restore buffer address */
 
-	   bufptr=buffer;
-		
-           SetCurrentBufferPosition(buffer);	   
+	   	ClearIsRunningFlag();
+
+	   	memset(InteractiveModeBuffer,0,INTERACTIVE_BUFFER_SIZE);
+
+	   	InteractiveModeBufferPosition=InteractiveModeBuffer;		/* set buffer positoon to start */
 	}
 	else
 	{
-	  bufptr += strlen(bufptr);
-	}
-
-	} 
+		InteractiveModeBufferPosition += strlen(InteractiveModeBufferPosition);	/* point to next statement */
+	}	
+ }
 }
 
 /*
@@ -202,17 +209,17 @@ exit(0);
  *
  */
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	if(GetIsRunningFlag() == FALSE) {
-		printf("No program running\n");
-	}
-	else
-	{
+if(GetIsRunningFlag() == FALSE) {
+	printf("No program running\n");
+}
+else
+{
 	printf("Continuing program\n");
 
 	SetIsRunningFlag();
 	longjmp(savestate,0);
 
-	}
+}
 
 }
 
@@ -239,12 +246,24 @@ list_variables(tokens[1]);
  *
  */
 int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	if(tc < 1) {						/* Not enough parameters */
-	 PrintError(SYNTAX_ERROR);
-	 return(SYNTAX_ERROR);
-	}
+int count;
+char *filename[MAX_SIZE];
 
-	LoadFile(tokens[1]);
+if(tc < 1) {						/* Not enough parameters */
+	PrintError(SYNTAX_ERROR);
+	return(SYNTAX_ERROR);
+}
+
+
+/* The filename may be split across tokens */
+
+memset(filename,0,MAX_SIZE);
+
+for(count=1;count<tc;count++) {
+	strcat(filename,tokens[count]);
+}
+
+LoadFile(filename);
 }
 
 /*
@@ -280,34 +299,23 @@ ExecuteFile(currentfile);
  *
  */
 int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	int StepCount=0;
-	int count;
-	char *linebuf[MAX_SIZE];
-	char *buf;
+int StepCount=0;
 
-	if(strlen(tokens[1]) > 0) {
+if(strlen(tokens[1]) <= 0) {		/* invalid step count */
+	PrintError(INVALID_VALUE);
+	return(INVALID_VALUE);
+}
+else if(strlen(tokens[1]) > 1) {
 	SubstituteVariables(1,tc,tokens,tokens);
 
 	StepCount=EvaluateExpression(tokens,1,tc);
-	}
-	else
-	{
+}
+else
+{
 	StepCount=1;
-	}
+}
 
-	for(count=0;count<StepCount;count++) {
-		SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));
-
-		buf=GetCurrentBufferPosition();
-
-		if(*buf == 0) {
-			printf("End reached\n");
-			return(0);
-		 }
-
-	 	 ExecuteLine(linebuf);			/* run statement */
-	}
-
+	SingleStep(StepCount);
 }
 
 /*
@@ -335,7 +343,7 @@ return(-1);
 }
 
 /*
- * Clear
+ * Clear breakpoint
  *
  * In: tc Token count
  * tokens Tokens array
@@ -344,17 +352,17 @@ return(-1);
  *
  */
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	if(tc < 2) {						/* Not enough parameters */
-	 PrintError(SYNTAX_ERROR);
-	 return(SYNTAX_ERROR);
-	}
+if(tc < 2) {						/* Not enough parameters */
+	PrintError(SYNTAX_ERROR);
+	return(SYNTAX_ERROR);
+}
 
-	if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
+if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
 	clear_breakpoint(atoi(tokens[2]),tokens[3]);
 	return(0);
-	}
+}
 
-	printf("Invalid sub-command\n");
-	return(0);
+printf("Invalid sub-command\n");
+return(0);
 }
 

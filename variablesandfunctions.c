@@ -38,8 +38,6 @@ UserDefinedType *udt=NULL;
 
 char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
 functionreturnvalue retval;
-
-extern char *currentptr;
 vars_t *findvar;
 
 int callpos=0;
@@ -144,10 +142,10 @@ else
 /* add to end */
 
 if(strcmpi(type,"DOUBLE") == 0) {		/* double precision */			
-	next->val=malloc((xsize*sizeof(double))*(ysize*sizeof(double)));
+		next->val=malloc((xsize*sizeof(double))*(ysize*sizeof(double)));
 		if(next->val == NULL) return(NO_MEM);
 
-	next->type_int=VAR_NUMBER;
+		next->type_int=VAR_NUMBER;
 }
 else if(strcmpi(type,"STRING") == 0) {	/* string */
 	next->val=calloc(((xsize*MAX_SIZE)+(ysize*MAX_SIZE)),sizeof(char *));
@@ -428,8 +426,7 @@ while(next != NULL) {
 }
 
 if(next == NULL) return(-1);
-
-//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
 
 if(next->type_int == VAR_NUMBER) {
 	val->d=next->val[(y*next->ysize)+(x*next->xsize)].d;
@@ -512,10 +509,10 @@ memset(split,0,sizeof(varsplit));
 
 strcpy(split->name,tokens[start]);		/* copy name */
 
-split->x=1;
-split->y=1;
-split->fieldx=1;
-split->fieldy=1;
+split->x=0;
+split->y=0;
+split->fieldx=0;
+split->fieldy=0;
 
 for(count=start;count<end;count++) {			/* find field start, if any */
 	if(strcmp(tokens[count],".") == 0) {
@@ -630,15 +627,28 @@ int RemoveVariable(char *name) {
 vars_t *next;
 vars_t *last;
 
+
 next=currentfunction->vars;						/* point to variables */
 	
 while(next != NULL) {
+//	printf("next=%lX\n",next);
+
 	last=next;
 	 
 	if(strcmpi(next->varname,name) == 0) {			/* found variable */
-	  	last->next=next->next;				/* point over link */
+		if(next == currentfunction->vars) {		/* first */
+			currentfunction->vars=currentfunction->vars->next;
+		}
+		else if (next->next == NULL) {			/* last */
+			last->next=NULL;
+		}
+		else
+		{
+	  		last->next=next->next;				/* point over link */
+		}
 
-       	  	free(next);
+//      	  	free(next);
+
    		return(0);    
 	  }
 
@@ -717,9 +727,9 @@ for(count=2;count<next->funcargcount-1;count++) {
 		 }
 
 	 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
-			//	udtptr=GetUDT(tokens[count+2]);
-			//	if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
-			//	strcpy(vartype,tokens[count+2]);
+				udtptr=GetUDT(tokens[count+2]);
+				if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
+				strcpy(vartype,tokens[count+2]);
 		}
 }
 	  
@@ -762,7 +772,7 @@ for(count=2;count<next->funcargcount-1;count++) {
 	paramsptr->ysize=0;
 	paramsptr->val=NULL;
 
-	next->funcstart=currentptr;
+	next->funcstart=GetCurrentBufferPosition();
 
 	if(strcmpi(tokens[count+1], ")") == 0) break;		/* at end */
 
@@ -799,7 +809,7 @@ for(count=2;count<next->funcargcount-1;count++) {
 /* find end of function */
 
 	do {
-	 currentptr=ReadLineFromBuffer(currentptr,linebuf,LINE_SIZE);			/* get data */
+	 SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */
 
 	 if(TokenizeLine(linebuf,tokens,TokenCharacters) == -1) {			/* tokenize line */
 	  PrintError(SYNTAX_ERROR);
@@ -808,7 +818,7 @@ for(count=2;count<next->funcargcount-1;count++) {
 
 	 if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
 	
-}    while(*currentptr != 0); 			/* until end */
+}    while(*GetCurrentBufferPosition() != 0); 			/* until end */
 
 PrintError(FUNCTION_NO_ENDFUNCTION);
 return;
@@ -848,13 +858,13 @@ int tc;
 char *argbuf[MAX_SIZE][MAX_SIZE];
 char *buf[MAX_SIZE];
 varsplit split;
-vars_t *vars;
 varval val;
 vars_t *parameters;
 int varstc;
 int endcount;
 FUNCTIONCALLSTACK newfunc;
 UserDefinedType userdefinedtype;
+int substreturnvalue;
 
 next=funcs;						/* point to variables */
 /* find function name */
@@ -867,25 +877,30 @@ while(next != NULL) {
 
 if(next == NULL) return(INVALID_STATEMENT);
 
-if(SubstituteVariables(start+2,end,tokens,tokens) == -1) return(-1);			/* substitute variables */
+substreturnvalue=SubstituteVariables(start+2,end,tokens,tokens);			/* substitute variables */
+if(substreturnvalue > 0) return(substreturnvalue);
 
 /* save information about the calling function. The calling function is already on the stack */
 
-currentfunction->callptr=currentptr;
+currentfunction->callptr=GetCurrentBufferPosition();
 
 /* save information about the called function */
 memset(&newfunc,0,sizeof(FUNCTIONCALLSTACK));
 
 strcpy(newfunc.name,next->name);
 
+newfunc.last=currentfunction;
 newfunc.callptr=next->funcstart;
-currentptr=next->funcstart;
-newfunc.lc=next->lc;
+
+SetCurrentBufferPosition(next->funcstart);
+
+newfunc.linenumber=1;
 newfunc.stat |= FUNCTION_STATEMENT;
 
 strcpy(newfunc.returntype,next->returntype);
-
 PushFunctionCallInformation(&newfunc);
+
+currentfunction=&newfunc;
 
 /* add variables from parameters */
 
@@ -926,8 +941,8 @@ while(parameters != NULL) {
 
 /* do function */
 
-while(*currentptr != 0) {	
-	currentptr=ReadLineFromBuffer(currentptr,buf,LINE_SIZE);			/* get data */
+while(*GetCurrentBufferPosition() != 0) {	
+	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),buf,LINE_SIZE));			/* get data */
 
 	tc=TokenizeLine(buf,argbuf,TokenCharacters);			/* tokenize line */
 
@@ -946,21 +961,9 @@ while(*currentptr != 0) {
 
 currentfunction->stat &= FUNCTION_STATEMENT;
 
-count=0;
-
-/* remove variables */
-
-
-vars=currentfunction->vars;
-
-while(vars != NULL) {
-	 RemoveVariable(vars->varname);
-	 vars=vars->next;
-}
-
 ReturnFromFunction();			/* return */
 
-return;
+return(0);
 }
 
 int ReturnFromFunction(void) {
@@ -1108,7 +1111,6 @@ for(count=start;count<end;count++) {
 			}
 	 	 }
 	
-
 	  	CallFunction(tokens,s,countx-1);
 
 	  	get_return_value(&subst_returnvalue);
@@ -1186,6 +1188,7 @@ for(count=start;count<end;count++) {
 		      else
 		      {
 	    	      	arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
+
 	    		if(((split.x*split.y) > arraysize) || arraysize < 0) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
 	
 		        GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
@@ -1321,13 +1324,13 @@ int CheckVariableType(char *typename) {
 }
 
 /*
- *  Check if is variable
+ *  Check if variable
  * 
  *  In: varname		Variable name
  * 
  *  Returns -1 on error or 0 on success
  * 
-  */
+ */
 int IsVariable(char *varname) {
 vars_t *next;
 varsplit split;
@@ -1348,26 +1351,34 @@ int PushFunctionCallInformation(FUNCTIONCALLSTACK *func) {
 FUNCTIONCALLSTACK *next;
 FUNCTIONCALLSTACK *previous;
 
+//printf("push\n");
+
 if(currentfunction == NULL) {
+//	printf("first\n");
+
 	currentfunction=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
 
 	if(currentfunction == NULL) {
-	 PrintError(NO_MEM);
-	 return(-1);
+		PrintError(NO_MEM);
+		return(-1);
 	}
 
 	currentfunction->last=NULL;
+	currentfunction->next=NULL;
 	next=currentfunction;
 }
 else
 {
+//	printf("next\n");
+
 	currentfunction->next=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
+
 	if(currentfunction->next == NULL) {
-	 PrintError(NO_MEM);
-	 return(-1);
+		PrintError(NO_MEM);
+		return(-1);
 	}
 
-next=currentfunction->next;
+	next=currentfunction->next;
 }
 
 memset(next,0,sizeof(FUNCTIONCALLSTACK));
@@ -1375,19 +1386,28 @@ memcpy(next,func,sizeof(FUNCTIONCALLSTACK));
 
 previous=currentfunction;
 currentfunction=next;
+
 next->last=previous;
 next->next=NULL;
 }
 
 int PopFunctionCallInformation(void) {
-FUNCTIONCALLSTACK *thisfunction;
+vars_t *vars;
 
-thisfunction=currentfunction;
+/* remove variables */
+
+vars=currentfunction->vars;
+
+while(vars != NULL) {
+	 RemoveVariable(vars->varname);
+	 vars=vars->next;
+}
 
 currentfunction=currentfunction->last;
+SetCurrentBufferPosition(currentfunction->callptr);
 
-currentptr=currentfunction->callptr;
-//free(thisfunction);
+//free(currentfunction->next);
+
 }
 
 int FindFirstVariable(vars_t *var) {
@@ -1493,25 +1513,25 @@ while(sourcenext != NULL) {
 	destnext->type=sourcenext->type;
 
 	if(sourcenext->type == VAR_NUMBER) {		/* double precision */			
-	destnext->fieldval=malloc((sourcenext->xsize*sizeof(double))*(sourcenext->ysize*sizeof(double)));
+		destnext->fieldval=malloc((sourcenext->xsize*sizeof(double))*(sourcenext->ysize*sizeof(double)));
 		if(destnext->fieldval == NULL) return(NO_MEM);
 
-	memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(double))*(sourcenext->ysize*sizeof(double)));
+		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(double))*(sourcenext->ysize*sizeof(double)));
 	}
-	else if(sourcenext->type == VAR_SINGLE) {		/* double precision */			
-	destnext->fieldval=malloc((sourcenext->xsize*sizeof(float))*(sourcenext->ysize*sizeof(float)));
+	else if(sourcenext->type == VAR_SINGLE) {		/* single precision */			
+		destnext->fieldval=malloc((sourcenext->xsize*sizeof(float))*(sourcenext->ysize*sizeof(float)));
 		if(destnext->fieldval == NULL) return(NO_MEM);
 
-	memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(float))*(sourcenext->ysize*sizeof(float)));
+		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(float))*(sourcenext->ysize*sizeof(float)));
 	}
 	if(sourcenext->type == VAR_INTEGER) {		/* integer */
 	destnext->fieldval=malloc((sourcenext->xsize*sizeof(int))*(sourcenext->ysize*sizeof(int)));
 		if(destnext->fieldval == NULL) return(NO_MEM);
 
-	memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(int))*(sourcenext->ysize*sizeof(int)));
+		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(int))*(sourcenext->ysize*sizeof(int)));
 	}
 	else if(sourcenext->type == VAR_STRING) {	/* string */			
-	destnext->fieldval=calloc(((sourcenext->xsize*MAX_SIZE)*(sourcenext->ysize*MAX_SIZE)),sizeof(char *));
+		destnext->fieldval=calloc(((sourcenext->xsize*MAX_SIZE)*(sourcenext->ysize*MAX_SIZE)),sizeof(char *));
 		if(destnext->fieldval == NULL) return(NO_MEM);
 
 	/* copy strings in array */
@@ -1679,7 +1699,7 @@ strcpy(buf,currentfunction->name);
 */
 
 int GetCurrentFunctionLine(void) {
-return(currentfunction->lc);
+return(currentfunction->linenumber);
 }
 
 /*
@@ -1692,7 +1712,7 @@ return(currentfunction->lc);
 */
 
 void SetCurrentFunctionLine(int linenumber) {
-currentfunction->lc=linenumber;
+currentfunction->linenumber=linenumber;
 }
 
 /*
@@ -1774,7 +1794,7 @@ SAVEINFORMATION *info;
 info=currentfunction->saveinformation_top;
 if(info == NULL) return(NULL);
 
-return(info->lc);
+return(info->linenumber);
 }
 
 
@@ -1821,8 +1841,8 @@ else
 	
 }
 
-info->bufptr=currentptr;
-info->lc=GetCurrentFunctionLine();
+info->bufptr=GetCurrentBufferPosition();
+info->linenumber=GetCurrentFunctionLine();
 info->next=NULL;
 }
 
@@ -1840,8 +1860,8 @@ if(currentfunction->saveinformation_top->last != NULL) {
 }
 else
 {
-	currentptr=currentfunction->saveinformation_top->bufptr;
-	currentfunction->lc=currentfunction->saveinformation_top->lc;
+	SetCurrentBufferPosition(currentfunction->saveinformation_top->bufptr);
+	currentfunction->linenumber=currentfunction->saveinformation_top->linenumber;
 }
 
 }

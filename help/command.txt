@@ -1,0 +1,6 @@
+COMMAND
+
+The COMMAND string variable holds the command-line arguments, if any.
+
+See also: PROGRAMNAME
+

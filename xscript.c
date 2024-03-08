@@ -53,6 +53,7 @@ char *args[MAX_SIZE];
 char *filename=NULL;
 char *dptr;
 char *aptr;
+varval cmdargs;
 
 /* get executable directory name from argv[0] */
 
@@ -67,20 +68,38 @@ while(aptr != strrchr(argv[0],'/')) {		/* from first character to last / in file
 
 InitializeFunctions();						/* Initialize functions */
 
+/* get command-line arguments */
+
+CreateVariable("programname","STRING",1,1);
+cmdargs.s=malloc(MAX_SIZE);
+
+strcpy(cmdargs.s,argv[0]);
+UpdateVariable("programname",NULL,&cmdargs,0,0);
+
+CreateVariable("command","STRING",1,1);
+
+cmdargs.s=malloc(MAX_SIZE);
+
+memset(cmdargs.s,0,MAX_SIZE);
+
+for(count=1;count<argc;count++) {
+	strcat(cmdargs.s,argv[count]);
+}
+
+UpdateVariable("command",NULL,&cmdargs,0,0);
+
+free(cmdargs.s);
+
 /* intialize command-line arguments */
 
 signal(SIGINT,signalhandler);		/* register signal handler */
 
 if(argc == 1) {					/* no arguments */ 
-	SetArguments(&argv[2],0);		/* add command-line arguments */
-
 	InteractiveMode();			/* run interpreter in interactive mode */
 }
 else
 {
 	ClearInteractiveModeFlag();
-
-	SetArguments(&argv[2],argc);		/* add command-line arguments */
 
 	ExecuteFile(argv[1]);						/* execute file */
 }
@@ -104,7 +123,6 @@ if(sig == SIGINT) {			/* ctrl-c */
 	if(GetInteractiveModeFlag() == TRUE) {		/* if in interactive mode */
 		if(GetIsRunningFlag() == TRUE) {		/* is running */
 			printf("Program stopped. Type continue to resume\n");
-			//asm("int $3");
 
 			ClearIsRunningFlag();
 

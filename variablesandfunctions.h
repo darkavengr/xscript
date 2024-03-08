@@ -65,7 +65,7 @@ typedef struct {
 
 typedef struct {
  char *bufptr;
- int lc;
+ int linenumber;
  struct SAVEINFORMATION *last;
  struct SAVEINFORMATION *next;
 } SAVEINFORMATION;
@@ -78,14 +78,14 @@ typedef struct {
  char *returntype[MAX_SIZE];
  int type_int;
  vars_t *parameters;
- int lc;
+ int linenumber;
  struct functions *next;
 } functions;
 
 typedef struct {
  char *name[MAX_SIZE];
  char *callptr;
- int lc;
+ int linenumber;
  SAVEINFORMATION *saveinformation;
  SAVEINFORMATION *saveinformation_top;
  vars_t *vars;
@@ -146,4 +146,5 @@ int PushSaveInformation(void);
 int PopSaveInformation(void);
 int GetVariableXSize(char *name);
 int GetVariableYSize(char *name);
+int IsFunction(char *name);
 

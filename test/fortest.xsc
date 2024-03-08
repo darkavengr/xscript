@@ -1,7 +1,4 @@
-a=12
-b=22
-
-for x=a+1 to b+2
- print x
-next
+for count=1 to 10
+print count
+next count
 

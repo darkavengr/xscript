@@ -30,6 +30,9 @@
 #include "size.h"
 #include "variablesandfunctions.h"
 #include "debug.h"
+#include "dofile.h"
+
+extern jmp_buf savestate;
 
 BREAKPOINT *breakpoints;
 BREAKPOINT *breakpointend;
@@ -185,36 +188,36 @@ if(xinc == 0) xinc++;
 
 if((var->xsize > 1) || (var->ysize > 1)) printf("(");
 
-for(count=0;count<(xinc*yinc);count++) {
+for(xcount=1;xcount<var->xsize+1;xcount++) {
+	for(ycount=1;ycount<var->ysize+1;ycount++) {
 
-	 switch(vartype) {
+		 switch(vartype) {
 
-		 case VAR_NUMBER:				/* double precision */			
-			printf("%.6g",&var->val[count].d);
-			asm("int $3");
+			 case VAR_NUMBER:				/* double precision */			
+				printf("%.6g",var->val[(ycount*var->ysize)+(xcount*var->xsize)].d);
+			        break;
 
-		        break;
+			  case VAR_STRING:				/* string */
+				printf("\"%s\"",var->val[((ycount*var->ysize)+(var->xsize*xcount))].s);
+			        break;
 
-		  case VAR_STRING:				/* string */
-			printf("\"%s\"",var->val[count].s);
-		        break;
+			  case VAR_INTEGER:	 			/* integer */
+				printf("%d",var->val[(ycount*var->ysize)+(xcount*var->xsize)].i);
+        			break;
 
-		  case VAR_INTEGER:	 			/* integer */
-			printf("%d",var->val[count].i);
-        		break;
-
-		  case VAR_SINGLE:				/* single */	     
-			printf("%f",var->val[count].f);
-		        break;
-  	  }
-
-	  if(count < ((xinc*yinc)-1)) printf(",");		 
+			  case VAR_SINGLE:				/* single */	     
+				printf("%f",var->val[ycount*sizeof(float)+(xcount*sizeof(float))].f);
+			        break;
+  		}
 	
-  }
+		  if(count < ((xinc*yinc)-1)) printf(",");		 
+	
+	  }
+}
 
-  if((var->xsize > 1) || (var->ysize >= 1)) printf(")");
+if((var->xsize > 1) || (var->ysize > 1)) printf(")");
   
-  printf("\n");
+printf("\n");
 }
 
 /*
@@ -247,32 +250,55 @@ do {
 }
 
 /*
- * Set command-line arguments
+ * Single step program
  *
- * In: argp		Point to arguments
+ * In: stepcount
  *
- * Returns: Nothing
+ * Returns: error number on error or 0 on success
  *
  */
-void SetArguments(char *argp[MAX_SIZE][MAX_SIZE],int argcount) {
-varval cmdargs;
+
+int SingleStep(int stepcount) {
+char *linebuf[MAX_SIZE];
+int returnvalue;
 int count;
+int linenumber;
+char *currentposition=NULL;
 
-CreateVariable("argcount","INTEGER",0,0);
-
-cmdargs.i=argcount;
-UpdateVariable("argcount",NULL,&cmdargs,0,0);
-
-CreateVariable("args","STRING",argcount,1);
-
-cmdargs.s=malloc(MAX_SIZE);
-
-for(count=0;count<argcount;count++) {
-	strcpy(cmdargs.s,&argp[count]);
-
-	UpdateVariable("args",NULL,&cmdargs,count,0);
+if(GetIsFileLoadedFlag() == FALSE) {	/* not running from file */
+	PrintError(NO_PROGRAM_LOADED);
+	return(NO_PROGRAM_LOADED);
 }
 
-return;
-}
+for(count=0;count<stepcount;count++) {
+	currentposition=GetCurrentBufferPosition();		/* get buffer position */
+
+	printf("currentposition=%lX\n",currentposition);
+	asm("int $3");
+
+	linenumber=GetCurrentFunctionLine();			/* get line number */
+
+	currentposition=ReadLineFromBuffer(currentposition,linebuf,LINE_SIZE);	/* read line from buffer */
+	SetCurrentBufferPosition(currentposition);		/* update buffer position */
+
+	setjmp(savestate);		/* save program state */
+
+	printf("%d:	%s\n",linenumber,linebuf);		/* display statement */
+
+	returnvalue=ExecuteLine(linebuf);
+	if(returnvalue != 0) {
+		ClearIsRunningFlag();
+		return(returnvalue);
+	}
+
+	if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
+
+	memset(linebuf,0,MAX_SIZE);
+
+	SetCurrentFunctionLine(++linenumber);	/* increment line number */
+
+}    while(*currentposition != 0); 			/* until end */
+
+return(NO_ERROR);
+}	
 

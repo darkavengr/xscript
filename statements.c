@@ -67,6 +67,7 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
 	     { "SET",NULL,&set_command,FALSE},\
 	     { "CLEAR",NULL,&clear_command,FALSE},\
 	     { "HELP",NULL,&help_command,FALSE},\
+	     { "SSTEP",NULL,&single_step_command,FALSE},\
 	     { NULL,NULL,NULL } };
 
 int CallIfStatement(int tc,char tokens[MAX_SIZE][MAX_SIZE]) {

@@ -30,6 +30,7 @@ int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
 int IsSeperator(char *token,char *sep);

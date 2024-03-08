@@ -61,6 +61,9 @@ char *errs[] = { "No error",\
 		 "FOR without NEXT",\
 		 "User-defined type already exists",\
 		 "Field in user-defined type does not exist",\
+		 "Breakpoint not found",\
+		 "No program loaded",\
+		 "Invalid value\n"
 };
 
 /*
@@ -97,20 +100,26 @@ int GetLastError(void) {
  *
  */
 
-int PrintError(int errornumber) {
+void PrintError(int errornumber) {
 char *functionname[MAX_SIZE];
+
 
 GetCurrentFunctionName(functionname);
 
-if(GetInteractiveModeFlag() == FALSE) {
-	printf("Error in function (line %d): %s %s\n",GetCurrentFunctionLine(),functionname,errs[errornumber]);
+if(GetIsFileLoadedFlag() == TRUE) {
+	printf("Error in function %s (line %d): %s\n",functionname,GetCurrentFunctionLine(),errs[errornumber]);
+
 }
 else
 {
 
-	printf("%s\n",errs[errornumber]);  
+	printf("%s\n",errs[errornumber]); 
 }
 
-if(GetInteractiveModeFlag() == FALSE) exit(errornumber);
+if(GetInteractiveModeFlag() == FALSE) {
+	exit(errornumber); 		/* If running from non-interactive source, exit */
+}
+
+return;
 }
 
