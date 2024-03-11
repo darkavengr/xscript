@@ -147,4 +147,5 @@ int PopSaveInformation(void);
 int GetVariableXSize(char *name);
 int GetVariableYSize(char *name);
 int IsFunction(char *name);
+SAVEINFORMATION *GetSaveInformation(void);
 

@@ -54,6 +54,7 @@ char *filename=NULL;
 char *dptr;
 char *aptr;
 varval cmdargs;
+int returnvalue;
 
 /* get executable directory name from argv[0] */
 
@@ -78,8 +79,6 @@ UpdateVariable("programname",NULL,&cmdargs,0,0);
 
 CreateVariable("command","STRING",1,1);
 
-cmdargs.s=malloc(MAX_SIZE);
-
 memset(cmdargs.s,0,MAX_SIZE);
 
 for(count=1;count<argc;count++) {
@@ -101,7 +100,13 @@ else
 {
 	ClearInteractiveModeFlag();
 
-	ExecuteFile(argv[1]);						/* execute file */
+	returnvalue=ExecuteFile(argv[1]);	/* execute file */
+	if(returnvalue) {
+		PrintError(returnvalue);
+
+		FreeFunctions();
+		exit(returnvalue);
+	}
 }
 
 FreeFunctions();

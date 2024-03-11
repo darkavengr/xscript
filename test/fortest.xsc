@@ -1,4 +1,11 @@
+trace on
 for count=1 to 10
 print count
+
+if count = 5 then
+	print "Yes"
+	exit for
+endif
+
 next count
 

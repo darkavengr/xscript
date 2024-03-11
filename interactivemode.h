@@ -30,6 +30,7 @@ int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+void SwitchToInteractiveModeBuffer(void);
 
 typedef struct {
 	int linenumber;

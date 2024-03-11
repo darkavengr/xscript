@@ -67,11 +67,13 @@ if(InteractiveModeBuffer == NULL) {
 	 exit(NO_MEM);
 }
 
-InteractiveModeBufferPosition=InteractiveModeBuffer;		/* set buffer positoon to start */
+InteractiveModeBufferPosition=InteractiveModeBuffer;		/* set buffer position to start */
+
 
 printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
 while(1) {
+	SwitchToInteractiveModeBuffer();		/* switch to interactive mode buffer */
 
 	if(block_statement_nest_count == 0) {
 		printf(">");
@@ -102,9 +104,10 @@ while(1) {
 
 		if(blockstatementsave_head == NULL) {	/* first */
 			blockstatementsave_head=malloc(sizeof(BLOCKSTATEMENTSAVE));
+
 			if(blockstatementsave_head == NULL) {
 				PrintError(NO_MEM);
-				exit(NO_MEM);
+				continue;
 			}
 
 			blockstatementsave_end=blockstatementsave_head;
@@ -116,7 +119,7 @@ while(1) {
 			blockstatementsave_end->next=malloc(sizeof(BLOCKSTATEMENTSAVE));
 			if(blockstatementsave_end->next == NULL) {
 				PrintError(NO_MEM);
-				exit(NO_MEM);
+				continue;
 			}
 
 			savelast=blockstatementsave_end->last;
@@ -138,12 +141,7 @@ while(1) {
 	}
 
 	if(block_statement_nest_count == 0) {			/* if at end of entering statements */
-		InteractiveModeBufferPosition=InteractiveModeBuffer;	/* point to start */
-
-		/* this is a kludge to force it to use the interactive buffer to execute statements */
-
-		SaveBufferAddress=GetCurrentBufferPosition();		/* save buffer buffer position */
-		SetCurrentBufferPosition(InteractiveModeBuffer);	/* force it to use interactive buffer */
+		SwitchToInteractiveModeBuffer();		/* switch to interactive mode buffer */
 
 		GetCurrentFunctionName(functionname);		/* get current function name */
 
@@ -290,7 +288,7 @@ ExecuteFile(currentfile);
 }
 
 /*
- * Single step statement
+ * Trace statement
  *
  * In: tc Token count
  * tokens Tokens array
@@ -298,24 +296,31 @@ ExecuteFile(currentfile);
  * Returns error number on error or 0 on success
  *
  */
-int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-int StepCount=0;
+int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+if(tc < 2) {			/* Display trace status */
+	if(GetTraceFlag() == TRUE) {
+		printf("Trace is ON\n");
+	}
+	else
+	{
+		printf("Trace is OFF\n");
+	}
 
-if(strlen(tokens[1]) <= 0) {		/* invalid step count */
-	PrintError(INVALID_VALUE);
-	return(INVALID_VALUE);
+	return;		
 }
-else if(strlen(tokens[1]) > 1) {
-	SubstituteVariables(1,tc,tokens,tokens);
 
-	StepCount=EvaluateExpression(tokens,1,tc);
+if(strcmpi(tokens[1],"ON") == 0) {		/* enable trace */
+	SetTraceFlag();
+}
+else if(strcmpi(tokens[1],"OFF") == 0) {		/* disable trace */
+	ClearTraceFlag();
 }
 else
 {
-	StepCount=1;
+	PrintError(INVALID_VALUE);
 }
 
-	SingleStep(StepCount);
+return(0);
 }
 
 /*
@@ -364,5 +369,9 @@ if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
 
 printf("Invalid sub-command\n");
 return(0);
+}
+
+void SwitchToInteractiveModeBuffer(void) {
+SetCurrentBufferPosition(InteractiveModeBuffer);
 }
 

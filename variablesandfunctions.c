@@ -1866,6 +1866,10 @@ else
 
 }
 
+SAVEINFORMATION *GetSaveInformation(void) {
+return(currentfunction->saveinformation_top);
+}
+
 /*
 *  Get variable X size
 * 

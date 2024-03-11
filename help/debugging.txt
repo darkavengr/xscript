@@ -1,16 +1,12 @@
 XScript supports debugging.
 
-SET BREAKPOINT linenumber {function}
+SET BREAKPOINT linenumber {function}		Set breakpoint at line number, optionally in {function}.
 
-Set breakpoint at line number, optionally in {function}.
+CLEAR BREAKPOINT linenumber {function}		Clear breakpoint at line number, optionally in {function}.
 
-CLEAR BREAKPOINT linenumber {function}
+TRACE { on | off }				Enable or disable statement tracing.
 
-Clear breakpoint at line number, optionally in {function}.
+VARIABLES					Display variables for the current function.
 
-VARIABLES
-
-Display variables for the current function.
-
-See also: SET BREAKPOINT, CLEAR BREAKPOINT, VARIABLES
+See also: SET BREAKPOINT, CLEAR BREAKPOINT, TRACE, VARIABLES
 

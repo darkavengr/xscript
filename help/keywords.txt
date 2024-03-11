@@ -4,7 +4,7 @@ AND          AS              COMMAND        CONTINUE       DECLARE     DOUBLE
 ELSE         ELSEIF          END            ENDFUNCTION    ENDIF       ENDTYPE
 EXIT	     FOR             FUNCTION       IF             IMPORT      INCLUDE
 INTEGER      ITERATE         LOAD           NEXT	   OR          PRINT
-QUIT         RETURN          RUN            SET            SINGLE      SSTEP
-STEP	     STRING          THEN           TO             TYPE        VARIABLES
+QUIT         RETURN          RUN            SET            SINGLE      STEP
+STRING       THEN            TO             TRACE          TYPE        VARIABLES
 WEND
 

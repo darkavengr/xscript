@@ -1,0 +1,6 @@
+TRACE { ON | OFF }
+
+Displays statements as they are executed.
+
+The TRACE statement by itself shows if tracing is ON or OFF.
+

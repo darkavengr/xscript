@@ -36,7 +36,7 @@ char *errs[] = { "No error",\
 		 "ENDFUNCTION without FUNCTION",\
 		 "Invalid variable name",\
 		 "Out of memory",\
-		 "EXIT outside FOR or WHILE loop",\
+		 "EXIT outside of FOR or WHILE loop",\
 		 "Read error",
 		 "Syntax error",\
 		 "Error calling library function",\
@@ -50,20 +50,18 @@ char *errs[] = { "No error",\
 		 "Invalid array subscript",\
 		 "Type mismatch",\
 		 "Invalid variable type",\
-		 "CONTINUE without FOR or WHILE",\
+		 "EXIT FOR without FOR",\
 		 "ELSEIF without IF",\
-		 "Invalid condition",\
 		 "Missing XSCRIPT_MODULE_PATH path",\
 		 "Variable already exists",\
 		 "Variable not found",\
-		 "EXIT FOR without FOR",\
 		 "EXIT WHILE without WHILE",\
 		 "FOR without NEXT",\
 		 "User-defined type already exists",\
 		 "Field in user-defined type does not exist",\
 		 "Breakpoint not found",\
 		 "No program loaded",\
-		 "Invalid value\n"
+		 "Invalid value",\
 };
 
 /*

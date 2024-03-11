@@ -67,7 +67,7 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
 	     { "SET",NULL,&set_command,FALSE},\
 	     { "CLEAR",NULL,&clear_command,FALSE},\
 	     { "HELP",NULL,&help_command,FALSE},\
-	     { "SSTEP",NULL,&single_step_command,FALSE},\
+	     { "TRACE",NULL,&trace_command,FALSE},\
 	     { NULL,NULL,NULL } };
 
 int CallIfStatement(int tc,char tokens[MAX_SIZE][MAX_SIZE]) {
@@ -80,8 +80,7 @@ do {
 	if(statements[statementcount].statement == NULL) break;
 
 	if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  	/* found statement */
-		statements[statementcount].call_statement(tc,tokens); 		/* call statement */
-		return(0);
+		return(statements[statementcount].call_statement(tc,tokens)); 		/* call statement */
 	}
 	
 	statementcount++;
