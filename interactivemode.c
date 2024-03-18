@@ -55,6 +55,7 @@ BLOCKSTATEMENTSAVE *blockstatementsave_head=NULL;
 BLOCKSTATEMENTSAVE *blockstatementsave_end=NULL;
 BLOCKSTATEMENTSAVE *savelast;
 char *SaveBufferAddress;
+size_t returnvalue;
 
 SetInteractiveModeFlag();
 ClearIsRunningFlag();
@@ -161,8 +162,12 @@ while(1) {
 
 			SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));	/* read line from buffer */
 		
-	   		ExecuteLine(linebuf);
-
+			returnvalue=ExecuteLine(linebuf);		/* run line */
+	   		if(returnvalue != 0) {
+				PrintError(returnvalue);
+				break;
+			}
+				
 			InteractiveModeBufferPosition=GetCurrentBufferPosition();
 			InteractiveModeBufferPosition += strlen(InteractiveModeBufferPosition);	/* point to next statement */
 			SetCurrentBufferPosition(InteractiveModeBufferPosition);
@@ -185,7 +190,7 @@ while(1) {
 }
 
 /*
- * Quit statement. Quits XScript.
+ * Quit statement
  *
  * In: tc Token count
  * tokens Tokens array
@@ -344,7 +349,7 @@ if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
 }
 
 printf("Invalid sub-command\n");
-return(-1);
+return(INVALID_VALUE);
 }
 
 /*
@@ -373,5 +378,20 @@ return(0);
 
 void SwitchToInteractiveModeBuffer(void) {
 SetCurrentBufferPosition(InteractiveModeBuffer);
+}
+
+int stacktrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+FUNCTIONCALLSTACK *stack;
+int callstackcount=0;
+	
+stack=GetFunctionCallStackTop();
+
+while(stack != NULL) {
+	printf("#%d	%s\n",callstackcount++,stack->name);
+
+	stack=stack->last;
+}
+
+return(0);
 }
 

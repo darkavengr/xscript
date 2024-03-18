@@ -72,6 +72,7 @@ InitializeFunctions();						/* Initialize functions */
 /* get command-line arguments */
 
 CreateVariable("programname","STRING",1,1);
+
 cmdargs.s=malloc(MAX_SIZE);
 
 strcpy(cmdargs.s,argv[0]);
@@ -123,11 +124,15 @@ exit(0);
  *
  */
 void signalhandler(int sig) {
+char *buf[MAX_SIZE];
 
 if(sig == SIGINT) {			/* ctrl-c */
 	if(GetInteractiveModeFlag() == TRUE) {		/* if in interactive mode */
 		if(GetIsRunningFlag() == TRUE) {		/* is running */
 			printf("Program stopped. Type continue to resume\n");
+
+			GetCurrentFunctionName(buf);
+			printf("%s\n",buf);
 
 			ClearIsRunningFlag();
 
@@ -153,4 +158,4 @@ printf("Signal %d received\n",sig);
 void GetExecutableDirectoryName(char *name) {
 	strcpy(name,dirname);
 }
-	
+

@@ -33,6 +33,8 @@
 #include "evaluate.h"
 
 functions *funcs=NULL;
+FUNCTIONCALLSTACK *functioncallstack=NULL;
+FUNCTIONCALLSTACK *functioncallstackend=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
 UserDefinedType *udt=NULL;
 
@@ -58,9 +60,7 @@ FUNCTIONCALLSTACK newfunc;
 
 /* create main function */
 
-memset(&newfunc,0,sizeof(FUNCTIONCALLSTACK));
 strcpy(newfunc.name,"main");
-
 PushFunctionCallInformation(&newfunc);
 
 return(0);
@@ -76,9 +76,9 @@ return(0);
   */
 
 void FreeFunctions(void) {
-	free(funcs);
+free(funcs);
 
-	return;
+return;
 }
 
 /*
@@ -878,29 +878,24 @@ while(next != NULL) {
 if(next == NULL) return(INVALID_STATEMENT);
 
 substreturnvalue=SubstituteVariables(start+2,end,tokens,tokens);			/* substitute variables */
-if(substreturnvalue > 0) return(substreturnvalue);
+//if(substreturnvalue > 0) return(substreturnvalue);
 
 /* save information about the calling function. The calling function is already on the stack */
 
 currentfunction->callptr=GetCurrentBufferPosition();
-
 /* save information about the called function */
-memset(&newfunc,0,sizeof(FUNCTIONCALLSTACK));
 
 strcpy(newfunc.name,next->name);
 
-newfunc.last=currentfunction;
 newfunc.callptr=next->funcstart;
-
 SetCurrentBufferPosition(next->funcstart);
 
 newfunc.linenumber=1;
 newfunc.stat |= FUNCTION_STATEMENT;
 
 strcpy(newfunc.returntype,next->returntype);
-PushFunctionCallInformation(&newfunc);
 
-currentfunction=&newfunc;
+PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
 
 /* add variables from parameters */
 
@@ -1348,47 +1343,42 @@ return(-1);
 }
 
 int PushFunctionCallInformation(FUNCTIONCALLSTACK *func) {
-FUNCTIONCALLSTACK *next;
 FUNCTIONCALLSTACK *previous;
 
-//printf("push\n");
+if(functioncallstack == NULL) {
+	functioncallstack=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
+	if(functioncallstack == NULL) return(NO_MEM);
+	
+	functioncallstackend=functioncallstack;
+	currentfunction=functioncallstack;			/* point to start */
 
-if(currentfunction == NULL) {
-//	printf("first\n");
-
-	currentfunction=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
-
-	if(currentfunction == NULL) {
-		PrintError(NO_MEM);
-		return(-1);
-	}
-
-	currentfunction->last=NULL;
-	currentfunction->next=NULL;
-	next=currentfunction;
+	functioncallstackend->last=NULL;
 }
 else
 {
-//	printf("next\n");
+	functioncallstackend->next=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
+	if(functioncallstackend->next == NULL) return(NO_MEM);
 
-	currentfunction->next=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
+	previous=functioncallstackend;			/* save previous */
+	
+	functioncallstackend=functioncallstackend->next;
 
-	if(currentfunction->next == NULL) {
-		PrintError(NO_MEM);
-		return(-1);
-	}
-
-	next=currentfunction->next;
+	functioncallstackend->last=previous;			/* previous function */
 }
 
-memset(next,0,sizeof(FUNCTIONCALLSTACK));
-memcpy(next,func,sizeof(FUNCTIONCALLSTACK));
+strcpy(functioncallstackend->name,func->name);		/* copy information */
+functioncallstackend->callptr=func->callptr;
+functioncallstackend->linenumber=func->linenumber;
+functioncallstackend->saveinformation=func->saveinformation;
+functioncallstackend->saveinformation_top=func->saveinformation_top;
+functioncallstackend->vars=func->vars;
+functioncallstackend->stat=func->stat;
+strcpy(functioncallstackend->returntype,func->returntype);
+functioncallstackend->type_int=func->type_int;
+functioncallstackend->lastlooptype=func->lastlooptype;
+functioncallstackend->next=NULL;
 
-previous=currentfunction;
-currentfunction=next;
-
-next->last=previous;
-next->next=NULL;
+return(0);
 }
 
 int PopFunctionCallInformation(void) {
@@ -1403,7 +1393,8 @@ while(vars != NULL) {
 	 vars=vars->next;
 }
 
-currentfunction=currentfunction->last;
+if(currentfunction->last != NULL) currentfunction=currentfunction->last;
+
 SetCurrentBufferPosition(currentfunction->callptr);
 
 //free(currentfunction->next);
@@ -1774,7 +1765,7 @@ return(currentfunction->stat);
 char *GetSaveInformationBufferPointer(void) {
 char *ptr;
 
-//if(currentfunction->saveinformation_top->bufptr == NULL) return(NULL);
+if(currentfunction->saveinformation_top->bufptr == NULL) return(NULL);
 
 ptr=currentfunction->saveinformation_top->bufptr;
 return(ptr);
@@ -1914,5 +1905,9 @@ while(next != NULL) {
 }
 
 return(-1);
+}
+
+FUNCTIONCALLSTACK *GetFunctionCallStackTop(void) {
+return(functioncallstackend);
 }
 

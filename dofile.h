@@ -31,6 +31,7 @@ int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int stacktrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
 int IsSeperator(char *token,char *sep);
@@ -59,6 +60,7 @@ void SwitchToFileBuffer(void);
 void SetTraceFlag(void);
 void ClearTraceFlag(void);
 int GetTraceFlag(void);
+FUNCTIONCALLSTACK *GetFunctionCallStackTop(void);
 
 typedef struct {
  char *statement;
