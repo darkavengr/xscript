@@ -1,3 +1,4 @@
-s="Test"
-print s
+import "test/haha.xsc"
+
+print 2+2
 

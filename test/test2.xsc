@@ -1,15 +1,15 @@
-function subtract(x,y,z)
-print "Test"
-
-return
+function subtract(a,b,c)
+stacktrace
 endfunction
 
 function add(d,e,f)
+stacktrace
 subtract(d,e,f)
-
+return d+e+f
 endfunction
 
 function multiply(a,b,c)
+stacktrace
 add(a,b,c)
 
 endfunction

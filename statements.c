@@ -40,7 +40,6 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
 	     { "FUNCTION","ENDFUNCTION",&function_statement,TRUE},\ 
 	     { "ENDFUNCTION",NULL,&endfunction_statement,FALSE},\ 
 	     { "RETURN",NULL,&return_statement,FALSE},\ 
-	     { "INCLUDE",NULL,&include_statement,FALSE},\ 
 	     { "DECLARE",NULL,&declare_statement,FALSE},\
 	     { "ITERATE",NULL,&iterate_statement,FALSE},\
 	     { "NEXT",NULL,&next_statement,FALSE},\

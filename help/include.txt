@@ -1,6 +1,0 @@
-INCLUDE filename
-
-Include source file.
-
-See also: IMPORT
-

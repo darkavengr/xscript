@@ -257,16 +257,14 @@ if(tc < 1) {						/* Not enough parameters */
 	return(SYNTAX_ERROR);
 }
 
-
-/* The filename may be split across tokens */
-
-memset(filename,0,MAX_SIZE);
-
-for(count=1;count<tc;count++) {
-	strcat(filename,tokens[count]);
+if(IsValidString(tokens[1]) == FALSE) {			/* is valid string */
+	PrintError(SYNTAX_ERROR);
+	return(SYNTAX_ERROR);
 }
 
-LoadFile(filename);
+StripQuotesFromString(tokens[1],filename);
+	
+return(LoadFile(filename));
 }
 
 /*
@@ -280,7 +278,6 @@ LoadFile(filename);
  */
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *currentfile[MAX_SIZE];
-
 
 GetCurrentFile(currentfile);		/* get current file */
 

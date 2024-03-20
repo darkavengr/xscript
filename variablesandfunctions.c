@@ -806,22 +806,25 @@ for(count=2;count<next->funcargcount-1;count++) {
 
 	strcpy(next->returntype,tokens[funcargcount-1]);
 
+return(FindEndOfunction());			/* find end of declared function */
+}
+
+int FindEndOfunction(void) {
+char *linebuf[MAX_SIZE];
+char *tokens[MAX_SIZE][MAX_SIZE];
+
 /* find end of function */
 
-	do {
-	 SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */
+do {
+	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */
 
-	 if(TokenizeLine(linebuf,tokens,TokenCharacters) == -1) {			/* tokenize line */
-	  PrintError(SYNTAX_ERROR);
-	  return(-1);
-	 }
+	TokenizeLine(linebuf,tokens,TokenCharacters);			/* tokenize line */
 
-	 if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
+	if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
 	
-}    while(*GetCurrentBufferPosition() != 0); 			/* until end */
+}  while(*GetCurrentBufferPosition() != 0); 			/* until end */
 
-PrintError(FUNCTION_NO_ENDFUNCTION);
-return;
+return(FUNCTION_NO_ENDFUNCTION);
 }
 
 int CheckFunctionExists(char *name) {
@@ -864,7 +867,7 @@ int varstc;
 int endcount;
 FUNCTIONCALLSTACK newfunc;
 UserDefinedType userdefinedtype;
-int substreturnvalue;
+int returnvalue;
 
 next=funcs;						/* point to variables */
 /* find function name */
@@ -877,8 +880,8 @@ while(next != NULL) {
 
 if(next == NULL) return(INVALID_STATEMENT);
 
-substreturnvalue=SubstituteVariables(start+2,end,tokens,tokens);			/* substitute variables */
-//if(substreturnvalue > 0) return(substreturnvalue);
+returnvalue=SubstituteVariables(start+2,end,tokens,tokens);			/* substitute variables */
+//if(returnvalue > 0) return(substreturnvalue);
 
 /* save information about the calling function. The calling function is already on the stack */
 
@@ -896,6 +899,8 @@ newfunc.stat |= FUNCTION_STATEMENT;
 strcpy(newfunc.returntype,next->returntype);
 
 PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
+
+currentfunction=functioncallstackend;			/* point to function */
 
 /* add variables from parameters */
 
@@ -941,14 +946,12 @@ while(*GetCurrentBufferPosition() != 0) {
 
 	tc=TokenizeLine(buf,argbuf,TokenCharacters);			/* tokenize line */
 
-	if(tc == -1) {
-		PrintError(SYNTAX_ERROR);
-		return(-1);
+	if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) {
+		break;
 	}
 
-	if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
-
-	ExecuteLine(buf);
+	returnvalue=ExecuteLine(buf);			/* Run line */
+	if(returnvalue != 0) return(returnvalue);
 
 	if(strcmpi(argbuf[0],"RETURN") == 0) break;
 
@@ -1350,8 +1353,6 @@ if(functioncallstack == NULL) {
 	if(functioncallstack == NULL) return(NO_MEM);
 	
 	functioncallstackend=functioncallstack;
-	currentfunction=functioncallstack;			/* point to start */
-
 	functioncallstackend->last=NULL;
 }
 else
@@ -1362,7 +1363,6 @@ else
 	previous=functioncallstackend;			/* save previous */
 	
 	functioncallstackend=functioncallstackend->next;
-
 	functioncallstackend->last=previous;			/* previous function */
 }
 
@@ -1377,6 +1377,8 @@ strcpy(functioncallstackend->returntype,func->returntype);
 functioncallstackend->type_int=func->type_int;
 functioncallstackend->lastlooptype=func->lastlooptype;
 functioncallstackend->next=NULL;
+
+currentfunction=functioncallstackend;
 
 return(0);
 }

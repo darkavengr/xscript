@@ -26,6 +26,9 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <setjmp.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "errors.h"
 #include "size.h"
 #include "evaluate.h"
@@ -80,7 +83,7 @@ FileBufferPosition=FileBuffer;
 
 if(fread(FileBuffer,filesize,1,handle) != 1) return(READ_ERROR);		/* read to buffer */
 		
-endptr=FileBuffer+(filesize-1);		/* point to end */
+endptr=(FileBuffer+filesize);		/* point to end */
 *endptr=0;			/* put null at end */
 
 FileBufferSize += filesize;
@@ -336,6 +339,9 @@ int returnvalue;
 /* if string literal, string variable or function returning string */
 
 if(((char) *tokens[1] == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExists(tokens[1]) == VAR_STRING) ) {
+	returnvalue=SubstituteVariables(1,tc,tokens,tokens);	
+	if(returnvalue > 0) return(returnvalue);
+
 	count += ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
 
 	printf("%s",val.s);
@@ -381,8 +387,20 @@ return(0);
  */
 
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-AddModule(tokens[1]);		/* load module */
-return(0);
+char *filename[MAX_SIZE];
+char *extptr;
+
+extptr=strstr(tokens[1],".");		/* get extension */
+
+if(memcmp(extptr,".xsc",3) == 0) {	/* is source file */
+	if(IsValidString(tokens[1]) == FALSE) return(SYNTAX_ERROR);	/* is valid string */
+
+	StripQuotesFromString(tokens[1],filename);		/* remove quotes from filename */
+
+	return(IncludeFile(filename));	/* including source file */
+}
+
+return(AddModule(tokens[1]));		/* load module */
 }
 
 /*
@@ -913,20 +931,6 @@ return(0);
 }
 
 /*
- * Include statement
- *
- * In: tc Token count
- * tokens Tokens array
- *
- * Returns error number on error or 0 on success
- *
- */
-
-int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(LoadFile(tokens[1]) == -1) return(FILE_NOT_FOUND);
-}
-
-/*
  * Exit statement
  *
  * In: tc Token count
@@ -1168,48 +1172,48 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
 	memset(d,0,MAX_SIZE);				/* clear line */
 	
 	while(*token != 0) {
-	 IsSeperator=FALSE;
+		IsSeperator=FALSE;
 
-	 if(*token == '"' ) {		/* quoted text */ 
-	   *d++=*token++;
+		if(*token == '"' ) {		/* quoted text */ 
+	   		*d++=*token++;
 
-	   while(*token != 0) {
-	    *d=*token++;
+	   		while(*token != 0) {
+	    			*d++=*token++;
 
-	    if(*d == '"') break;		/* quoted text */	
+	    			if(*(d-1) == '"') break;		/* quoted text */	
 
-	    d++;
-	  }
+	  		}
 
-	  tc++;
-	 }
-	 else
-	 {
-	  s=split;
+	  		tc++;
+	 	}
+	 	else
+	 	{
+	  		s=split;
 
-	  while(*s != 0) {
-	    if(*token == *s) {		/* token found */
+	  		while(*s != 0) {
+	    			if(*token == *s) {		/* token found */
 	   
-		    b=token;
-		    b--;
-		    if(strlen(tokens[tc]) != 0) tc++;
+		    		b=token;
+		   	 	b--;
+
+		    		if(strlen(tokens[tc]) != 0) tc++;
 	    
-		    IsSeperator=TRUE;
-		    d=tokens[tc]; 			
+		    		IsSeperator=TRUE;
+		    		d=tokens[tc]; 			
 
-		    memset(d,0,MAX_SIZE);				/* clear line */
+		    		memset(d,0,MAX_SIZE);				/* clear line */
 
-		    if(*token != ' ') {
-		      *d=*token++;
-	     		      d=tokens[++tc]; 				      
-		    }
-		    else
-		    {
-		      token++;
-		    }
-	   }
+		    		if(*token != ' ') {
+		      			*d=*token++;
+	     		     		d=tokens[++tc]; 				      
+		    		}
+		    		else
+		    		{
+		      			token++;
+		    		}
+	   	}
 
-	   s++;
+	 	s++;
 	 }
 
 	 if(IsSeperator == FALSE) *d++=*token++; /* non-token character */
@@ -1540,3 +1544,84 @@ Flags &= ~BREAK_FLAG;
 int GetBreakFlag(void) {
 return((Flags & BREAK_FLAG) >> 4);
 }
+
+int IncludeFile(char *filename) {
+struct stat includestat;
+char *tempbuf;
+FILE *handle;
+size_t newptr;
+char *oldtextptr;
+
+if(stat(filename,&includestat) == -1) return(FILE_NOT_FOUND);
+
+handle=fopen(filename,"rb");
+if(!handle) return(FILE_NOT_FOUND);
+
+/* replace include statement with file contents */
+
+tempbuf=malloc(includestat.st_size);		/* allocate temporary buffer */
+strcpy(tempbuf,CurrentBufferPosition);		/* save from current buffer to end */
+
+/* find relative distance from start of buffer and apply it to new buffer pointer */
+
+newptr=(CurrentBufferPosition-FileBuffer);	/* find distance from start of buffer */
+if(realloc(FileBuffer,(FileBufferSize+includestat.st_size)) == NULL) return(NO_MEM);	/* resize file buffer */
+
+CurrentBufferPosition=(FileBuffer+newptr);	/* new file buffer position */
+
+/* find start of include statement so it can be overwritten */
+
+CurrentBufferPosition -= 2;		/* skip newline */
+
+while(CurrentBufferPosition != FileBuffer) {
+	if(*CurrentBufferPosition-- == '\n') break;
+}
+
+if(fread(CurrentBufferPosition,includestat.st_size,1,handle) != 1) return(READ_ERROR);		/* read include file to buffer */
+
+/* copy text after included file */
+
+oldtextptr=(CurrentBufferPosition+includestat.st_size)-1;
+strcpy(oldtextptr,tempbuf);
+
+oldtextptr += includestat.st_size;		/* point to end */
+*oldtextptr=0;
+
+free(tempbuf);
+
+oldtextptr=NULL;
+
+fclose(handle);
+return(0);
+}
+
+int IsValidString(char *str) {
+char *s;
+
+if(*str != '"') return(FALSE);
+
+s=(str+strlen(str))-1;		/* point to end */
+
+if(*s != '"') return(FALSE);
+
+return(TRUE);
+}
+
+int StripQuotesFromString(char *str,char *buf) {
+char *s;
+char *b;
+
+if(IsValidString(str) == FALSE) return(-1);		/* not valid string */
+
+/* copy filename without quotes */
+
+s=str;
+s++;
+
+b=buf;
+
+while(*s != '"') *b++=*s++;	/* copy character */
+
+return(0);
+}
+
