@@ -1,8 +1,9 @@
-function test(a as integer,b as integer)
-return a + b
+function test()
+print "Function with no parameters"
 endfunction
 
-print test(22,34) + 222
+print test()
+
 
 
 

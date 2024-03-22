@@ -245,7 +245,7 @@ next=currentfunction->vars;
 while(next != NULL) {
 	if(strcmpi(next->varname,name) == 0) break;		/* already defined */
 	 
-		next=next->next;
+	next=next->next;
 }
 
 if(next == NULL) return(VARIABLE_DOES_NOT_EXIST);
@@ -264,8 +264,7 @@ if(next->type_int == VAR_NUMBER) {		/* double precision */
 }
 else if(next->type_int == VAR_STRING) {	/* string */			
 	      if(next->val[( (y*next->ysize)+(next->xsize*x))].s == NULL) {		/* if string element not allocated */
-
-	 next->val[((y*next->ysize)+(next->xsize*x))].s=malloc(strlen(val->s));	/* allocate memory */
+	      	 next->val[((y*next->ysize)+(next->xsize*x))].s=malloc(strlen(val->s));	/* allocate memory */
 	    	 strcpy(next->val[((y*next->ysize)+(next->xsize*x))].s,val->s);		/* assign value */
 	      } 
 
@@ -302,11 +301,11 @@ else {					/* user-defined type */
 			 else if(udtfield->type == VAR_STRING) {
 			 	if(udtfield->fieldval[( (y*next->ysize)+(next->xsize*x))].s == NULL) {		/* if string element not allocated */
 	 				udtfield->fieldval[((y*next->ysize)+(next->xsize*x))].s=malloc(strlen(val->s));	/* allocate memory */
-	      				} 
+	      			} 
 
-	      				if( strlen(val->s) > (strlen(udtfield->fieldval[(y*next->ysize)+(next->xsize*x)].s)+(next->xsize*x))) {	/* if string element larger */
+	      			if( strlen(val->s) > (strlen(udtfield->fieldval[(y*next->ysize)+(next->xsize*x)].s)+(next->xsize*x))) {	/* if string element larger */
 	 				realloc(udtfield->fieldval[((y*next->ysize)+(next->xsize*x))].s,strlen(val->s));	/* resize memory */
-	      				}
+	      			}
 		
 			        strcpy(udtfield->fieldval[(next->ysize*y)+(next->xsize*x)].s,val->s);		/* assign value */
 			        return(0);
@@ -687,7 +686,7 @@ if((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT) return(NE
 
 if(funcs == NULL) {
 	funcs=malloc(sizeof(functions));		/* add new item to list */
-	 next=funcs;
+	next=funcs;
 }
 else
 {
@@ -709,6 +708,12 @@ else
 
 strcpy(next->name,tokens[0]);				/* copy name */
 next->funcargcount=funcargcount;
+next->funcstart=GetCurrentBufferPosition();
+
+if(funcargcount <= 3) {		/* no parameters, only function () */
+	next->parameters=NULL;
+	return(FindEndOfunction());			/* find end of declared function */
+}
 
 /* skip ( and go to end */
 
@@ -772,8 +777,6 @@ for(count=2;count<next->funcargcount-1;count++) {
 	paramsptr->ysize=0;
 	paramsptr->val=NULL;
 
-	next->funcstart=GetCurrentBufferPosition();
-
 	if(strcmpi(tokens[count+1], ")") == 0) break;		/* at end */
 
 	if(strcmpi(tokens[count+1], "AS") == 0) {
@@ -792,16 +795,16 @@ for(count=2;count<next->funcargcount-1;count++) {
 
 
 	if(strcmpi(tokens[funcargcount-1], "AS") == 0) {		/* type */
-	 while(vartypenames[typecount] != NULL) {
-	   if(strcmpi(vartypenames[typecount],tokens[count+1]) == 0) break;	/* found type */
+		while(vartypenames[typecount] != NULL) {
+			if(strcmpi(vartypenames[typecount],tokens[count+1]) == 0) break;	/* found type */
 
-	   typecount++;
-	 }
+			typecount++;
+		}
 	}
 
 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
-	 udtptr=GetUDT(tokens[count+1]);
-	 if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
+		udtptr=GetUDT(tokens[count+1]);
+		if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
 	}
 
 	strcpy(next->returntype,tokens[funcargcount-1]);
@@ -820,7 +823,7 @@ do {
 
 	TokenizeLine(linebuf,tokens,TokenCharacters);			/* tokenize line */
 
-	if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return;  
+	if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return(0);  
 	
 }  while(*GetCurrentBufferPosition() != 0); 			/* until end */
 
@@ -869,6 +872,8 @@ FUNCTIONCALLSTACK newfunc;
 UserDefinedType userdefinedtype;
 int returnvalue;
 
+retval.has_returned_value=FALSE;			/* clear has returned value flag */
+
 next=funcs;						/* point to variables */
 /* find function name */
 
@@ -888,9 +893,9 @@ returnvalue=SubstituteVariables(start+2,end,tokens,tokens);			/* substitute vari
 currentfunction->callptr=GetCurrentBufferPosition();
 /* save information about the called function */
 
-strcpy(newfunc.name,next->name);
+strcpy(newfunc.name,next->name);			/* function name */
+newfunc.callptr=next->funcstart;			/* function start */
 
-newfunc.callptr=next->funcstart;
 SetCurrentBufferPosition(next->funcstart);
 
 newfunc.linenumber=1;
@@ -946,9 +951,7 @@ while(*GetCurrentBufferPosition() != 0) {
 
 	tc=TokenizeLine(buf,argbuf,TokenCharacters);			/* tokenize line */
 
-	if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) {
-		break;
-	}
+	if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
 	returnvalue=ExecuteLine(buf);			/* Run line */
 	if(returnvalue != 0) return(returnvalue);
@@ -972,7 +975,7 @@ PopFunctionCallInformation();
  *  Convert char * to int using base
  * 
  *  In: char *hex		char representation of number
-	      int base			Base
+ *	      int base			Base
  * 
  *  Returns -1 on error or 0 on success
  * 
@@ -1065,6 +1068,8 @@ int arraysize;
 
 outcount=0;
 
+memset(temp,0,(MAX_SIZE*MAX_SIZE));		/* clear temporary array */
+
 /* replace non-decimal numbers with decimal equivalents */
 for(count=start;count<end;count++) {
 	if(memcmp(tokens[count],"0x",2) == 0 ) {	/* hex number */  
@@ -1108,29 +1113,33 @@ for(count=start;count<end;count++) {
 				break;
 			}
 	 	 }
+
 	
 	  	CallFunction(tokens,s,countx-1);
 
-	  	get_return_value(&subst_returnvalue);
+		if(retval.has_returned_value == TRUE) {		/* function has returned value */
+		  	get_return_value(&subst_returnvalue);
 
-	  	if(retval.val.type == VAR_STRING) {		/* returning string */   
-	  		sprintf(temp[outcount++],"\"%s\"",retval.val.s);
-	  		numberofouttokens++;
-	  	}
-	  	else if(retval.val.type == VAR_INTEGER) {		/* returning integer */
-			sprintf(temp[outcount++],"%d",retval.val.i);
-			numberofouttokens++;
+		  	if(retval.val.type == VAR_STRING) {		/* returning string */   
+		  		sprintf(temp[outcount++],"\"%s\"",retval.val.s);
+		  		numberofouttokens++;
+		  	}
+		  	else if(retval.val.type == VAR_INTEGER) {		/* returning integer */
+				sprintf(temp[outcount++],"%d",retval.val.i);
+				numberofouttokens++;
 	 	  	}
-	  	else if(retval.val.type == VAR_NUMBER) {		/* returning double */
-			sprintf(temp[outcount++],"%.6g",retval.val.d);		 		
-			numberofouttokens++;	
-	  	}
-	  	else if(retval.val.type == VAR_SINGLE) {		/* returning single */
-			sprintf(temp[outcount++],"%f",retval.val.f);
-			numberofouttokens++;
-	  	}
+		  	else if(retval.val.type == VAR_NUMBER) {		/* returning double */
+				sprintf(temp[outcount++],"%.6g",retval.val.d);		 		
+				numberofouttokens++;	
+		  	}
+		  	else if(retval.val.type == VAR_SINGLE) {		/* returning single */
+				sprintf(temp[outcount++],"%f",retval.val.f);
+				numberofouttokens++;
+		  	}
 
-	  	count=countx-1;
+		  	count=countx-1;
+	    }
+
 	 }
 	 else if(IsVariable(tokens[count]) == 0) {
 	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
@@ -1148,7 +1157,7 @@ for(count=start;count<end;count++) {
 		type=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);		/* get field type id udt */
 		if(type == -1) return(TYPE_FIELD_DOES_NOT_EXIST);	
 	    }
-
+	
 	    switch(type) {
 		case VAR_STRING:
 
@@ -1202,8 +1211,8 @@ for(count=start;count<end;count++) {
 	
 		case VAR_NUMBER:
 		    sprintf(temp[outcount++],"%.6g",val.d);
-		    numberofouttokens++;
 
+		    numberofouttokens++;
 	   	    break;
 
 	        case VAR_INTEGER:	       
@@ -1222,6 +1231,7 @@ for(count=start;count<end;count++) {
 	 }
 	 else
 	 {
+		printf("other=%s\n",tokens[count]);
 	  	strcpy(temp[outcount++],tokens[count]);
 	 	numberofouttokens++; 
 	 }   

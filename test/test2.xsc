@@ -1,19 +1,7 @@
-function subtract(a,b,c)
-stacktrace
-endfunction
-
-function add(d,e,f)
-stacktrace
-subtract(d,e,f)
-return d+e+f
-endfunction
-
 function multiply(a,b,c)
-stacktrace
-add(a,b,c)
-
+return a*b*c
 endfunction
 
-multiply(1,2,3)
+print multiply(1,2,3)
 
 

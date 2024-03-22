@@ -325,14 +325,9 @@ return(0);
  */
 
 int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-double exprone;
-char c;
 varval val;
 int count;
 int countx;
-char *s[MAX_SIZE];
-char *sptr;
-int PrintFunctionFound;
 char *udttokens[2][MAX_SIZE];
 int returnvalue;
 
@@ -355,24 +350,28 @@ returnvalue=SubstituteVariables(1,tc,tokens,tokens);
 if(returnvalue > 0) return(returnvalue);
 
 retval.val.type=0;
-retval.val.d=EvaluateExpression(tokens,1,tc);
 
-/* if it's a condition print True or False */
+if(strlen(tokens[1]) > 0) {		/* if there are tokens substituted */
+	retval.val.d=EvaluateExpression(tokens,1,tc);
 
-for(countx=1;countx<tc;countx++) {
-	 if((strcmp(tokens[countx],">") == 0) || (strcmp(tokens[countx],"<") == 0) || (strcmp(tokens[countx],"=") == 0)) {
+	/* if it's a condition print True or False */
 
-	     retval.val.type=0;
-	     retval.val.d=EvaluateCondition(tokens,1,tc);
+	for(countx=1;countx<tc;countx++) {
+		if((strcmp(tokens[countx],">") == 0) || (strcmp(tokens[countx],"<") == 0) || (strcmp(tokens[countx],"=") == 0)) {
 
-	     retval.val.d == 1 ? printf("True") : printf("False");
-	     break;
-	 } 
+			retval.val.type=0;
+	     		retval.val.d=EvaluateCondition(tokens,1,tc);
+
+	     		retval.val.d == 1 ? printf("True") : printf("False");
+	     		break;
+	 	} 
+	}
+
+	if(countx == tc) printf("%.6g ",retval.val.d);	/* Not conditional */
+	if(strcmp(tokens[tc-1],";") != 0) printf("\n");
+
 }
-	 
-if(countx == tc) printf("%.6g ",retval.val.d);	/* Not conditional */
 
-if(strcmp(tokens[tc-1],";") != 0) printf("\n");
 return(0);
 }
 
@@ -737,36 +736,47 @@ for(count=1;count<tc;count++) {
 	}
 }
 
-
 retval.val.type=GetFunctionReturnType();		/* get return type */
 
+retval.has_returned_value=TRUE;				/* set has returned value flag */
+
 if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
-	if(IsValidExpression(tokens,2,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+
+	if(IsValidExpression(tokens,2,tc) == FALSE) {   /* invalid expression */
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+
+		return(INVALID_EXPRESSION);	
+	}
 }
 
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 	ConatecateStrings(1,tc,tokens,&retval.val);		/* get strings */
-
-	return(0);
 }
 else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
 	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
-	if(substreturnvalue > 0) return(substreturnvalue);
+	if(substreturnvalue > 0) {
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+		return(substreturnvalue);
+	}
 	
 	retval.val.i=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 
 	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
+	if(substreturnvalue > 0) {
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+		return(substreturnvalue);
+	}
 
-	if(substreturnvalue > 0) return(substreturnvalue);
-	
 	 retval.val.d=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
 	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
+	if(substreturnvalue > 0) {
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+		return(substreturnvalue);
+	}
 
-	if(substreturnvalue > 0) return(substreturnvalue);
-	
 	retval.val.f=EvaluateExpression(tokens,1,tc);	
 }
 
@@ -1579,17 +1589,16 @@ while(CurrentBufferPosition != FileBuffer) {
 
 if(fread(CurrentBufferPosition,includestat.st_size,1,handle) != 1) return(READ_ERROR);		/* read include file to buffer */
 
+
 /* copy text after included file */
 
 oldtextptr=(CurrentBufferPosition+includestat.st_size)-1;
 strcpy(oldtextptr,tempbuf);
 
 oldtextptr += includestat.st_size;		/* point to end */
-*oldtextptr=0;
 
+//CurrentBufferPosition=(oldtextptr-2);
 free(tempbuf);
-
-oldtextptr=NULL;
 
 fclose(handle);
 return(0);

@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #define FOR_STATEMENT 1
 #define IF_STATEMENT 2
 #define WHILE_STATEMENT 4
@@ -100,6 +102,7 @@ typedef struct {
 typedef struct {
  varval val;
  UserDefinedType *udt;
+ bool has_returned_value;
 } functionreturnvalue;
 
 int InitializeFunctions(void);
