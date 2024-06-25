@@ -45,6 +45,9 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
 	     { "NEXT",NULL,&next_statement,FALSE},\
 	     { "EXIT",NULL,&exit_statement,FALSE},\
 	     { "TYPE","ENDTYPE",&type_statement,FALSE},\
+	     { "TRY","ENDTRY",&try_statement,FALSE},\
+	     { "ENDTRY",NULL,&endtry_statement,FALSE},\
+	     { "CATCH",NULL,&catch_statement,FALSE},\
 	     { "AS",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "TO",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "STEP",NULL,&bad_keyword_as_statement,FALSE},\

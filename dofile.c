@@ -106,7 +106,7 @@ return(0);
 int ExecuteFile(char *filename) {
 char *linebuf[MAX_SIZE];
 char *saveCurrentBufferPosition;
-int lc=0;
+int lc=1;
 int returnvalue;
 
 SetCurrentFunctionLine(lc);		/* set line number to 1 */
@@ -198,7 +198,7 @@ memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
 tc=TokenizeLine(lbuf,tokens,TokenCharacters);			/* tokenize line */
 
-if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) return(SYNTAX_ERROR);		/* check syntax */
+//if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) return(SYNTAX_ERROR);		/* check syntax */
 
 if(IsStatement(tokens[0])) {			/* run statement if statement */
 	return(CallIfStatement(tc,tokens));
@@ -227,11 +227,13 @@ for(count=1;count<tc;count++) {
 	 		vartype=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);
 			if(vartype == -1) return(TYPE_FIELD_DOES_NOT_EXIST);
 		}
-	
+
 		c=*tokens[count+1];
 
-		 if( ((c == '"') || (vartype == VAR_STRING))) {			/* string */  
-		 	if(vartype == -1) CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
+		if((c != '"') && (vartype == VAR_STRING)) return(TYPE_ERROR);
+
+		if( ((c == '"') && (vartype == VAR_STRING))) {			/* string */  
+			if(vartype == -1) CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
 		  		 
 		  	ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
 
@@ -241,7 +243,7 @@ for(count=1;count<tc;count++) {
 
 		/* number otherwise */
 
-		 if(vartype == VAR_STRING) return(TYPE_ERROR);		/* not string */
+		 if( ((c == '"') && (vartype != VAR_STRING))) return(TYPE_ERROR);
 	
 		 if(IsValidExpression(tokens,count+1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 	
@@ -1117,6 +1119,99 @@ do {
 return(-1);
 }
 
+/*
+ * try...catch statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+int try_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *buf[MAX_SIZE];
+int returnvalue;
+char *trytokens[MAX_SIZE][MAX_SIZE];
+	
+while(*CurrentBufferPosition != 0) {
+
+	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+
+	tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
+
+	if(strcmpi(trytokens[0],"CATCH") == 0) {	/* reached catch statement without error occurring in try block */
+		while(*CurrentBufferPosition != 0) {
+			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+
+			tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
+	
+			if(strcmpi(trytokens[0],"ENDTRY") == 0) return(0);
+		}
+
+		return(TRY_WITHOUT_ENDTRY);
+	}
+
+
+	if(ExecuteLine(buf) > 0) {			/* run statement */
+		/* error occurred */
+
+		while(*CurrentBufferPosition != 0) {	/* find catch block */
+			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+
+			tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
+
+			if(strcmpi(trytokens[0],"CATCH") == 0) {	/* found catch block */
+
+			/* run catch statements */
+
+				while(*CurrentBufferPosition != 0) {
+					CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+					tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
+
+					if(strcmpi(trytokens[0],"ENDTRY") == 0) return(0);		/* at end of catch block */
+
+					returnvalue=ExecuteLine(buf);
+					if(returnvalue > 0) return(returnvalue);		/* run statement and return if error */
+				}
+			}
+		}
+
+		return(TRY_WITHOUT_CATCH);		/* no catch block */
+	}
+}
+
+return(TRY_WITHOUT_ENDTRY);		/* no endtry statement */
+}
+
+/*
+ * endtry statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+int endtry_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+return(ENDTRY_WITHOUT_TRY);
+}
+
+/*
+ * catch statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+int catch_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+return(CATCH_WITHOUT_TRY);
+}
+	
 /*
  * Help statement
  *

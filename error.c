@@ -58,10 +58,16 @@ char *errs[] = { "No error",\
 		 "EXIT WHILE without WHILE",\
 		 "FOR without NEXT",\
 		 "User-defined type already exists",\
+		 "TYPE without ENDTYPE",\
 		 "Field in user-defined type does not exist",\
 		 "Breakpoint not found",\
 		 "No program loaded",\
 		 "Invalid value",\
+		 "Include file without main file",\
+		 "TRY without CATCH",\
+		 "TRY without ENDTRY",\
+		 "CATCH without TRY",\
+		 "ENDTRY without TRY",\
 };
 
 /*
@@ -105,13 +111,13 @@ char *functionname[MAX_SIZE];
 GetCurrentFunctionName(functionname);
 
 if(GetIsFileLoadedFlag() == TRUE) {
-	printf("Error in function %s (line %d): %s\n",functionname,GetCurrentFunctionLine(),errs[errornumber]);
+	printf("Error %d in function %s (line %d): %s\n",errornumber,functionname,GetCurrentFunctionLine(),errs[errornumber]);
 
 }
 else
 {
 
-	printf("%s\n",errs[errornumber]); 
+	printf("Error %d: %s\n",errornumber,errs[errornumber]); 
 }
 
 if(GetInteractiveModeFlag() == FALSE) {

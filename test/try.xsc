@@ -1,0 +1,10 @@
+declare a as integer
+
+try
+	a="XXXXXXXXXXXXXXXXX"
+catch
+	print "Caught error"
+endtry
+
+
+

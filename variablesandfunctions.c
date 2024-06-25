@@ -1231,7 +1231,6 @@ for(count=start;count<end;count++) {
 	 }
 	 else
 	 {
-		printf("other=%s\n",tokens[count]);
 	  	strcpy(temp[outcount++],tokens[count]);
 	 	numberofouttokens++; 
 	 }   
