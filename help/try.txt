@@ -1,0 +1,13 @@
+TRY
+
+{statements}
+
+CATCH
+
+{error handler}
+
+ENDTRY
+
+Handle errors.
+
+
