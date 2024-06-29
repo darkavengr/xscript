@@ -55,6 +55,7 @@ char *dptr;
 char *aptr;
 varval cmdargs;
 int returnvalue;
+struct sigaction signalaction;
 
 /* get executable directory name from argv[0] */
 
@@ -67,32 +68,23 @@ while(aptr != strrchr(argv[0],'/')) {		/* from first character to last / in file
 	*dptr++=*aptr++;
 }
 
-InitializeFunctions();						/* Initialize functions */
-
-/* get command-line arguments */
-
-CreateVariable("programname","STRING",1,1);
-
-cmdargs.s=malloc(MAX_SIZE);
-
-strcpy(cmdargs.s,argv[0]);
-UpdateVariable("programname",NULL,&cmdargs,0,0);
-
-CreateVariable("command","STRING",1,1);
-
-memset(cmdargs.s,0,MAX_SIZE);
+memset(args,0,MAX_SIZE);
 
 for(count=1;count<argc;count++) {
-	strcat(cmdargs.s,argv[count]);
+	strcat(args,argv[count]);
 }
 
-UpdateVariable("command",NULL,&cmdargs,0,0);
+InitializeMainFunction(args);			/* Initialize main function */
 
-free(cmdargs.s);
+signalaction.sa_sigaction=&signalhandler;
+signalaction.sa_flags=SA_NODEFER;
+
+if(sigaction(SIGINT,&signalaction,NULL) == -1) {		/* set signal handler */
+	perror("xscript:");
+	exit(1);
+}
 
 /* intialize command-line arguments */
-
-signal(SIGINT,signalhandler);		/* register signal handler */
 
 if(argc == 1) {					/* no arguments */ 
 	InteractiveMode();			/* run interpreter in interactive mode */
@@ -103,6 +95,8 @@ else
 
 	returnvalue=ExecuteFile(argv[1]);	/* execute file */
 	if(returnvalue) {
+		SetLastError(returnvalue);
+
 		PrintError(returnvalue);
 
 		FreeFunctions();
@@ -123,7 +117,7 @@ exit(0);
  * Returns error number on error or 0 on success
  *
  */
-void signalhandler(int sig) {
+void signalhandler(int sig,siginfo_t *info,void *ucontext) {
 char *buf[MAX_SIZE];
 
 if(sig == SIGINT) {			/* ctrl-c */
@@ -156,6 +150,6 @@ printf("Signal %d received\n",sig);
 }
 
 void GetExecutableDirectoryName(char *name) {
-	strcpy(name,dirname);
+strcpy(name,dirname);
 }
 

@@ -55,15 +55,61 @@ int callpos=0;
 
 extern char *TokenCharacters;
 
-int InitializeFunctions(void) {
+/*
+ * Intialize main function
+ * 
+ *  In: args	command-line arguments
+ * 
+ *  Returns: Nothing
+ * 
+ */
+void InitializeMainFunction(char *args) {
 FUNCTIONCALLSTACK newfunc;
 
-/* create main function */
-
-strcpy(newfunc.name,"main");
+strcpy(newfunc.name,"main");			/* create main function */
 PushFunctionCallInformation(&newfunc);
 
-return(0);
+DeclareBuiltInVariables(args);			/* declare built-in variables */
+}
+
+/*
+ * Declare built-in variables
+ * 
+ * In: args	command-line arguments
+ * 
+ * Returns: Nothing
+ * 
+ */
+void DeclareBuiltInVariables(char *args) {
+varval cmdargs;
+
+/* get command-line arguments */
+
+CreateVariable("COMMAND","STRING",0,0);
+
+cmdargs.s=malloc(MAX_SIZE);
+
+strcpy(cmdargs.s,args);
+UpdateVariable("COMMAND",NULL,&cmdargs,0,0);
+
+/* add built-in variables */
+cmdargs.i=0;
+
+CreateVariable("ERR","INTEGER",0,0);			/* error number */
+UpdateVariable("ERR",NULL,&cmdargs,0,0);
+
+CreateVariable("ERRL","INTEGER",0,0);			/* error line */
+UpdateVariable("ERRL",NULL,&cmdargs,0,0);
+
+CreateVariable("ERRFUNC","STRING",0,0);			/* error function */
+UpdateVariable("ERRFUNC",NULL,&cmdargs,0,0);
+
+memset(cmdargs.s,0,MAX_SIZE);
+
+CreateVariable("ERRFUNC","STRING",0,0);			/* error function */
+UpdateVariable("ERRFUNC",NULL,&cmdargs,0,0);
+
+free(cmdargs.s);
 }
 
 /*
@@ -646,7 +692,7 @@ while(next != NULL) {
 	  		last->next=next->next;				/* point over link */
 		}
 
-//      	  	free(next);
+      	  	free(next);
 
    		return(0);    
 	  }
@@ -907,6 +953,8 @@ PushFunctionCallInformation(&newfunc);			/* push function information onto call 
 
 currentfunction=functioncallstackend;			/* point to function */
 
+DeclareBuiltInVariables("");				/* add built-in variables */
+
 /* add variables from parameters */
 
 parameters=next->parameters;
@@ -1071,6 +1119,7 @@ outcount=0;
 memset(temp,0,(MAX_SIZE*MAX_SIZE));		/* clear temporary array */
 
 /* replace non-decimal numbers with decimal equivalents */
+
 for(count=start;count<end;count++) {
 	if(memcmp(tokens[count],"0x",2) == 0 ) {	/* hex number */  
 	    valptr=tokens[count];
@@ -1094,6 +1143,15 @@ for(count=start;count<end;count++) {
 
 	   itoa(atoi_base(valptr,2),tokens[count]);
 	}
+
+	if(strcmpi(tokens[count],"true") == 0 ) {	/* true */  
+	    strcpy(tokens[count],"1");
+	}
+
+	if(strcmpi(tokens[count],"false") == 0 ) {	/* false */  
+	    strcpy(tokens[count],"0");
+	}
+
 }
 
 outcount=start;

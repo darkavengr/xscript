@@ -180,16 +180,10 @@ printf(" = ");
 
 vartype=GetVariableType(var->varname);
 
-yinc=var->ysize;
-if(yinc == 0) yinc++;
-
-xinc=var->xsize;
-if(xinc == 0) xinc++;
-
 if((var->xsize > 1) || (var->ysize > 1)) printf("(");
 
-for(xcount=1;xcount<var->xsize+1;xcount++) {
-	for(ycount=1;ycount<var->ysize+1;ycount++) {
+for(xcount=0;xcount != var->xsize+1;xcount++) {
+	for(ycount=0;ycount != var->ysize+1;ycount++) {
 
 		 switch(vartype) {
 

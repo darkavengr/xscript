@@ -164,6 +164,8 @@ while(1) {
 		
 			returnvalue=ExecuteLine(linebuf);		/* run line */
 	   		if(returnvalue != 0) {
+				SetLastError(returnvalue);
+
 				PrintError(returnvalue);
 				break;
 			}

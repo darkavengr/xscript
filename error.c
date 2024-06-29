@@ -21,8 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "size.h"
-
-int lasterror=0;
+#include "variablesandfunctions.h"
 
 char *errs[] = { "No error",\
 		 "File not found",\
@@ -71,31 +70,6 @@ char *errs[] = { "No error",\
 };
 
 /*
- * Set last error
- *
- * In: errornumber	Error number
- *
- * Returns: nothing
- *
- */
-void SetLastError(int errornumber) {
-	lasterror=errornumber;
-}
-
-
-/*
- * Get last error
- *
- * In: Nothing
- *
- * Returns: error number
- *
- */
-int GetLastError(void) {
-	return(lasterror);
-}
-
-/*
  * Display error
  *
  * In: err			Error number
@@ -106,7 +80,6 @@ int GetLastError(void) {
 
 void PrintError(int errornumber) {
 char *functionname[MAX_SIZE];
-
 
 GetCurrentFunctionName(functionname);
 
@@ -125,5 +98,27 @@ if(GetInteractiveModeFlag() == FALSE) {
 }
 
 return;
+}
+
+
+/*
+ * Set last error
+ *
+ * In: errornumber	Error number
+ *
+ * Returns: nothing
+ *
+ */
+void SetLastError(int errornumber) {
+varval errval;
+
+errval.i=errornumber;				/* update error number */
+UpdateVariable("ERR","",&errval,0,0);
+
+errval.i=GetCurrentFunctionLine();		/* update error line */
+UpdateVariable("ERRL","",&errval,0,0);
+
+GetCurrentFunctionName(errval.s);		/* update error function */
+UpdateVariable("ERRFUNC","",&errval,0,0);
 }
 

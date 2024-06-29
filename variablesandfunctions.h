@@ -105,7 +105,6 @@ typedef struct {
  bool has_returned_value;
 } functionreturnvalue;
 
-int InitializeFunctions(void);
 void FreeFunctions(void);
 int CreateVariable(char *name,char *type,int xsize,int ysize);
 int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y);
@@ -151,4 +150,7 @@ int GetVariableXSize(char *name);
 int GetVariableYSize(char *name);
 int IsFunction(char *name);
 SAVEINFORMATION *GetSaveInformation(void);
+void InitializeMainFunction(char *args);
+void DeclareBuiltInVariables(char *args);
+void GetCurrentFunctionFilename(char *buf);
 
