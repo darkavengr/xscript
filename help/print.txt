@@ -1,5 +1,4 @@
-PRINT {expression | string } {;}
+PRINT {expression | string }
 
 Display expression or string.
-Append ; to the end to suppress newline at the end.
 

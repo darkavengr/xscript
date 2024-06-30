@@ -70,8 +70,12 @@ while(aptr != strrchr(argv[0],'/')) {		/* from first character to last / in file
 
 memset(args,0,MAX_SIZE);
 
-for(count=1;count<argc;count++) {
+/* get arguments */
+
+for(count=2;count<argc;count++) {
 	strcat(args,argv[count]);
+
+	if(count < argc-1) strcat(args," ");
 }
 
 InitializeMainFunction(args);			/* Initialize main function */

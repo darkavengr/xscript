@@ -27,7 +27,8 @@
 
 /* statements */
 			  
-statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
+statement statements[] = {
+	     { "IF","ENDIF",&if_statement,TRUE},\
 	     { "ELSE",NULL,&else_statement,FALSE},\
 	     { "ELSEIF",NULL,&elseif_statement,FALSE},\
 	     { "ENDIF",NULL,&endif_statement,FALSE},\
@@ -61,6 +62,9 @@ statement statements[] = { { "IF","ENDIF",&if_statement,TRUE},\
 	     { "OR",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "NOT",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "ENDTYPE",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "ERR",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "ERRL",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "ERRFUNC",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "QUIT",NULL,&quit_command,FALSE},\
 	     { "VARIABLES",NULL,&variables_command,FALSE},\
 	     { "CONTINUE",NULL,&continue_command,FALSE},\

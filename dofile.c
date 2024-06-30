@@ -330,49 +330,61 @@ int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 varval val;
 int count;
 int countx;
-char *udttokens[2][MAX_SIZE];
 int returnvalue;
+char *printtokens[MAX_SIZE][MAX_SIZE];
+int endtoken;
 
-/* if string literal, string variable or function returning string */
+for(count=1;count<tc;count++) {
+	/* if string literal, string variable or function returning string */
 
-if(((char) *tokens[1] == '"') || (GetVariableType(tokens[1]) == VAR_STRING) || (CheckFunctionExists(tokens[1]) == VAR_STRING) ) {
-	returnvalue=SubstituteVariables(1,tc,tokens,tokens);	
-	if(returnvalue > 0) return(returnvalue);
-
-	count += ConatecateStrings(1,tc,tokens,&val);					/* join all the strings on the line */
-
-	printf("%s",val.s);
-
-	if(strcmp(tokens[tc-1],";") != 0) printf("\n");
-
-	return(0);
-}
-
-returnvalue=SubstituteVariables(1,tc,tokens,tokens);
-if(returnvalue > 0) return(returnvalue);
-
-retval.val.type=0;
-
-if(strlen(tokens[1]) > 0) {		/* if there are tokens substituted */
-	retval.val.d=EvaluateExpression(tokens,1,tc);
-
-	/* if it's a condition print True or False */
-
-	for(countx=1;countx<tc;countx++) {
-		if((strcmp(tokens[countx],">") == 0) || (strcmp(tokens[countx],"<") == 0) || (strcmp(tokens[countx],"=") == 0)) {
-
-			retval.val.type=0;
-	     		retval.val.d=EvaluateCondition(tokens,1,tc);
-
-	     		retval.val.d == 1 ? printf("True") : printf("False");
-	     		break;
-	 	} 
+	for(endtoken=count+1;endtoken<tc;endtoken++) {
+		if(strcmp(tokens[endtoken],",") == 0) break;
 	}
 
-	if(countx == tc) printf("%.6g ",retval.val.d);	/* Not conditional */
-	if(strcmp(tokens[tc-1],";") != 0) printf("\n");
+	if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
 
+		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
+
+		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);	
+		if(returnvalue > 0) return(returnvalue);		/* error occurred */
+
+		count += ConatecateStrings(count,endtoken,printtokens,&val);		/* join all the strings in the token */
+
+		printf("%s ",val.s);
+	}
+	else
+	{
+		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
+
+		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);
+		if(returnvalue > 0) return(returnvalue);		/* error occurred */
+
+		retval.val.type=0;
+
+		if(strlen(tokens[count]) > 0) {		/* if there are tokens substituted */
+			retval.val.d=EvaluateExpression(printtokens,count,endtoken);
+
+			/* if it's a condition print True or False */
+
+			for(countx=count;countx<tc;countx++) {
+				if((strcmp(tokens[countx],">") == 0) || (strcmp(tokens[countx],"<") == 0) || (strcmp(tokens[countx],"=") == 0)) {
+
+					retval.val.type=0;
+		     			retval.val.d=EvaluateCondition(tokens,count,endtoken);
+
+		     			retval.val.d == 1 ? printf("True ") : printf("False ");
+		     			break;
+		 		} 
+			}
+
+			if(countx == tc) printf("%.6g ",retval.val.d);	/* Not conditional */
+		}
+	}
+
+	count=endtoken;
 }
+
+printf("\n");
 
 return(0);
 }

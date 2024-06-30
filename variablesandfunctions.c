@@ -80,17 +80,19 @@ DeclareBuiltInVariables(args);			/* declare built-in variables */
  * Returns: Nothing
  * 
  */
-void DeclareBuiltInVariables(char *args) {
+void DeclareBuiltInVariables	(char *args) {
 varval cmdargs;
 
-/* get command-line arguments */
+/* get command-line arguments, if any */
 
-CreateVariable("COMMAND","STRING",0,0);
+if(args != NULL) {
+	CreateVariable("COMMAND","STRING",0,0);
 
-cmdargs.s=malloc(MAX_SIZE);
+	cmdargs.s=malloc(MAX_SIZE);
 
-strcpy(cmdargs.s,args);
-UpdateVariable("COMMAND",NULL,&cmdargs,0,0);
+	strcpy(cmdargs.s,args);
+	UpdateVariable("COMMAND",NULL,&cmdargs,0,0);
+}
 
 /* add built-in variables */
 cmdargs.i=0;

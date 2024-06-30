@@ -33,6 +33,7 @@
 #include "dofile.h"
 
 extern jmp_buf savestate;
+extern char *vartypenames[];
 
 BREAKPOINT *breakpoints;
 BREAKPOINT *breakpointend;
