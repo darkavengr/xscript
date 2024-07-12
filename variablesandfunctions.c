@@ -38,7 +38,7 @@ FUNCTIONCALLSTACK *functioncallstackend=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
 UserDefinedType *udt=NULL;
 
-char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE",NULL };
+char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG",NULL };
 functionreturnvalue retval;
 vars_t *findvar;
 
@@ -80,7 +80,7 @@ DeclareBuiltInVariables(args);			/* declare built-in variables */
  * Returns: Nothing
  * 
  */
-void DeclareBuiltInVariables	(char *args) {
+void DeclareBuiltInVariables(char *args) {
 varval cmdargs;
 
 /* get command-line arguments, if any */
@@ -213,6 +213,12 @@ else if(strcmpi(type,"SINGLE") == 0) {	/* single */
 
 	next->type_int=VAR_SINGLE;
 }
+else if(strcmpi(type,"LONG") == 0) {	/* long */
+	next->val=malloc((xsize*sizeof(long long))*(ysize*sizeof(long long)));
+		if(next->val == NULL) return(NO_MEM);
+
+	next->type_int=VAR_LONG;
+}
 else {					/* user-defined type */	 
 
 	next->type_int=VAR_UDT;
@@ -332,6 +338,10 @@ else if(next->type_int == VAR_SINGLE) {	/* single */
 	      next->val[x*sizeof(float)+(y*sizeof(float))].f=val->f;
 	      return(0);
 }
+else if(next->type_int == VAR_LONG) {	/* long */
+	      next->val[x*sizeof(long long)+(y*sizeof(long long))].l=val->l;
+	      return(0);
+}
 else {					/* user-defined type */	
 	next=GetVariablePointer(name);		/* get variable entry */
 	if(next == NULL) return(-1);
@@ -447,6 +457,10 @@ if(c >= '0' && c <= '9') {
 	      	val->f=atof(name);
 		break;
 
+	      case VAR_LONG:				/* long */
+	      	val->l=atol(name);
+		break;
+
 	      default:
 	      	val->d=atof(name);
 		break;
@@ -492,6 +506,10 @@ else if(next->type_int == VAR_INTEGER) {
 }
 else if(next->type_int == VAR_SINGLE) {
 	val->f=next->val[(y*next->ysize)+(x*next->xsize)].f;
+	return(0);
+}
+else if(next->type_int == VAR_LONG) {
+	val->l=next->val[(y*next->ysize)+(x*next->xsize)].l;
 	return(0);
 }
 else {					/* User-defined type */
@@ -983,6 +1001,9 @@ while(parameters != NULL) {
 	else if(parameters->type_int == VAR_SINGLE) {
 		val.f=atof(tokens[count]);
 	}
+	else if(parameters->type_int == VAR_LONG) {
+		val.l=atol(tokens[count]);
+	}
 	else {
 	  	
 	}
@@ -1196,7 +1217,10 @@ for(count=start;count<end;count++) {
 				sprintf(temp[outcount++],"%f",retval.val.f);
 				numberofouttokens++;
 		  	}
-
+		 	else if(retval.val.type == VAR_LONG) {			/* returning long */
+				sprintf(temp[outcount++],"%ld",retval.val.l);
+				numberofouttokens++;
+		  	}
 		  	count=countx-1;
 	    }
 
@@ -1218,9 +1242,7 @@ for(count=start;count<end;count++) {
 		if(type == -1) return(TYPE_FIELD_DOES_NOT_EXIST);	
 	    }
 	
-	    switch(type) {
-		case VAR_STRING:
-
+	    if(type == VAR_STRING) {
 		   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
 	    	   	arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
 	    		if(((split.x*split.y) > arraysize) || arraysize < 0) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
@@ -1267,23 +1289,24 @@ for(count=start;count<end;count++) {
 	      
 	            }
 
-		    break;
-	
-		case VAR_NUMBER:
+
+		}
+		else if(type == VAR_NUMBER) {
 		    sprintf(temp[outcount++],"%.6g",val.d);
 
 		    numberofouttokens++;
-	   	    break;
-
-	        case VAR_INTEGER:	       
+		}
+		else if(type == VAR_INTEGER) {
 		    sprintf(temp[outcount++],"%d",val.i);
 	  	    numberofouttokens++;
-	    	    break;
-
-	        case VAR_SINGLE:	     
+		}
+		else if(type == VAR_SINGLE) {   
 		    sprintf(temp[outcount++],"%f",val.f);
 		    numberofouttokens++;
-	       	    break;			
+	       	}
+		else if(type == VAR_LONG) {   
+		    sprintf(temp[outcount++],"%ld",val.l);
+		    numberofouttokens++;
 	       	}
 
 	 	count += skiptokens;
@@ -1591,6 +1614,12 @@ while(sourcenext != NULL) {
 		if(destnext->fieldval == NULL) return(NO_MEM);
 
 		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(int))*(sourcenext->ysize*sizeof(int)));
+	}
+	if(sourcenext->type == VAR_LONG) {		/* long */
+	destnext->fieldval=malloc((sourcenext->xsize*sizeof(long long))*(sourcenext->ysize*sizeof(long long)));
+		if(destnext->fieldval == NULL) return(NO_MEM);
+
+		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(long long))*(sourcenext->ysize*sizeof(long long)));
 	}
 	else if(sourcenext->type == VAR_STRING) {	/* string */			
 		destnext->fieldval=calloc(((sourcenext->xsize*MAX_SIZE)*(sourcenext->ysize*MAX_SIZE)),sizeof(char *));

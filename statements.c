@@ -58,6 +58,7 @@ statement statements[] = {
 	     { "STRING",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "INTEGER",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "SINGLE",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "LONG",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "AND",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "OR",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "NOT",NULL,&bad_keyword_as_statement,FALSE},\

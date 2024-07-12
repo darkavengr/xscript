@@ -67,6 +67,7 @@ char *errs[] = { "No error",\
 		 "TRY without ENDTRY",\
 		 "CATCH without TRY",\
 		 "ENDTRY without TRY",\
+		 "Cannot CONTINUE while running a program",\
 };
 
 /*

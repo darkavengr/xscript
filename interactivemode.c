@@ -30,6 +30,8 @@
 #include "version.h"
 
 extern jmp_buf savestate;
+extern int savestatereturn;
+
 char *InteractiveModeBuffer=NULL;
 char *InteractiveModeBufferPosition=NULL;
 
@@ -73,7 +75,7 @@ InteractiveModeBufferPosition=InteractiveModeBuffer;		/* set buffer position to 
 
 printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
-while(1) {
+while(1) {	
 	SwitchToInteractiveModeBuffer();		/* switch to interactive mode buffer */
 
 	if(block_statement_nest_count == 0) {
@@ -214,18 +216,13 @@ exit(0);
  *
  */
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(GetIsRunningFlag() == FALSE) {
-	printf("No program running\n");
-}
-else
-{
-	printf("Continuing program\n");
-
-	SetIsRunningFlag();
-	longjmp(savestate,0);
-
+if(GetIsRunningFlag() == TRUE) {
+	PrintError(CONTINUE_WHILE_RUNNING);
+	return(CONTINUE_WHILE_RUNNING);
 }
 
+SetIsRunningFlag();
+if(!savestatereturn) siglongjmp(savestate,1);
 }
 
 /*

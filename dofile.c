@@ -264,6 +264,9 @@ for(count=1;count<tc;count++) {
 	 	else if(vartype == VAR_SINGLE) {
 	 		val.f=exprone;
 	 	}
+		else if(vartype == VAR_LONG) {
+	 		val.l=exprone;
+	 	}
 	 	else if(vartype == VAR_UDT) {			/* user-defined type */	 
 			ParseVariableName(tokens,count+1,tc,&assignsplit);		/* split variable */  	
  			varptr=GetVariablePointer(split.name);		/* point to variable entry */

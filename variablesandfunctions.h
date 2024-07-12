@@ -9,7 +9,8 @@
 #define VAR_STRING  1
 #define VAR_INTEGER 2
 #define VAR_SINGLE  3
-#define VAR_UDT     4
+#define VAR_LONG    4
+#define VAR_UDT     5
 
 #define ARRAY_SUBSCRIPT 1
 #define ARRAY_SLICE	2
@@ -26,6 +27,7 @@ typedef struct {
  char *s;
  int i;
  float f;
+ long long l;
  int type;
 } varval;
 
