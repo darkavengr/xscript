@@ -49,6 +49,7 @@ statement statements[] = {
 	     { "TRY","ENDTRY",&try_statement,FALSE},\
 	     { "ENDTRY",NULL,&endtry_statement,FALSE},\
 	     { "CATCH",NULL,&catch_statement,FALSE},\
+	     { "RESIZE",NULL,&resize_statement,FALSE},\
 	     { "AS",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "TO",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "STEP",NULL,&bad_keyword_as_statement,FALSE},\

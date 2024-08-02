@@ -68,6 +68,7 @@ char *errs[] = { "No error",\
 		 "CATCH without TRY",\
 		 "ENDTRY without TRY",\
 		 "Cannot CONTINUE while running a program",\
+		 "Not an array",\
 };
 
 /*
@@ -86,6 +87,7 @@ GetCurrentFunctionName(functionname);
 
 if(GetIsFileLoadedFlag() == TRUE) {
 	printf("Error %d in function %s (line %d): %s\n",errornumber,functionname,GetCurrentFunctionLine(),errs[errornumber]);
+	asm("int $3");
 
 }
 else
@@ -119,7 +121,7 @@ UpdateVariable("ERR","",&errval,0,0);
 errval.i=GetCurrentFunctionLine();		/* update error line */
 UpdateVariable("ERRL","",&errval,0,0);
 
-GetCurrentFunctionName(errval.s);		/* update error function */
+GetCurrentFunctionName(&errval.s);		/* update error function */
 UpdateVariable("ERRFUNC","",&errval,0,0);
 }
 

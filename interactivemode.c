@@ -190,7 +190,7 @@ while(1) {
 	{
 		InteractiveModeBufferPosition += strlen(InteractiveModeBufferPosition);	/* point to next statement */
 	}	
- }
+	 }
 }
 
 /*
@@ -216,13 +216,7 @@ exit(0);
  *
  */
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(GetIsRunningFlag() == TRUE) {
-	PrintError(CONTINUE_WHILE_RUNNING);
-	return(CONTINUE_WHILE_RUNNING);
-}
-
-SetIsRunningFlag();
-if(!savestatereturn) siglongjmp(savestate,1);
+ExecuteFile(NULL);
 }
 
 /*

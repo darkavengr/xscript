@@ -137,7 +137,7 @@ return;
 	      xsize	Size of X subscript
 	      ysize	Size of Y subscript
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */
 
@@ -279,7 +279,7 @@ return(0);
 	      int x		X subscript
 	      int y		Y subscript
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */	
 int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y) {
@@ -304,9 +304,8 @@ while(next != NULL) {
 
 if(next == NULL) return(VARIABLE_DOES_NOT_EXIST);
 
-if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) {		/* outside array */
-	return(INVALID_ARRAY_SUBSCRIPT);
-}
+//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+
 
 /* update variable */
 
@@ -396,7 +395,7 @@ return(0);
 	      int x		X subscript
 	      int y		Y subscript
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */								
 int ResizeArray(char *name,int x,int y) {
@@ -412,16 +411,25 @@ next=currentfunction->vars;
 while(next != NULL) {
 
 	if(strcmpi(next->varname,name) == 0) {		/* found variable */
-		if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) return(-1);	/* resize buffer */
-	  
-	   			next->xsize=x;		/* update x subscript */
-	   			next->ysize=y;		/* update y subscript */
-	   			return(0);
-	 	}
+
+		if(next->type_int == VAR_UDT) {		/* if user-defined type */
+			if(realloc(next->udt,(x*y)*sizeof(UserDefinedType)) == NULL) return(NO_MEM);	/* resize buffer */
+	  	}
+		else
+		{
+			if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) return(NO_MEM);	/* resize buffer */
+		}
+  
+		next->xsize=x;		/* update x subscript */
+		next->ysize=y;		/* update y subscript */
+
+		return(0);
+ 	}
 
 	next=next->next;
 }
 
+SetLastError(VARIABLE_DOES_NOT_EXIST);
 return(-1);
 }
 
@@ -431,7 +439,7 @@ return(-1);
  *  In: char *name	Variable name
 	      varname *val	Variable value
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */
 int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy) {
@@ -487,7 +495,8 @@ while(next != NULL) {
 }
 
 if(next == NULL) return(-1);
-if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+
+//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
 
 if(next->type_int == VAR_NUMBER) {
 	val->d=next->val[(y*next->ysize)+(x*next->xsize)].d;
@@ -525,7 +534,7 @@ return(INVALID_VARIABLE_TYPE);
  * 
  *  In: char *name	Variable name
  * 
- *  Returns -1 on error or variable type on success
+ *  Returns error value on error or variable type on success
  * 
   */
 
@@ -559,7 +568,7 @@ return(-1);
  *  In: char *name	Variable name
 	      varsplit *split	Variable split object
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */
 int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split) {
@@ -599,15 +608,17 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	
 	/* find end of array subscripts */
 
-	for(subscriptend=start+2;count<subscriptend;count++) {
-	 	if(strcmp(tokens[subscriptend],")") == 0) break;
+	for(subscriptend=start;subscriptend<end;subscriptend++) {
+	 	if((strcmp(tokens[subscriptend],")") == 0) || (strcmp(tokens[subscriptend],"]") == 0)) break;
+
 	}
 
 	parse_end += (subscriptend-(start+1));
 
 	commafound=FALSE;
 
-	for(count=start+2;count<subscriptend;count++) {
+	for(count=start+2;count<subscriptend+2;count++) {
+
 		if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
 
 			if((IsValidExpression(tokens,1,count) == FALSE) || (IsValidExpression(tokens,count+1,subscriptend) == FALSE)) {  /* invalid expression */
@@ -615,8 +626,8 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 				return(SYNTAX_ERROR);
 			}
 
-			split->x=EvaluateExpression(tokens,start+1,count);
-			split->y=EvaluateExpression(tokens,count+1,subscriptend);
+			split->x=EvaluateExpression(tokens,start+2,count);
+			split->y=EvaluateExpression(tokens,count+1,subscriptend+1);
 
 			commafound=TRUE;
 		 	break;
@@ -626,7 +637,7 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	if(commafound == FALSE) {
 		if(IsValidExpression(tokens,start+2,subscriptend+1) == FALSE) {	/* invalid expression */
 			PrintError(SYNTAX_ERROR);
-			return(SYNTAX_ERROR);
+			return(-1);
 		}
 
 		split->x=EvaluateExpression(tokens,start+2,subscriptend+1);
@@ -654,7 +665,7 @@ if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
 
 				if((IsValidExpression(tokens,fieldstart+2,count) == FALSE) || (IsValidExpression(tokens,count+1,end-1) == FALSE)) {  /* invalid expression */
 					PrintError(SYNTAX_ERROR);
-					return(SYNTAX_ERROR);
+					return(-1);
 				}
 
 				split->fieldx=EvaluateExpression(tokens,fieldstart+2,count);
@@ -685,7 +696,7 @@ return(parse_end);
  * 
  *  In: char *name	Variable name
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */
 int RemoveVariable(char *name) {
@@ -729,7 +740,7 @@ return(-1);
  *  In: char *tokens[MAX_SIZE][MAX_SIZE] function name and args
 	      int funcargcount			number of tokens
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */
 int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount) {
@@ -919,7 +930,7 @@ return(-1);
  *  In: char *tokens[MAX_SIZE][MAX_SIZE] function name and args
 	      int funcargcount			number of tokens
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */
 
@@ -1048,7 +1059,7 @@ PopFunctionCallInformation();
  *  In: char *hex		char representation of number
  *	      int base			Base
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */
 int atoi_base(char *hex,int base) {
@@ -1231,9 +1242,15 @@ for(count=start;count<end;count++) {
 	    tokentype=SUBST_VAR;
 
 	    arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
-	    if(((split.x*split.y) > arraysize) || (arraysize < 0)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
-	
+
 	    GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+
+	    if(split.arraytype == ARRAY_SUBSCRIPT) {
+		    if(((split.x*split.y) > arraysize) || (arraysize < 0)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	    }
+	    else if(split.arraytype == ARRAY_SLICE) {
+		    if((split.x*split.y) > strlen(val.s)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	    }
 
 	    type=GetVariableType(split.name); 	/* Get variable type */
 	    
@@ -1244,13 +1261,10 @@ for(count=start;count<end;count++) {
 	
 	    if(type == VAR_STRING) {
 		   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
-	    	   	arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
-	    		if(((split.x*split.y) > arraysize) || arraysize < 0) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
-	
 			returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
 		      	if(returnvalue != NO_ERROR) return(returnvalue);
 
-			b=&val.s;			/* get start */
+			b=val.s;			/* get start */
 			b += split.x;
 
 			memset(temp[outcount],0,MAX_SIZE);
@@ -1340,7 +1354,7 @@ return(0);
 	      char *tokens[][MAX_SIZE] Tokens array
 	      varval *val 		Variable value to return conatecated strings
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
   */
 int ConatecateStrings(int start,int end,char *tokens[][MAX_SIZE],varval *val) {
@@ -1396,7 +1410,7 @@ for(count=start+1;count<end;count++) {
  * 
  *  In: char *typename		Variable type as string
  * 
- *  Returns -1 on error or variable type on success
+ *  Returns error value on error or variable type on success
  * 
   */
 int CheckVariableType(char *typename) {
@@ -1418,7 +1432,7 @@ int CheckVariableType(char *typename) {
  * 
  *  In: varname		Variable name
  * 
- *  Returns -1 on error or 0 on success
+ *  Returns error value on error or 0 on success
  * 
  */
 int IsVariable(char *varname) {

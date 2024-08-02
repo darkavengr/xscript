@@ -3,5 +3,4 @@
 #define IS_FILE_LOADED_FLAG	4
 #define TRACE_FLAG		8
 #define BREAK_FLAG		16
-#define PAUSED_FLAG		32
 

@@ -35,6 +35,7 @@
 #include "modeflags.h"
 #include "variablesandfunctions.h"
 #include "dofile.h"
+#include "debugmacro.h"
 
 extern jmp_buf savestate;
 
@@ -98,7 +99,7 @@ return(0);
 /*
  * Load and execute file
  *
- * In: char *filename		Filename of file to load
+ * In: char *filename		Filename of file to load or NULL to resume current file
  *
  * Returns -1 on error or 0 on success
  *
@@ -109,22 +110,25 @@ char *saveCurrentBufferPosition;
 int lc=1;
 int returnvalue;
 
-SetCurrentFunctionLine(lc);		/* set line number to 1 */
+if(filename != NULL) {
+	SetCurrentFunctionLine(lc);		/* set line number to 1 */
 	
-if(LoadFile(filename) > 0) return(FILE_NOT_FOUND);
+	if(LoadFile(filename) > 0) return(FILE_NOT_FOUND);
+
+	SetCurrentFileBufferPosition(FileBuffer);
+	SetCurrentBufferPosition(FileBuffer);
+	SetIsFileLoadedFlag();
+}
 
 SetIsRunningFlag();
-SetIsFileLoadedFlag();
-
 SwitchToFileBuffer();			/* switch to file buffer */
 
-saveCurrentBufferPosition=CurrentBufferPosition;		/* save current pointer */
-CurrentBufferPosition=FileBuffer;
-
-SetFunctionCallPtr(CurrentBufferPosition);		/* set start of current function to buffer start */
+saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
+SetFunctionCallPtr(saveCurrentBufferPosition);		/* set start of current function to buffer start */
 
 do {
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,linebuf,LINE_SIZE);			/* get data */
+	SetCurrentFileBufferPosition(CurrentBufferPosition);
 
 	returnvalue=ExecuteLine(linebuf);			/* run statement */
 
@@ -217,6 +221,7 @@ for(count=1;count<tc;count++) {
  		ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
 
 		SubstituteVariables(count+1,tc,tokens,tokens);
+
  		if(returnvalue > 0) return(returnvalue);
 		
 	 	if(strlen(split.fieldname) == 0) {			/* use variable name */
@@ -232,7 +237,7 @@ for(count=1;count<tc;count++) {
 
 		if((c != '"') && (vartype == VAR_STRING)) return(TYPE_ERROR);
 
-		if( ((c == '"') && (vartype == VAR_STRING))) {			/* string */  
+		if( (c == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
 			if(vartype == -1) CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
 		  		 
 		  	ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
@@ -336,12 +341,19 @@ int countx;
 int returnvalue;
 char *printtokens[MAX_SIZE][MAX_SIZE];
 int endtoken;
+bool IsInBracket;
 
 for(count=1;count<tc;count++) {
+	IsInBracket=FALSE;
+
 	/* if string literal, string variable or function returning string */
 
 	for(endtoken=count+1;endtoken<tc;endtoken++) {
-		if(strcmp(tokens[endtoken],",") == 0) break;
+		/* is function parameter or array subscript */
+
+		if((strcmp(tokens[endtoken],"(") == 0) || (strcmp(tokens[endtoken],"[") == 0)) IsInBracket=TRUE;														
+
+		if((IsInBracket == FALSE) && (strcmp(tokens[endtoken],",") == 0)) break;		/* found separator not subscript */
 	}
 
 	if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
@@ -551,13 +563,11 @@ int steppos;
 double exprone;
 double exprtwo;
 varval loopcount;
-varval loopx;
 int ifexpr;
 char *d;
 char *buf[MAX_SIZE];
 int vartype;
 varsplit split;
-
 int returnvalue;
 int lc;
 
@@ -661,14 +671,10 @@ CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);		
 	
 do {	  
 	returnvalue=ExecuteLine(buf);
+
 	if(returnvalue != 0) {
 		ClearIsRunningFlag();
 		return(returnvalue);
-	}
-
-	if(GetBreakFlag() == TRUE) {		/* end of loop */
-		ClearBreakFlag();
-		return(0);
 	}
 
 	if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program halted */
@@ -682,7 +688,10 @@ do {
 
  	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	
-	if(strcmpi(tokens[0],"NEXT") == 0) {     	
+//	printf("tokens[0]=%s\n",tokens[0]);
+//	sleep(1);
+
+	if(strcmpi(tokens[0],"NEXT") == 0) {     
 		SetCurrentFunctionLine(GetSaveInformationLineCount());
 
 		CurrentBufferPosition=GetSaveInformationBufferPointer();			/* get pointer to start of for statement */
@@ -808,6 +817,8 @@ int get_return_value(varval *val) {
 
 int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 	if((GetFunctionFlags() & WHILE_STATEMENT) == 0) return(WEND_NOWHILE);
+
+	return(0);
 }
 
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -835,6 +846,7 @@ char *condition_tokens[MAX_SIZE][MAX_SIZE];
 char *condition_tokens_substituted[MAX_SIZE][MAX_SIZE];
 int condition_tc;
 int substreturnvalue;
+char *saveBufferPosition;
 
 if(tc < 1) return(SYNTAX_ERROR);			/* Too few parameters */
 
@@ -845,6 +857,7 @@ memcpy(condition_tokens,tokens,((tc*MAX_SIZE)*MAX_SIZE)/sizeof(tokens));		/* sav
 condition_tc=tc;
 
 SetFunctionFlags(WHILE_STATEMENT);
+saveBufferPosition=CurrentBufferPosition;
 	
 do {
 	     CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
@@ -853,7 +866,7 @@ do {
 
 	     exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
 
-	     if(exprtrue == 0) {
+	     if(exprtrue == 0) {			/* if condition is true, skip to end */
 	     		while(*CurrentBufferPosition != 0) {
 
 	     		  	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
@@ -870,13 +883,17 @@ do {
 
 	     }
 
-	     tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-		if(tc == -1) return(SYNTAX_ERROR);
-	    
-	     if(strcmpi(tokens[0],"WEND") == 0) {
-		SetCurrentFunctionLine(GetSaveInformation()->linenumber);		/* return line counter to start */
-	     }
+	     /* if condition is false, execute lines until condition is true */
 
+	     tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+	     if(tc == -1) return(SYNTAX_ERROR);
+	    
+	     if(strcmpi(tokens[0],"WEND") == 0) {				/* at end of block, go back to start */
+		     CurrentBufferPosition=saveBufferPosition;
+
+	     	     SetCurrentFunctionLine(GetSaveInformation()->linenumber);		/* return line counter to start */
+	     }
+	     
 	     substreturnvalue=ExecuteLine(buf);
 
 	     if(substreturnvalue != 0) {
@@ -1226,9 +1243,34 @@ return(ENDTRY_WITHOUT_TRY);
 int catch_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 return(CATCH_WITHOUT_TRY);
 }
-	
+
 /*
- * Help statement
+ * Resize statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+int resize_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+vars_t *var;
+varsplit split;
+
+if(tc < 3) return(SYNTAX_ERROR);			/* Too few parameters */
+
+var=GetVariablePointer(tokens[1]);		/* get pointer to variable */
+if(var == NULL) return(VARIABLE_DOES_NOT_EXIST);
+
+if((var->xsize == 0) && (var->ysize == 0)) return(NOT_ARRAY);
+
+ParseVariableName(tokens,1,tc,&split);		/* parse variable name */
+
+return(ResizeArray(split.name,split.x,split.y));
+}
+/*
+ * Help command
  *
  * In: tc Token count
  *	tokens Tokens array
@@ -1418,9 +1460,10 @@ for(count=start;count<end;count++) {
 	}
 
 	if(strcmp(tokens[count],",") == 0) {		/* list of expressions */
-	//	if(IsInBracket == FALSE) return(FALSE);	/* list not in brackets */
+		if(IsInBracket == FALSE) return(FALSE);	/* list not in brackets */
 
-	//	if((IsVariable(tokens[variablenameindex]) == TRUE) && (commacount++ > 2)) return(FALSE); /* too many commas for array */
+		if((IsVariable(tokens[variablenameindex]) == TRUE) && (commacount++ > 2)) return(FALSE); /* too many commas for array */
+
 	}
 }
 

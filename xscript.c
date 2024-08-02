@@ -126,15 +126,12 @@ exit(0);
 void signalhandler(int sig,siginfo_t *info,void *ucontext) {
 
 if(sig == SIGINT) {			/* ctrl-c */
+
 	if(GetInteractiveModeFlag() == TRUE) {		/* if in interactive mode */
 		if(GetIsRunningFlag() == TRUE) {		/* is running */
 			printf("Program stopped. Type continue to resume\n");
 
 			ClearIsRunningFlag();
-
-			savestatereturn=sigsetjmp(savestate,1);
-
-			printf("Continuing program\n");
 
 	   	}
 	   	else
