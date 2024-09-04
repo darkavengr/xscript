@@ -100,7 +100,7 @@ for(count=start;count<end;count++) {
 
 }
 
-for(count=0;count<exprcount;count++) {
+for(count=0;count<exprcount-1;count++) {
 	if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
 		SetLastError(TYPE_ERROR);
 		return(-1);
@@ -109,7 +109,7 @@ for(count=0;count<exprcount;count++) {
 
 val.d=atof(temp[0]);
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 
 	if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {
 	 val.d=EvaluateCondition(temp,count-1,count+2);
@@ -119,7 +119,7 @@ for(count=0;count<exprcount;count++)  {
 }
 
 // BIDMAS
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 
 	if(strcmp(temp[count],"/") == 0) {
 	 val.d /= atof(temp[count+1]);
@@ -129,7 +129,7 @@ for(count=0;count<exprcount;count++)  {
 	} 
 }
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if(strcmp(temp[count],"*") == 0) { 
 		val.d *= atof(temp[count+1]);
 
@@ -139,7 +139,7 @@ for(count=0;count<exprcount;count++)  {
 	} 
 }
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if(strcmp(temp[count],"+") == 0) { 
 
 		val.d += atof(temp[count+1]);
@@ -150,7 +150,7 @@ for(count=0;count<exprcount;count++)  {
 	 } 
 }
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if(strcmp(temp[count],"-") == 0) {
 		val.d -= atof(temp[count+1]);
 	 	//DeleteFromArray(temp,count,count+2);		/* remove rest */
@@ -161,7 +161,7 @@ for(count=0;count<exprcount;count++)  {
 
 /* power */
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if((strcmp(temp[count],"*") == 0) && (strcmp(temp[count+1],"*") == 0)) {
 		val.d += pow(atof(temp[count-1]),atof(temp[count+2]));
 		DeleteFromArray(temp,start,end,count,count+3);		/* remove rest */
@@ -172,7 +172,7 @@ for(count=0;count<exprcount;count++)  {
 
 
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if(strcmp(temp[count],"%") == 0) {
 	 ti=val.d;
 
@@ -187,7 +187,7 @@ for(count=0;count<exprcount;count++)  {
 }
 /* bitwise not */
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if(strcmp(temp[count],"~") == 0) {
 
 	 val.d += !atof(temp[count+1]);
@@ -200,7 +200,7 @@ for(count=0;count<exprcount;count++)  {
 
 /* bitwise and */
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if(strcmp(temp[count],"&") == 0) {
 	 val.d += atof(temp[count+1]);
 
@@ -210,7 +210,7 @@ for(count=0;count<exprcount;count++)  {
 	 count++;
 }
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if(strcmp(temp[count],"|") == 0) {
 	 val.d += atof(temp[count+1]);
 
@@ -220,7 +220,7 @@ for(count=0;count<exprcount;count++)  {
 	 count++;
 }
 
-for(count=0;count<exprcount;count++)  {
+for(count=0;count<exprcount-1;count++)  {
 	if(strcmp(temp[count],"^") == 0) {
 	 val.d += atof(temp[count+1]);
 

@@ -31,6 +31,7 @@
 #include "errors.h"
 #include "dofile.h"
 #include "evaluate.h"
+#include "debugmacro.h"
 
 functions *funcs=NULL;
 FUNCTIONCALLSTACK *functioncallstack=NULL;
@@ -95,21 +96,10 @@ if(args != NULL) {
 }
 
 /* add built-in variables */
-cmdargs.i=0;
 
 CreateVariable("ERR","INTEGER",0,0);			/* error number */
-UpdateVariable("ERR",NULL,&cmdargs,0,0);
-
 CreateVariable("ERRL","INTEGER",0,0);			/* error line */
-UpdateVariable("ERRL",NULL,&cmdargs,0,0);
-
 CreateVariable("ERRFUNC","STRING",0,0);			/* error function */
-UpdateVariable("ERRFUNC",NULL,&cmdargs,0,0);
-
-memset(cmdargs.s,0,MAX_SIZE);
-
-CreateVariable("ERRFUNC","STRING",0,0);			/* error function */
-UpdateVariable("ERRFUNC",NULL,&cmdargs,0,0);
 
 free(cmdargs.s);
 }
@@ -304,7 +294,7 @@ while(next != NULL) {
 
 if(next == NULL) return(VARIABLE_DOES_NOT_EXIST);
 
-//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
 
 
 /* update variable */
@@ -375,7 +365,7 @@ else {					/* user-defined type */
 			        udtfield->fieldval[(next->ysize*y)+(next->xsize*x)].f=val->f;
 				return(0);
 			 }
-			 else {
+			 else {		/* XXX */
 				return(-1);
 			}	
 		 }
@@ -578,6 +568,8 @@ int fieldend;
 int subscriptend;
 int commafound=FALSE;
 int parse_end=0;
+char ParseEndChar;
+char *evaltokens[MAX_SIZE][MAX_SIZE];
 
 memset(split,0,sizeof(varsplit));
 
@@ -588,65 +580,75 @@ split->y=0;
 split->fieldx=0;
 split->fieldy=0;
 
-for(count=start;count<end;count++) {			/* find field start, if any */
-	if(strcmp(tokens[count],".") == 0) {
-		fieldstart=count+1;
-		parse_end += 4;			/* skip name, . and field name */
+for(fieldstart=end;fieldstart > start;fieldstart--) {		/* find field start, if any */
+	if(strcmp(tokens[fieldstart],".") == 0) {
+		fieldstart++;
 		break;
 	}
-}
-
-/* find end of a possible subscript */
-
-if(fieldstart == 0) {
-	subscriptend=end;
 }
 
 if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	if(strcmp(tokens[start+1],"(") == 0) split->arraytype=ARRAY_SUBSCRIPT;
 	if(strcmp(tokens[start+1],"[") == 0) split->arraytype=ARRAY_SLICE;
 	
-	/* find end of array subscripts */
 
-	for(subscriptend=start;subscriptend<end;subscriptend++) {
-	 	if((strcmp(tokens[subscriptend],")") == 0) || (strcmp(tokens[subscriptend],"]") == 0)) break;
-
+	for(subscriptend=end;subscriptend>start+1;subscriptend--) {
+		if(strcmp(tokens[subscriptend],")") == 0) break;
 	}
 
-	parse_end += (subscriptend-(start+1));
-
+	/* find array x and y values */
 	commafound=FALSE;
 
-	for(count=start+2;count<subscriptend+2;count++) {
+	for(count=start+2;count<end;count++) {
+			/* Skip commas in arrays and function calls */
 
-		if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
+			if((strcmp(tokens[count],"(") == 0) || (strcmp(tokens[count],"[") == 0)) {
 
-			if((IsValidExpression(tokens,1,count) == FALSE) || (IsValidExpression(tokens,count+1,subscriptend) == FALSE)) {  /* invalid expression */
-				PrintError(SYNTAX_ERROR);
-				return(SYNTAX_ERROR);
+				if(strcmp(tokens[count],"(") == 0) ParseEndChar=')';
+				if(strcmp(tokens[count],"[") == 0) ParseEndChar=']';
+
+				while(*tokens[count] != ParseEndChar) {
+					if(count == end) {		/* Missing end */
+						PrintError(SYNTAX_ERROR);
+						return(SYNTAX_ERROR);
+					}
+
+					count++;
+				}
 			}
 
-			split->x=EvaluateExpression(tokens,start+2,count);
-			split->y=EvaluateExpression(tokens,count+1,subscriptend+1);
+			if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
+				if((IsValidExpression(tokens,1,count) == FALSE) || (IsValidExpression(tokens,count+1,end) == FALSE)) {  /* invalid expression */
+					PrintError(SYNTAX_ERROR);
+					return(SYNTAX_ERROR);
+				}
+	
+				SubstituteVariables(start+2,count,tokens,evaltokens);
+				SubstituteVariables(count+1,end,tokens,evaltokens);
 
-			commafound=TRUE;
-		 	break;
-		}
+				split->x=EvaluateExpression(evaltokens,start+2,count);
+				split->y=EvaluateExpression(evaltokens,count+1,end);
+
+				commafound=TRUE;
+			 	break;
+			}
 	}
 
-	if(commafound == FALSE) {
-		if(IsValidExpression(tokens,start+2,subscriptend+1) == FALSE) {	/* invalid expression */
+	if(commafound == FALSE) {			/* 2d array */
+		if(IsValidExpression(tokens,start+2,count) == FALSE) {	/* invalid expression */
 			PrintError(SYNTAX_ERROR);
 			return(-1);
 		}
 
-		split->x=EvaluateExpression(tokens,start+2,subscriptend+1);
+		SubstituteVariables(start+2,count,tokens,evaltokens);
+
+		split->x=EvaluateExpression(evaltokens,start+2,count);
 	 	split->y=1;
 	}
 	
 }
 
-if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
+if(fieldstart != start) {					/* if there is a field name and possible subscripts */
 	strcpy(split->fieldname,tokens[fieldstart]);	/* copy field name */
 
 	if((strcmp(tokens[fieldstart+1],"(") == 0) || (strcmp(tokens[fieldstart+1],"[") == 0)) {
@@ -675,14 +677,14 @@ if(fieldstart != 0) {					/* if there is a field name and possible subscripts */
 	      }
 
 	      if(count == end) {			/* 2d array */  
-	      		SubstituteVariables(start+2,end-1,tokens,tokens);
+		      		SubstituteVariables(start+2,end-1,tokens,tokens);
 
 			if(IsValidExpression(tokens,start+2,end-1) == FALSE) {  /* invalid expression */
 				PrintError(SYNTAX_ERROR);
 				return(SYNTAX_ERROR);
 			}
 
-		  	split->fieldx=EvaluateExpression(tokens,start+2,end-1);
+		  	split->fieldx=EvaluateExpression(tokens,start+2,end);
 		        split->fieldy=1;
 	   }
    }
@@ -1136,7 +1138,7 @@ functions *func;
 char *b;
 char *d;
 int countx;
-int outcount;
+int outcount=0;
 varval val;
 int tokentype;
 char *temp[MAX_SIZE][MAX_SIZE];
@@ -1246,7 +1248,7 @@ for(count=start;count<end;count++) {
 	    GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
 
 	    if(split.arraytype == ARRAY_SUBSCRIPT) {
-		    if(((split.x*split.y) > arraysize) || (arraysize < 0)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	//	    if(((split.x*split.y) > arraysize) || (arraysize < 0)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
 	    }
 	    else if(split.arraytype == ARRAY_SLICE) {
 		    if((split.x*split.y) > strlen(val.s)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
@@ -1307,7 +1309,6 @@ for(count=start;count<end;count++) {
 		}
 		else if(type == VAR_NUMBER) {
 		    sprintf(temp[outcount++],"%.6g",val.d);
-
 		    numberofouttokens++;
 		}
 		else if(type == VAR_INTEGER) {

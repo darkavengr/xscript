@@ -7,6 +7,6 @@ numbers(3)=11
 numbers(4)=13
 
 for count=0 to 4
- print numbers(count)
+	print numbers(count)
 next count
 

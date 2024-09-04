@@ -1,0 +1,21 @@
+declare testarray(2,2)
+
+testarray(0,0)=2
+testarray(1,0)=4
+testarray(2,0)=6
+testarray(3,0)=8
+
+testarray(0,1)=3
+testarray(1,1)=6
+testarray(2,1)=9
+testarray(3,1)=12
+
+testarray(0,2)=4
+testarray(1,2)=8
+testarray(2,2)=12
+testarray(3,2)=16
+
+count=3
+
+print testarray(count,1)
+

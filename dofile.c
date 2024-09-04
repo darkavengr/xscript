@@ -202,7 +202,7 @@ memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
 tc=TokenizeLine(lbuf,tokens,TokenCharacters);			/* tokenize line */
 
-//if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) return(SYNTAX_ERROR);		/* check syntax */
+if(CheckSyntax(tokens,TokenCharacters,1,tc) == 0) return(SYNTAX_ERROR);		/* check syntax */
 
 if(IsStatement(tokens[0])) {			/* run statement if statement */
 	return(CallIfStatement(tc,tokens));
@@ -348,7 +348,7 @@ for(count=1;count<tc;count++) {
 
 	/* if string literal, string variable or function returning string */
 
-	for(endtoken=count+1;endtoken<tc;endtoken++) {
+	for(endtoken=count;endtoken<tc;endtoken++) {
 		/* is function parameter or array subscript */
 
 		if((strcmp(tokens[endtoken],"(") == 0) || (strcmp(tokens[endtoken],"[") == 0)) IsInBracket=TRUE;														
@@ -1431,6 +1431,7 @@ bool IsInBracket=FALSE;
 int statementcount=0;
 int commacount=0;
 int variablenameindex=0;
+int starttoken;
 
 /* check if brackets are balanced */
 
@@ -1438,7 +1439,7 @@ for(count=start;count<end;count++) {
 	if(strcmp(tokens[count],"(") == 0) {
 		commacount=0;
 
-		variablenameindex=count-1;			/* save name index */
+		if(IsInBracket == FALSE) variablenameindex=(count-1);			/* save name index */
 
 		IsInBracket=TRUE;
 		bracketcount++;
@@ -1462,15 +1463,16 @@ for(count=start;count<end;count++) {
 	if(strcmp(tokens[count],",") == 0) {		/* list of expressions */
 		if(IsInBracket == FALSE) return(FALSE);	/* list not in brackets */
 
+//		if((bracketcount > 1) || (squarebracketcount > 1)) return(FALSE);
+
 		if((IsVariable(tokens[variablenameindex]) == TRUE) && (commacount++ > 2)) return(FALSE); /* too many commas for array */
 
 	}
 }
 
-
 if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
 
-for(count=start;count<end;count += 2) {
+for(count=start;count<end;count++) {
 
 /* check if two separators are together */
 
