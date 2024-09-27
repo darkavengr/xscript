@@ -24,6 +24,7 @@
 #include "variablesandfunctions.h"
 #include "dofile.h"
 #include "statements.h"
+#include "errors.h"
 
 /* statements */
 			  
@@ -79,7 +80,7 @@ statement statements[] = {
 	     { "STACKTRACE",NULL,&stacktrace_command,FALSE},\
 	     { NULL,NULL,NULL } };
 
-int CallIfStatement(int tc,char tokens[MAX_SIZE][MAX_SIZE]) {
+int CallIfStatement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int statementcount=0;
 char *statement[MAX_SIZE];
 
@@ -96,7 +97,7 @@ do {
 
 } while(statements[statementcount].statement != NULL);
 
-return(-1);
+return(INVALID_STATEMENT);
 }
 
 int IsStatement(char *statement) {

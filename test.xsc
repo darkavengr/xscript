@@ -1,5 +1,3 @@
-str = "Hello"
-print str[1]
-
-
+declare a(1,2)
+print a(1,2,3)
 

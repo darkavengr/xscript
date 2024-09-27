@@ -33,6 +33,7 @@
 #include "version.h"
 #include "interactivemode.h"
 #include "dofile.h"
+#include "debugmacro.h"
 
 jmp_buf savestate;
 int savestatereturn;
@@ -102,8 +103,6 @@ else
 	returnvalue=ExecuteFile(argv[1]);	/* execute file */
 	if(returnvalue) {
 		SetLastError(returnvalue);
-
-		PrintError(returnvalue);
 
 		FreeFunctions();
 		exit(returnvalue);

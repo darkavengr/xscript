@@ -33,6 +33,8 @@
 #include "evaluate.h"
 #include "debugmacro.h"
 
+extern char *TokenCharacters;
+
 functions *funcs=NULL;
 FUNCTIONCALLSTACK *functioncallstack=NULL;
 FUNCTIONCALLSTACK *functioncallstackend=NULL;
@@ -365,7 +367,8 @@ else {					/* user-defined type */
 			        udtfield->fieldval[(next->ysize*y)+(next->xsize*x)].f=val->f;
 				return(0);
 			 }
-			 else {		/* XXX */
+			 else {
+				SetLastError(INVALID_VARIABLE_TYPE);
 				return(-1);
 			}	
 		 }
@@ -1238,7 +1241,7 @@ for(count=start;count<end;count++) {
 	    }
 
 	 }
-	 else if(IsVariable(tokens[count]) == 0) {
+	 else if(IsVariable(tokens[count]) == TRUE) {
 	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 
 	    tokentype=SUBST_VAR;
@@ -1341,7 +1344,7 @@ for(count=start;count<end;count++) {
 memset(out,0,MAX_SIZE*MAX_SIZE);
 
 for(count=0;count<outcount;count++) {
-	 strcpy(out[count],temp[count]);
+	strcpy(out[count],temp[count]);
 }
 
 return(0);
@@ -1444,12 +1447,12 @@ int tc;
 next=currentfunction->vars;						/* point to variables */
 
 while(next != NULL) {
-	if(strcmpi(next->varname,varname) == 0) return(0);		/* variable exists */
+	if(strcmpi(next->varname,varname) == 0) return(TRUE);		/* variable exists */
 	
 	next=next->next;
 }
 
-return(-1);
+return(FALSE);
 }
 
 int PushFunctionCallInformation(FUNCTIONCALLSTACK *func) {
@@ -2022,7 +2025,36 @@ while(next != NULL) {
 return(-1);
 }
 
+/*
+*  Get function call stack top
+* 
+*  In: Nothing
+* 
+*  Returns: pointer to top of call stack
+* 
+*/
+
 FUNCTIONCALLSTACK *GetFunctionCallStackTop(void) {
 return(functioncallstackend);
+}	
+
+/*
+*  Check if variable or keyword is valid
+* 
+*  In: variable name
+* 
+*  Returns: TRUE or FALSE
+* 
+*/
+
+int IsValidVariableOrKeyword(char *name) {
+char *InvalidChars = { "¬`\"$%^&*()-+={}[]:;@'~#<>,.?/|\\" };
+
+if(strpbrk(name,InvalidChars) != NULL) return(FALSE);		/* can't start with invalid character */
+
+
+if((*name >= '0') && (*name	 <= '9')) return(FALSE);		/* can't start with number */
+
+return(TRUE);
 }
 

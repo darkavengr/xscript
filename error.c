@@ -87,8 +87,6 @@ GetCurrentFunctionName(functionname);
 
 if(GetIsFileLoadedFlag() == TRUE) {
 	printf("Error %d in function %s (line %d): %s\n",errornumber,functionname,GetCurrentFunctionLine(),errs[errornumber]);
-	asm("int $3");
-
 }
 else
 {

@@ -1,11 +1,9 @@
-trace on
 for count=1 to 10
-print count
+	print count
 
-if count = 5 then
-	print "Yes"
-	exit for
-endif
+	if count = 5 then
+		print "Yes"
+		exit for
+	endif
 
 next count
-
