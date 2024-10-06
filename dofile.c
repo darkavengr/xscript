@@ -213,7 +213,7 @@ for(count=0;count < tc;count++) {
 	}
 }
 
-if(CheckSyntax(tokens,TokenCharacters,1,tc-1) == FALSE) return(SYNTAX_ERROR);		/* check syntax */
+if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) return(SYNTAX_ERROR);		/* check syntax */
 
 SetCurrentFunctionLine(lc++);
 
@@ -387,8 +387,9 @@ for(count=1;count<tc;count++) {
 
 		memcpy(printtokens,tokens,MAX_SIZE*4);
 
+		if(IsValidExpression(tokens,count,endtoken) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+	
 		retval.val.type=0;
-
 		retval.val.d=EvaluateExpression(printtokens,count,endtoken);
 
 		/* if it's a condition print True or False */
@@ -801,6 +802,8 @@ else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
 		return(substreturnvalue);
 	}
 	
+	 if(IsValidExpression(tokens,1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+	
 	retval.val.i=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 
@@ -810,6 +813,8 @@ else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */
 		return(substreturnvalue);
 	}
 
+	 if(IsValidExpression(tokens,1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+	
 	 retval.val.d=EvaluateExpression(tokens,1,tc);
 }
 else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
@@ -819,6 +824,8 @@ else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
 		return(substreturnvalue);
 	}
 
+	 if(IsValidExpression(tokens,1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+	
 	retval.val.f=EvaluateExpression(tokens,1,tc);	
 }
 
@@ -1455,8 +1462,6 @@ int commacount=0;
 int variablenameindex=0;
 int starttoken;
 
-//if(IsValidVariableOrKeyword(tokens[start]) == FALSE) return(FALSE);
-
 /* check if brackets are balanced */
 
 for(count=start;count<end;count++) {
@@ -1507,10 +1512,12 @@ for(count=start;count<end;count++) {
 	if(*tokens[count] == 0) break;
 
 	if((strcmpi(tokens[0],"HELP") != 0) && (strcmpi(tokens[0],"PRINT") != 0)  && (strcmpi(tokens[0],"EXIT") != 0)) {
-		if((IsSeperator(tokens[count],separators) == 1) && (IsSeperator(tokens[count+1],separators) == 1)) {
+		if((IsSeperator(tokens[count],separators) == 1) && (*tokens[count] == 0)) return(TRUE);
 	   
+		if((IsSeperator(tokens[count],separators) == 1) && (IsSeperator(tokens[count+1],separators) == 1)) {
 		/* brackets can be next to separators */
 
+			if((strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
 			if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
 			if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
 			if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);

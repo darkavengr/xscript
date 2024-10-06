@@ -280,76 +280,76 @@ varval firstval,secondval;
 
 /* check kind of expression */
 
-	exprone=0;
-	exprtwo=0;
+exprone=0;
+exprtwo=0;
 
-	for(exprpos=start;exprpos<end;exprpos++) {
-	  if(strcmp(tokens[exprpos],"=") == 0) {
-	   ifexpr=EQUAL;
-	   break;
-	  }
-	  else if(strcmp(tokens[exprpos],"!=") == 0) {
-	   ifexpr=NOTEQUAL;
-	   break;
-	  }
-	  else if(strcmp(tokens[exprpos],">") == 0) {
-	   ifexpr=GTHAN;
-	   break;	
-	         }
-	  else if(strcmp(tokens[exprpos],"<") == 0) {           
-	   ifexpr=LTHAN;
-	          break;
-	  }
-	  else if(strcmp(tokens[exprpos],"=<") == 0) {
-	          ifexpr=EQLTHAN;
-	          break;
-	  }
-	  else if(strcmp(tokens[exprpos],">=") == 0) {
-	          ifexpr=EQGTHAN;
-	          break;
-	  }
+for(exprpos=start;exprpos<end;exprpos++) {
+	if(strcmp(tokens[exprpos],"=") == 0) {
+		ifexpr=EQUAL;
+		break;
+	}
+	else if(strcmp(tokens[exprpos],"!=") == 0) {
+		ifexpr=NOTEQUAL;
+		break;
+	}
+	else if(strcmp(tokens[exprpos],">") == 0) {
+		ifexpr=GTHAN;
+		break;	
+	}
+	else if(strcmp(tokens[exprpos],"<") == 0) {           
+		ifexpr=LTHAN;
+		break;
+	}
+	else if(strcmp(tokens[exprpos],"=<") == 0) {
+		ifexpr=EQLTHAN;
+		break;
+	}
+	else if(strcmp(tokens[exprpos],">=") == 0) {
+		ifexpr=EQGTHAN;
+		break;
+	}
+}
+
+if(ifexpr == -1) {	/* evaluate non-zero or zero */
+	if(GetVariableType(tokens[start]) == VAR_STRING) {		/* comparing string */
+		PrintError(TYPE_ERROR);
+		return(-1);
 	}
 
-	if(ifexpr == -1) {	/* evaluate non-zero or zero */
-		if(GetVariableType(tokens[start]) == VAR_STRING) {		/* comparing string */
-			PrintError(TYPE_ERROR);
-			return(-1);
-		}
+	return(EvaluateExpression(tokens,start,end));
+}
 
-		return(EvaluateExpression(tokens,start,end));
-	}
+if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
+	ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the line */
+	ConatecateStrings(exprpos+1,end,tokens,&secondval);					/* join all the strings on the line */
 
-	if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-		ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the line */
-		ConatecateStrings(exprpos+1,end,tokens,&secondval);					/* join all the strings on the line */
+	return(!strcmp(firstval.s,secondval.s));
+}
 
-		return(!strcmp(firstval.s,secondval.s));
-	}
+exprone=EvaluateExpression(tokens,start,exprpos);				/* evaluate expressions */
+exprtwo=EvaluateExpression(tokens,exprpos+1,end);
 
-	exprone=EvaluateExpression(tokens,start,exprpos);				/* do expression */
-	exprtwo=EvaluateExpression(tokens,exprpos+1,end);				/* do expression */
+exprtrue=0;
 
-        exprtrue=0;
+switch(ifexpr) {
 
- 	switch(ifexpr) {
+	case EQUAL:
+		return(exprone == exprtwo);
 
-        	case EQUAL:
-		 	return(exprone == exprtwo);
+	case NOTEQUAL:					/* exprone != exprtwo */ 
+   		return(exprone != exprtwo);
 
-		case NOTEQUAL:					/* exprone != exprtwo */ 
-	   		return(exprone != exprtwo);
+        case LTHAN:						/* exprone < exprtwo */
+		return(exprone < exprtwo);
 
-	        case LTHAN:						/* exprone < exprtwo */
-	   		return(exprone < exprtwo);
+	case GTHAN:						/* exprone > exprtwo */
+		return(exprone > exprtwo);
 
-	        case GTHAN:						/* exprone > exprtwo */
-	   		return(exprone > exprtwo);
+	case EQLTHAN:	           /* exprone =< exprtwo */
+		return(exprone <= exprtwo);
 
-	        case EQLTHAN:	           /* exprone =< exprtwo */
-	   		return(exprone <= exprtwo);
-
-	        case EQGTHAN:						/* exprone >= exprtwo */
-	   		return(exprone >= exprtwo);
+	case EQGTHAN:						/* exprone >= exprtwo */
+		return(exprone >= exprtwo);
 	}
 
 	
@@ -383,11 +383,6 @@ struct {
 	int result;
 	int and_or;
 } results[MAX_SIZE];
-
-//456 > 123 and 124 > 666 and 999 > 888
-//456 > 123
-//124 > 666
-//999 > 888
 
 // Evaluate sub-conditions
 
@@ -430,65 +425,62 @@ while(count < end) {
 	count++;
 }
 
-//
-// Do conditions outside brackets
-//
+	/* Do conditions outside brackets */
 
-startcount=0;
+	startcount=0;
 
-for(count=0;count<outcount;count++) {
+	for(count=0;count<outcount;count++) {
 
-	 if((strcmpi(temp[count],"AND") == 0) || (strcmpi(temp[count],"OR") == 0) || (count >= outcount-1)) {
-		results[resultcount].result=EvaluateSingleCondition(temp,startcount,count+1);		
+		if((strcmpi(temp[count],"AND") == 0) || (strcmpi(temp[count],"OR") == 0) || (count >= outcount-1)) {
+			results[resultcount].result=EvaluateSingleCondition(temp,startcount,count+1);		
 
-		if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
-		if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
+			if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
+			if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
 	
-		startcount=(count+1);
+			startcount=(count+1);
 
-		resultcount++;
-	}
-
-}
-
-/* if there is more than one result and an odd number of results, set the last to end */
-
-if((resultcount > 1 ) && (resultcount % 2) != 0) {
-	results[resultcount-1].and_or=CONDITION_END;
-}
-
-// If there are no sub conditions, use whole expression
-
-if(resultcount == 1) return(EvaluateSingleCondition(temp,0,outcount));
-
-overallresult=0;
-
-count=0;
-
-while(count < resultcount) {
-	if(results[count].and_or == CONDITION_AND) {		// and
-	 overallresult=results[count].result;
-	 overallresult=results[count+1].result;
-
-	 count += 2;
-	}
-	else if(results[count].and_or == CONDITION_OR) {		// or
-	 overallresult=(results[count].result || results[count+1].result);
-	 count += 2;
-	}
-	else if(results[count].and_or == CONDITION_END) {		// end
-	 if(results[count-1].and_or == CONDITION_AND) {
-	  overallresult = (results[count].result == results[count+1].result);
-	  count += 2;
-	 }
-	 else
-	 {
-	  overallresult = (results[count].result || results[count+1].result);
-	  count += 2;
-	 }
+			resultcount++;
+		}
 
 	}
 
+	/* if there is more than one result and an odd number of results, set the last to end */
+
+	if((resultcount > 1 ) && (resultcount % 2) != 0) {
+		results[resultcount-1].and_or=CONDITION_END;
+	}
+
+	/* If there are no sub conditions, use whole expression */
+
+	if(resultcount == 1) return(EvaluateSingleCondition(temp,0,outcount));
+
+	overallresult=0;
+
+	count=0;
+
+	while(count < resultcount) {
+		if(results[count].and_or == CONDITION_AND) {		// and
+			overallresult=results[count].result;
+			overallresult=results[count+1].result;
+
+			count += 2;
+		}
+		else if(results[count].and_or == CONDITION_OR) {		// or
+			overallresult=(results[count].result || results[count+1].result);
+			count += 2;
+		}
+		else if(results[count].and_or == CONDITION_END) {		// end
+			if(results[count-1].and_or == CONDITION_AND) {
+				overallresult = (results[count].result == results[count+1].result);
+				count += 2;
+		}
+		else
+		{
+			overallresult = (results[count].result || results[count+1].result);
+		 	count += 2;
+		}
+
+	}
 }
 
 return(overallresult);
@@ -507,24 +499,43 @@ return(overallresult);
 
 int IsValidExpression(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
+char *ValidExpressionCharacters = { "+-*/<>=&|!%" };
+int endexpression;
 
-//for(count=start+1;count<end;count += 2) {
-//	if( (strcmp(tokens[count],"+") != 0) && (strcmp(tokens[count],"-") != 0) && (strcmp(tokens[count],"*") != 0) && \
-//	    (strcmp(tokens[count],"/") != 0) && (strcmp(tokens[count],"<") != 0) && (strcmp(tokens[count],">") != 0) && \
-//	    (strcmp(tokens[count],"=") != 0) && (strcmp(tokens[count],"&") != 0) && (strcmp(tokens[count],"|") != 0) && \
-//	    (strcmp(tokens[count],"!") != 0) && (strcmp(tokens[count],"%") != 0)) {
+/* Valid expressions can't start or end with an operator */
 
-//	   	if((strcmp(tokens[count],"*") == 0) && (strcmp(tokens[count+1],"*") == 0)) {
-//			count++;
-//			return(TRUE);		/* power is an exception */
-//		}
+if((strpbrk(tokens[start],ValidExpressionCharacters) != NULL) || (strpbrk(tokens[end],ValidExpressionCharacters) != NULL)) return(FALSE);
 
-//		return(FALSE);
-//	}
+for(count=start+1;count<end;count += 2) {
+	if(strcmp(tokens[count-1],"(") == 0) {		/* sub-expression */
+		/* find end of sub-expression */
 
-//}
+		endexpression=count+1;
+
+		while(endexpression < end) {
+			if(strcmp(tokens[endexpression],")") == 0) {		/* sub-expression */
+				if(IsValidExpression(tokens,count+1,endexpression-1) == TRUE) return(TRUE);
+
+				return(FALSE);
+			}
+
+			endexpression++;
+		}
+
+		count=endexpression+1;
+	}
+
+	if(strpbrk(tokens[count],ValidExpressionCharacters) == NULL) {
+	   	if((strcmp(tokens[count],"*") == 0) && (strcmp(tokens[count+1],"*") == 0)) {
+			count++;
+			return(TRUE);		/* power is an exception */
+		}
+
+		return(FALSE);
+	}
+
+}
 
 return(TRUE);
 }
-
 

@@ -2052,8 +2052,7 @@ char *InvalidChars = { "¬`\"$%^&*()-+={}[]:;@'~#<>,.?/|\\" };
 
 if(strpbrk(name,InvalidChars) != NULL) return(FALSE);		/* can't start with invalid character */
 
-
-if((*name >= '0') && (*name	 <= '9')) return(FALSE);		/* can't start with number */
+if((*name >= '0') && (*name <= '9')) return(FALSE);		/* can't start with number */
 
 return(TRUE);
 }
