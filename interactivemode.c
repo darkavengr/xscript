@@ -28,10 +28,12 @@
 #include "dofile.h"
 #include "statements.h"
 #include "version.h"
+#include "debugmacro.h"
 
 extern jmp_buf savestate;
 extern int savestatereturn;
-
+extern char *TokenCharacters;
+		
 char *InteractiveModeBuffer=NULL;
 char *InteractiveModeBufferPosition=NULL;
 
@@ -71,7 +73,6 @@ if(InteractiveModeBuffer == NULL) {
 }
 
 InteractiveModeBufferPosition=InteractiveModeBuffer;		/* set buffer position to start */
-
 
 printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
@@ -190,7 +191,7 @@ while(1) {
 	{
 		InteractiveModeBufferPosition += strlen(InteractiveModeBufferPosition);	/* point to next statement */
 	}	
-	 }
+   }
 }
 
 /*
@@ -203,6 +204,9 @@ while(1) {
  *
  */
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+free(InteractiveModeBuffer);
+cleanup();		/* deallocate lists */
+
 exit(0);
 }
 
@@ -216,7 +220,12 @@ exit(0);
  *
  */
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-ExecuteFile(NULL);
+if(GetBreakFlag() == 0)	return(NO_RUNNING_PROGRAM);	/* no program running */
+
+SetIsRunningFlag();
+SwitchToFileBuffer();			/* switch to file buffer */
+
+longjmp(savestate,1);
 }
 
 /*
@@ -366,10 +375,27 @@ printf("Invalid sub-command\n");
 return(0);
 }
 
+/*
+ * Switch to interactive mode buffer
+ *
+ * In: Nothing
+ *
+ * Returns: Nothing
+ *
+ */
 void SwitchToInteractiveModeBuffer(void) {
 SetCurrentBufferPosition(InteractiveModeBuffer);
 }
 
+/*
+ * Stack trace command
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 int stacktrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 FUNCTIONCALLSTACK *stack;
 int callstackcount=0;
@@ -383,5 +409,18 @@ while(stack != NULL) {
 }
 
 return(0);
+}
+
+/*
+ * Free interactive mode list
+ *
+ * In: Nothing
+ *
+ * Returns: Nothing
+ *
+ */
+void FreeInteractiveModeBuffer(void) {
+if(InteractiveModeBuffer != NULL) free(InteractiveModeBuffer);
+return;
 }
 

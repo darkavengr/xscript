@@ -22,7 +22,7 @@
 #include "module.h"
 
 int AddModule(char *modulename);
-intGetModuleHandle(char *module);
+int GetModuleHandle(char *module);
 
 /*
  * Module functions
@@ -30,6 +30,7 @@ intGetModuleHandle(char *module);
  */
 
 MODULES *modules=NULL;
+MODULES *modules_end=NULL;
 
 /*
  * Load module
@@ -55,7 +56,7 @@ modpath=getenv("XSCRIPT_MODULE_PATH");				/* get module path */
 if(modpath == NULL)  {
  SetLastError(NO_MODULE_PATH);	/* no module path warning */
 
- strcpy(modpath,".");		/* use currnet directory */
+ strcpy(modpath,".");		/* use current directory */
 }
 
 tc=TokenizeLine(modpath,moddirs,":");			/* tokenize line */
@@ -65,39 +66,35 @@ for(count=0;count<tc;count++) {			/* loop through path array */
 /* get module filename without extension
    LoadModule adds the extension for portability reasons */
 
- sprintf(modulename,"%s\\%s",moddirs[count],filename);	
+	sprintf(modulename,"%s\\%s",moddirs[count],filename);	
 
- handle=LoadModule(filename);
- if(handle == -1) continue;			/* can't open module */
+	handle=LoadModule(filename);
+	if(handle == -1) continue;			/* can't open module */
 
- if(modules == NULL) {			/* first in list */
-  modules=malloc(sizeof(MODULES));
-  if(modules == NULL) {
-  	SetLastError(NO_MEM);
-  	return(-1);
-  }
+	if(modules == NULL) {			/* first in list */
+		modules=malloc(sizeof(MODULES));
+		if(modules == NULL) {
+			SetLastError(NO_MEM);
+		  	return(-1);
+		}
 
-  last=modules;
- }
- else
- {
-  next=modules;
+		modules_end=modules;
+		modules_end->last=NULL;
+	}
+	else
+	{
+		modules_end->next=malloc(sizeof(MODULES));
+	
+		if(modules_end->next == NULL) {
+	 		SetLastError(NO_MEM);
+	 		return(-1);
+		}
 
-  while(next != NULL) {
-   last=next;
-   next=next->next;
-  }
- }
+		modules_end=modules_end->next;
+		next->dlhandle=handle;
 
- last->next=malloc(sizeof(MODULES));
- if(modules == NULL) {
- 	SetLastError(NO_MEM);
- 	return(-1);
- }
-
- next=last->next;
- strcpy(next->modulename,filename);
- next->dlhandle=handle;
+		strcpy(next->modulename,filename);
+	}
 }
 
 return(0);
@@ -113,17 +110,41 @@ return(0);
  */
 
 int GetModuleHandle(char *module) {
-MODULES *next;
-next=modules;
+MODULES *next=modules;
 
 /* search through linked list */
 
 while(next != NULL) {
- if(strcmpi(next->modulename,module) == 0) return(next->dlhandle);		/* found module */
+	if(strcmpi(next->modulename,module) == 0) return(next->dlhandle);		/* found module */
  
- next=next->next;
+	next=next->next;
 }
 
 return(-1);
+}
+
+/*
+ * Free modules list
+ *
+ * In: Nothing
+ *	
+ * Returns: Nothing
+ *
+ */
+
+void FreeModulesList(void) {
+MODULES *next=modules;
+MODULES *nextptr;
+
+/* search through linked list */
+
+while(next != NULL) {
+	nextptr=next->next;
+	free(next);
+	next=nextptr;
+}
+
+modules=NULL;
+return;
 }
 

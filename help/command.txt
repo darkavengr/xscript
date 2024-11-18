@@ -1,6 +1,6 @@
-COMMAND
+PROGRAMNAME
 
-The COMMAND string variable holds the command-line arguments, if any.
+The PROGRAMNAME variables holds the name of the current program.
 
-See also: PROGRAMNAME
+See also: COMMAND
 

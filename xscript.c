@@ -104,13 +104,15 @@ else
 	if(returnvalue) {
 		SetLastError(returnvalue);
 
-		FreeFunctions();
+		PrintError(returnvalue);
+
+		cleanup();		/* deallocate lists */
+
 		exit(returnvalue);
 	}
 }
 
-FreeFunctions();
-
+cleanup();			/* deallocate lists */
 exit(0);
 }
 
@@ -119,7 +121,7 @@ exit(0);
  *
  * In: sig	Signal number
  *
- * Returns error number on error or 0 on success
+ * Returns nothing
  *
  */
 void signalhandler(int sig,siginfo_t *info,void *ucontext) {
@@ -132,6 +134,9 @@ if(sig == SIGINT) {			/* ctrl-c */
 
 			ClearIsRunningFlag();
 
+			SetBreakFlag();
+			return;
+
 	   	}
 	   	else
 	   	{
@@ -141,6 +146,8 @@ if(sig == SIGINT) {			/* ctrl-c */
 	else
 	{
 			printf("Terminated by Ctrl-C\n");
+
+			cleanup();		/* deallocate lists */
 			exit(0);
 	}
 
@@ -152,5 +159,14 @@ printf("Signal %d received\n",sig);
 
 void GetExecutableDirectoryName(char *name) {
 strcpy(name,dirname);
+}
+
+void cleanup(void) {
+FreeFunctionsAndVariables();			/* free functions and variables */
+FreeModulesList();				/* free modules */
+
+FreeInteractiveModeBuffer();	/* free interactive mode buffer */
+FreeFileBuffer();		/* free file buffer */
+
 }
 

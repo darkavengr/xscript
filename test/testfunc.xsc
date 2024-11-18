@@ -1,5 +1,5 @@
 function test()
-print "Function with no parameters"
+print 2+2
 endfunction
 
 print test()

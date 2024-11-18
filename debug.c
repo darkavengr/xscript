@@ -239,8 +239,8 @@ if(strlen(name) > 0) {
 FindFirstVariable(&var);
 	
 do {
- PrintVariable(&var);
- } while(FindNextVariable(&var) != -1);
+	PrintVariable(&var);
+} while(FindNextVariable(&var) != -1);
 
 }
 

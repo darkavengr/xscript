@@ -66,6 +66,9 @@ void ClearTraceFlag(void);
 int GetTraceFlag(void);
 FUNCTIONCALLSTACK *GetFunctionCallStackTop(void);
 int IncludeFile(char *filename);
+void SetBreakFlag(void);
+void ClearBreakFlag(void);
+int GetBreakFlag(void);
 
 typedef struct {
  char *statement;

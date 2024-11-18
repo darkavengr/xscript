@@ -219,6 +219,7 @@ SetCurrentFunctionLine(lc++);
 
 if(IsStatement(tokens[0])) return(CallIfStatement(tc,tokens)); /* run  if statement */
 
+setjmp(savestate);		/* save current context */
 
 /*
  *
@@ -232,8 +233,7 @@ for(count=1;count<tc;count++) {
  		ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
 
 		SubstituteVariables(count+1,tc,tokens,tokens);
-
- 		if(returnvalue > 0) return(returnvalue);
+ 		//if(returnvalue > 0) return(returnvalue);
 		
 	 	if(strlen(split.fieldname) == 0) {			/* use variable name */
 	 		vartype=GetVariableType(split.name);
@@ -329,9 +329,7 @@ return(INVALID_STATEMENT);
  */
 
 int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-
 DeclareFunction(&tokens[1],tc-1);
-
 return(0);
 } 
 
@@ -480,6 +478,8 @@ while(*CurrentBufferPosition != 0) {
 			saveexprtrue=exprtrue;
 
 			do {
+				setjmp(savestate);		/* save current context */
+
 		   		CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 				if(*CurrentBufferPosition == 0) return(0);
 
@@ -520,6 +520,8 @@ while(*CurrentBufferPosition != 0) {
 
 		if(saveexprtrue == 0) {
 	    		do {
+				setjmp(savestate);		/* save current context */
+
 	   			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 				if(*CurrentBufferPosition == 0) return(0);
 
@@ -689,15 +691,19 @@ PushSaveInformation();					/* save line information */
 
 CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
 	
-do {	  
+do {
+	setjmp(savestate);		/* save current context */
+
 	returnvalue=ExecuteLine(buf);
 	if(returnvalue != 0) {
 		ClearIsRunningFlag();
 		return(returnvalue);
 	}
 
+	setjmp(savestate);		/* save current context */
+
 	if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program halted */
-		    
+
 	d=*buf+(strlen(buf)-1);
 	if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
 	if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
@@ -705,11 +711,12 @@ do {
 	SetCurrentFunctionLine(lc++);
 
  	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-	
-//	printf("tokens[0]=%s\n",tokens[0]);
-//	sleep(1);
 
-	if(strcmpi(tokens[0],"NEXT") == 0) {     
+	setjmp(savestate);
+
+	if(strcmpi(tokens[0],"NEXT") == 0) {   
+		setjmp(savestate);		/* save current context */
+  
 		SetCurrentFunctionLine(GetSaveInformationLineCount());
 		lc=GetSaveInformationLineCount();
 
@@ -731,9 +738,14 @@ do {
 
 			return(SYNTAX_ERROR);
 	     	 }
-	    	} 
+    	} 
 
-		CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
+	setjmp(savestate);		/* save current context */
+  
+	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
+
+	setjmp(savestate);		/* save current context */
+  
 } while(
        ( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d >= exprtwo)) ||
        ((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d <= exprtwo)) ||
@@ -742,6 +754,8 @@ do {
        ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f >= exprtwo)) ||
        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f <= exprtwo))
        );
+
+setjmp(savestate);		/* save current context */
 
 return(NO_ERROR);	
 }
@@ -883,14 +897,20 @@ SetFunctionFlags(WHILE_STATEMENT);
 saveBufferPosition=CurrentBufferPosition;
 	
 do {
+	     setjmp(savestate);		/* save current context */
+
 	     CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
 	     if(IsValidExpression(tokens,1,condition_tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+
+	     setjmp(savestate);		/* save current context */
 
 	     exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
 
 	     if(exprtrue == 0) {			/* if condition is true, skip to end */
 	     		while(*CurrentBufferPosition != 0) {
+
+				setjmp(savestate);		/* save current context */
 
 	     		  	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
@@ -907,6 +927,8 @@ do {
 	     }
 
 	     /* if condition is false, execute lines until condition is true */
+
+	     setjmp(savestate);		/* save current context */
 
 	     tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	     if(tc == -1) return(SYNTAX_ERROR);
@@ -1025,6 +1047,8 @@ else
 /* find end of loop */
 while(*CurrentBufferPosition != 0) {
 	savebuffer=CurrentBufferPosition;
+
+	setjmp(savestate);		/* save current context */
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,MAX_SIZE);			/* get data */
 
@@ -1203,6 +1227,8 @@ while(*CurrentBufferPosition != 0) {
 
 	if(strcmpi(trytokens[0],"CATCH") == 0) {	/* reached catch statement without error occurring in try block */
 		while(*CurrentBufferPosition != 0) {
+			setjmp(savestate);		/* save current context */
+
 			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
 			tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
@@ -1822,5 +1848,18 @@ b=buf;
 while(*s != '"') *b++=*s++;	/* copy character */
 
 return(0);
+}
+
+/*
+ * Free file buffer
+ *
+ * In: Nothing
+ *
+ * Returns: Nothing
+ *
+ */
+void FreeFileBuffer(void) {
+if(FileBuffer != NULL) free(FileBuffer);
+return;
 }
 

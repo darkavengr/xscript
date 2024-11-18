@@ -22,6 +22,7 @@
 #include <string.h>
 #include "size.h"
 #include "variablesandfunctions.h"
+#include "debugmacro.h"
 
 char *errs[] = { "No error",\
 		 "File not found",\
@@ -67,7 +68,7 @@ char *errs[] = { "No error",\
 		 "TRY without ENDTRY",\
 		 "CATCH without TRY",\
 		 "ENDTRY without TRY",\
-		 "Cannot CONTINUE while running a program",\
+		 "No program currently running",\
 		 "Not an array",\
 };
 
@@ -112,6 +113,7 @@ return;
  */
 void SetLastError(int errornumber) {
 varval errval;
+char *errfunc[MAX_SIZE];
 
 errval.i=errornumber;				/* update error number */
 UpdateVariable("ERR","",&errval,0,0);
@@ -119,7 +121,15 @@ UpdateVariable("ERR","",&errval,0,0);
 errval.i=GetCurrentFunctionLine();		/* update error line */
 UpdateVariable("ERRL","",&errval,0,0);
 
-GetCurrentFunctionName(&errval.s);		/* update error function */
+GetCurrentFunctionName(errfunc);		/* get faulting function */
+
+errval.s=malloc(strlen(errfunc));
+if(errval.s == NULL) return;
+
+strcpy(errval.s,errfunc);
+
 UpdateVariable("ERRFUNC","",&errval,0,0);
+
+free(errval.s);
 }
 

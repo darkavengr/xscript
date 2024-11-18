@@ -46,7 +46,7 @@ typedef struct  {
  struct UserDefinedType *next;
 } UserDefinedType;
 
-typedef struct {
+typedef struct vartype {
  char *varname[MAX_SIZE];
  varval *val;
  UserDefinedType *udt;
@@ -54,7 +54,8 @@ typedef struct {
  int ysize;
  char *udt_type[MAX_SIZE];
  int type_int;
- struct vars_t *next;
+ struct vartype *last;
+ struct vartype *next;
 } vars_t;
 
 typedef struct {
@@ -74,16 +75,16 @@ typedef struct {
  struct SAVEINFORMATION *next;
 } SAVEINFORMATION;
 
-typedef struct {
+typedef struct func {
  char *name[MAX_SIZE];
- char *fieldname[MAX_SIZE];
  char *funcstart;
  int funcargcount;
  char *returntype[MAX_SIZE];
  int type_int;
  vars_t *parameters;
  int linenumber;
- struct functions *next;
+ struct func *last;
+ struct func *next;
 } functions;
 
 typedef struct {
@@ -93,6 +94,7 @@ typedef struct {
  SAVEINFORMATION *saveinformation;
  SAVEINFORMATION *saveinformation_top;
  vars_t *vars;
+ vars_t *vars_end;
  int stat;	
  char *returntype[MAX_SIZE];
  int type_int;
@@ -155,4 +157,7 @@ SAVEINFORMATION *GetSaveInformation(void);
 void InitializeMainFunction(char *args);
 void DeclareBuiltInVariables(char *args);
 void GetCurrentFunctionFilename(char *buf);
+void FreeFunctionsAndVariables(void);
+void FreeVariablesList(vars_t *vars);
+
 

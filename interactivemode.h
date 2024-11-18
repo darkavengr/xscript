@@ -20,6 +20,7 @@
 #define INTERACTIVE_BUFFER_SIZE 65536
 #define INITIAL_BUFFERSIZE 1024
 #define INTERACTIVE_MODE_FLAG	1
+#define LIST_LINE_COUNT 20
 
 void InteractiveMode(void);
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
@@ -31,6 +32,7 @@ int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 void SwitchToInteractiveModeBuffer(void);
+int list_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 typedef struct {
 	int linenumber;

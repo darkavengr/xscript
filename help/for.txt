@@ -1,4 +1,4 @@
-FOR variable = start TO end { STEP expression }
+FOR variable = [expression] TO [expression] { STEP expression }
 .
 .
 .

@@ -25,6 +25,7 @@
 #include "dofile.h"
 #include "statements.h"
 #include "errors.h"
+#include "interactivemode.h"
 
 /* statements */
 			  
@@ -65,9 +66,6 @@ statement statements[] = {
 	     { "OR",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "NOT",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "ENDTYPE",NULL,&bad_keyword_as_statement,FALSE},\
-	     { "ERR",NULL,&bad_keyword_as_statement,FALSE},\
-	     { "ERRL",NULL,&bad_keyword_as_statement,FALSE},\
-	     { "ERRFUNC",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "QUIT",NULL,&quit_command,FALSE},\
 	     { "VARIABLES",NULL,&variables_command,FALSE},\
 	     { "CONTINUE",NULL,&continue_command,FALSE},\

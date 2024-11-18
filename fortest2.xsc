@@ -1,4 +1,4 @@
-for count=1 to 10000000
+for count=1 to 10
 print count
 next count
 
