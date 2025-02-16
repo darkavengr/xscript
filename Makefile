@@ -11,7 +11,7 @@ else
 	FLAGS += -ldl
 endif
 
-xscript: $(OBJFILES)
+all: $(OBJFILES)
 	$(CC) $(OBJFILES) -o $(OUTFILE) $(FLAGS)
 
 statements.o:

@@ -1,12 +1,11 @@
 declare numbers(5)
 
-numbers(0)=3
-numbers(1)=7
-numbers(2)=9
-numbers(3)=11
-numbers(4)=13
+numbers(0)=7
+numbers(1)=9
+numbers(2)=11
+numbers(3)=13
 
-for count=0 to 4
-	print numbers(count)
+for count=0 to 3
+	print numbers(count,1)
 next count
 

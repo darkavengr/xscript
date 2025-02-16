@@ -15,7 +15,6 @@ testarray(1,2)=8
 testarray(2,2)=12
 testarray(3,2)=16
 
-count=3
+print testarray
 
-print testarray(count,1)
 

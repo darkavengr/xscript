@@ -30,10 +30,11 @@
 #include "version.h"
 #include "debugmacro.h"
 
-extern jmp_buf savestate;
+extern sigjmp_buf savestate;
 extern int savestatereturn;
 extern char *TokenCharacters;
 		
+jmp_buf single_step_save_state;
 char *InteractiveModeBuffer=NULL;
 char *InteractiveModeBufferPosition=NULL;
 
@@ -111,7 +112,7 @@ while(1) {
 
 			if(blockstatementsave_head == NULL) {
 				PrintError(NO_MEM);
-				continue;
+				return(NO_MEM);
 			}
 
 			blockstatementsave_end=blockstatementsave_head;
@@ -152,15 +153,6 @@ while(1) {
 		SetIsRunningFlag();
 
 		do {
-	   		if(check_breakpoint(GetCurrentFunctionLine(),functionname) == TRUE) {	/* breakpoint found */
-				printf("Breakpoint in function %s on line %d reached\n",functionname,GetCurrentFunctionLine());
-				ClearIsRunningFlag();
-
-				setjmp(savestate);		/* save program state */
-
-				break;
-	   		}
-
 			if(GetIsRunningFlag() == FALSE)	break;		/* not running */
 
 			SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));	/* read line from buffer */
@@ -220,12 +212,14 @@ exit(0);
  *
  */
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(GetBreakFlag() == 0)	return(NO_RUNNING_PROGRAM);	/* no program running */
+if(GetIsFileLoadedFlag() == 0) return(NO_RUNNING_PROGRAM);	/* no program running */
 
 SetIsRunningFlag();
 SwitchToFileBuffer();			/* switch to file buffer */
 
-longjmp(savestate,1);
+//asm("int $3");
+
+siglongjmp(savestate,0);
 }
 
 /*
@@ -310,7 +304,7 @@ if(tc < 2) {			/* Display trace status */
 		printf("Trace is OFF\n");
 	}
 
-	return;		
+	return(0);	
 }
 
 if(strcmpi(tokens[1],"ON") == 0) {		/* enable trace */
@@ -337,10 +331,11 @@ return(0);
  *
  */
 int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(tc < 2) {						/* Not enough parameters */
-	PrintError(SYNTAX_ERROR);
-	return(SYNTAX_ERROR);
-}
+
+//if(tc < 2) {						/* Not enough parameters */
+//	PrintError(SYNTAX_ERROR);
+//	return(SYNTAX_ERROR);
+//}
 
 if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
 	set_breakpoint(atoi(tokens[2]),tokens[3]);

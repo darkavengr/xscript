@@ -1,16 +1,7 @@
-a=1
 b=4
-
-print a
-
-if a = 1 then
- print "Yes"
-endif
 
 if b = 2+2 then
  print "Yay"
 endif
-
-print 2+2
 
 

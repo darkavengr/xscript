@@ -25,14 +25,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <setjmp.h>
 #include "errors.h"
 #include "size.h"
 #include "variablesandfunctions.h"
 #include "debug.h"
 #include "dofile.h"
 
-extern jmp_buf savestate;
 extern char *vartypenames[];
 
 BREAKPOINT *breakpoints;
@@ -85,7 +83,7 @@ else
 breakpointend->linenumber=linenumber;
 strcpy(breakpointend->functionname,funcname);
 
-return;
+return(0);
 }
 
 /*
@@ -113,7 +111,7 @@ int clear_breakpoint(int linenumber,char *functionname) {
 		free(breakpoints);
 
 		breakpoints=NULL;
-		return;
+		return(0);
 	    }
 	    else if(next->next == NULL) {	/* end */
 		free(next);
@@ -128,7 +126,7 @@ int clear_breakpoint(int linenumber,char *functionname) {
     next=next->next;
  }
 
- return;
+ return(0);
 }
 
 /*
@@ -141,17 +139,17 @@ int clear_breakpoint(int linenumber,char *functionname) {
  *
  */
 int check_breakpoint(int linenumber,char *functionname) {
- BREAKPOINT *next;
- next=breakpoints;
+BREAKPOINT *next;
+next=breakpoints;
  
- while(next != NULL) {
+while(next != NULL) {
 
-    if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) return(TRUE);
+	if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) return(TRUE);
 	    
-    next=next->next;
- }
+	next=next->next;
+}
 
- return(FALSE);
+return(FALSE);
 }
 
 /*
@@ -162,29 +160,17 @@ int check_breakpoint(int linenumber,char *functionname) {
  * Returns error number on error or 0 on success
  *
  */
-void PrintVariable(vars_t *var) {
-int count;
+void PrintVariableValue(vars_t *var) {
 int vartype=0;
 int ycount=0;
 int xcount=0;
-int yinc=0;
-int xinc=0;
-
-printf("%s",var->varname);
-
-	
-for(count=0;count<12-strlen(var->varname);count++) {	/* pad out with spaces */
-	printf(" ");
-}
-
-printf(" = ");
 
 vartype=GetVariableType(var->varname);
 
 if((var->xsize > 1) || (var->ysize > 1)) printf("(");
 
-for(xcount=0;xcount != var->xsize+1;xcount++) {
-	for(ycount=0;ycount != var->ysize+1;ycount++) {
+for(ycount=1;ycount != var->ysize+1;ycount++) {
+	for(xcount=0;xcount != var->xsize;xcount++) {
 
 		 switch(vartype) {
 
@@ -205,7 +191,7 @@ for(xcount=0;xcount != var->xsize+1;xcount++) {
 			        break;
   		}
 	
-		  if(count < ((xinc*yinc)-1)) printf(",");		 
+		  if(xcount < var->xsize+1) printf(",");		 
 	
 	  }
 }
@@ -225,6 +211,7 @@ printf("\n");
  */
 void list_variables(char *name) {
 vars_t var;
+int padcount;
 
 if(strlen(name) > 0) {
 	if(FindVariable(name,&var) == -1) {
@@ -232,14 +219,23 @@ if(strlen(name) > 0) {
 		return(-1);
 	}
 
-	PrintVariable(&var);
+	PrintVariableValue(&var);
 	return;
 }
 
 FindFirstVariable(&var);
 	
 do {
-	PrintVariable(&var);
+	printf("%s",name);
+	
+	for(padcount=0;padcount<12-strlen(name);padcount++) {	/* pad out with spaces */
+		printf(" ");
+	}
+
+	printf(" = ");
+
+	PrintVariableValue(&var);
+
 } while(FindNextVariable(&var) != -1);
 
 }

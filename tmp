@@ -1,4 +1,0 @@
-int CallModuleFunction(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-char *subst_tokens[MAX_SIZE][MAX_SIZE];
-
-SubstituteVariables(0,tc,tokens,subst_tokens);

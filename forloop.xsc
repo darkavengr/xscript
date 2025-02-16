@@ -1,4 +1,4 @@
 for count=1 to 10000000
-	print count
+	print "Counter is ",count
 next count
 

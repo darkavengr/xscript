@@ -52,6 +52,7 @@ int endexpr;
 int exprcount;
 int ti;
 int countx;
+int subtc;
 
 memset(temp,0,MAX_SIZE*MAX_SIZE);
 
@@ -86,9 +87,9 @@ for(count=start;count<end;count++) {
 		 		count++;
 			}
 		
-			SubstituteVariables(startexpr,count,tokens,subexpr);
+			subtc=SubstituteVariables(startexpr,count,tokens,subexpr);
 	
-			exprone=EvaluateExpression(subexpr,startexpr,count);
+			exprone=EvaluateExpression(subexpr,0,subtc);
 	
 			sprintf(temp[exprcount++],"%.6g",exprone);
 		}			
@@ -233,7 +234,7 @@ for(count=0;count<exprcount;count++)  {
 return(val.d);
 }
 
-int DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend) {
+void DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend) {
 	int count;
 	char *temp[10][255];
 	int oc=0;
@@ -283,8 +284,16 @@ varval firstval,secondval;
 exprone=0;
 exprtwo=0;
 
+//for(exprpos=0;exprpos<end;exprpos++) {
+//	printf("exprtoken[%d]=%s\n",exprpos,tokens[exprpos]);
+//}
+
 for(exprpos=start;exprpos<end;exprpos++) {
+
 	if(strcmp(tokens[exprpos],"=") == 0) {
+	//	printf("EQUAL\n");
+	//	printf("exprpos=%d\n",exprpos);
+
 		ifexpr=EQUAL;
 		break;
 	}
@@ -296,7 +305,7 @@ for(exprpos=start;exprpos<end;exprpos++) {
 		ifexpr=GTHAN;
 		break;	
 	}
-	else if(strcmp(tokens[exprpos],"<") == 0) {           
+	else if(strcmp(tokens[exprpos],"<") == 0) {  
 		ifexpr=LTHAN;
 		break;
 	}
@@ -326,6 +335,17 @@ if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
 	return(!strcmp(firstval.s,secondval.s));
 }
 
+//printf("exprposxxx=%d %d\n",start,exprpos);
+
+
+//for(int countx=0;countx < exprpos;countx++) {
+//	printf("first tokens[%d]=%s\n",countx,tokens[countx]);
+//}
+
+//for(int countx=exprpos+1;countx < end;countx++) {
+//	printf("second tokens[%d]=%s\n",countx,tokens[countx]);
+//}
+
 exprone=EvaluateExpression(tokens,start,exprpos);				/* evaluate expressions */
 exprtwo=EvaluateExpression(tokens,exprpos+1,end);
 
@@ -334,6 +354,8 @@ exprtrue=0;
 switch(ifexpr) {
 
 	case EQUAL:
+//		printf("expr=%.6g %.6g\n",exprone,exprtwo);
+
 		return(exprone == exprtwo);
 
 	case NOTEQUAL:					/* exprone != exprtwo */ 
@@ -378,6 +400,7 @@ int exprend;
 char *temp[MAX_SIZE][MAX_SIZE];
 int subcount=0;
 int outcount=0;
+int evaltc;
 
 struct {
 	int result;
@@ -386,16 +409,16 @@ struct {
 
 // Evaluate sub-conditions
 
-SubstituteVariables(start,end,tokens,evaltokens);
+evaltc=SubstituteVariables(start,end,tokens,evaltokens);
 
 startcount=start;
-count=start;
+count=0;
 
 //
 // Do conditions in brackets first
 //
 
-while(count < end) {
+while(count < evaltc) {
 	 if(strcmp(evaltokens[count],"(") == 0) {		// if sub-expression
 
 	  subcount++;
@@ -403,7 +426,7 @@ while(count < end) {
 
 	  while(count < exprend) {
 	    if(strcmp(evaltokens[count],")") == 0) {		// end of sub-expression
-	      results[resultcount].result=EvaluateSingleCondition(evaltokens,startcount,count+1);
+	      results[resultcount].result=EvaluateSingleCondition(evaltokens,0,count+1);
 
 	      resultcount++;
 
@@ -489,7 +512,7 @@ return(overallresult);
 /*
  * Check if expression is valid
  *
- * In: char *tokens[][MAX_SIZE]		Tokens array containing expression
+ * In: tokens				Tokens array containing expression
  *     int start			Start in array
  *     int end				End in array
  *
@@ -514,7 +537,7 @@ for(count=start+1;count<end;count += 2) {
 
 		while(endexpression < end) {
 			if(strcmp(tokens[endexpression],")") == 0) {		/* sub-expression */
-				if(IsValidExpression(tokens,count+1,endexpression-1) == TRUE) return(TRUE);
+				if(IsValidExpression(tokens,count,endexpression-1) == TRUE) return(TRUE);
 
 				return(FALSE);
 			}

@@ -70,6 +70,7 @@ char *errs[] = { "No error",\
 		 "ENDTRY without TRY",\
 		 "No program currently running",\
 		 "Not an array",\
+		 "Missing array subscript",\
 };
 
 /*
@@ -94,6 +95,8 @@ else
 
 	printf("Error %d: %s\n",errornumber,errs[errornumber]); 
 }
+
+asm("int $3");
 
 if(GetInteractiveModeFlag() == FALSE) {
 	exit(errornumber); 		/* If running from non-interactive source, exit */

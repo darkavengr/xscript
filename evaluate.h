@@ -10,7 +10,7 @@
 #define CONDITION_END 2
 
 double EvaluateExpression(char *tokens[][MAX_SIZE],int start,int end);
-int DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend);
+void DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend);
 int EvaluateSingleCondition(char *tokens[][MAX_SIZE],int start,int end);
 int EvaluateCondition(char *tokens[][MAX_SIZE],int start,int end);
 

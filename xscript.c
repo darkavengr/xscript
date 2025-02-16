@@ -35,7 +35,7 @@
 #include "dofile.h"
 #include "debugmacro.h"
 
-jmp_buf savestate;
+sigjmp_buf savestate;
 int savestatereturn;
 char *dirname[MAX_SIZE];
 bool IsPaused=FALSE;
@@ -133,10 +133,7 @@ if(sig == SIGINT) {			/* ctrl-c */
 			printf("Program stopped. Type continue to resume\n");
 
 			ClearIsRunningFlag();
-
-			SetBreakFlag();
 			return;
-
 	   	}
 	   	else
 	   	{

@@ -22,16 +22,19 @@
 #include "module.h"
 #include "errors.h"
 
+void *LoadModule(char *filename);
+void *GetModuleAddress(int handle,char *name);
+
 /*
  * Open Linux module
  *
  * In: char *filename	Filename to open
- * Returns -1 on error or module handle
  *
+ * Returns -1 on error or module handle
  */
 
-int LoadModule(char *filename) {
-int dlhandle;
+void *LoadModule(char *filename) {
+void *dlhandle;
 
 dlhandle=dlopen(filename,RTLD_LAZY);			/* open library */
 if(dlhandle == -1) {
@@ -40,5 +43,17 @@ if(dlhandle == -1) {
 }
 
 return(dlhandle);
+}
+
+/*
+ * Get function address
+ *
+ * In: handle	Module handle
+ *	name	Function name
+ *
+ * Returns -1 on error or module handle
+ */
+void *GetFunctionAddress(int handle,char *name) {
+return(dlsym(handle,name));
 }
 

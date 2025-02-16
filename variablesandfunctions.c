@@ -133,9 +133,9 @@ int count;
 
 /* Check if variable name is a reserved name */
 
-if(IsStatement(name) == TRUE) return(INVALID_VARIABLE_NAME);
+if(IsStatement(name)) return(INVALID_VARIABLE_NAME);
 
-if(IsVariable(name) == TRUE) return(VARIABLE_EXISTS);
+if(IsVariable(name)) return(VARIABLE_EXISTS);
 
 /* Add entry to variable list */
 
@@ -229,6 +229,7 @@ else {					/* user-defined type */
 	}
 }
 
+//DEBUG_PRINT_DEC(xsize);
 currentfunction->vars_end->xsize=xsize;				/* set size */
 currentfunction->vars_end->ysize=ysize;
 
@@ -260,6 +261,8 @@ UserDefinedType *udtptr;
 UserDefinedTypeField *fieldptr;
 UserDefinedTypeField *udtfield;
 
+//printf("********** Update ***********\n");
+
 /* Find variable */
 
 next=currentfunction->vars;
@@ -272,13 +275,25 @@ while(next != NULL) {
 
 if(next == NULL) return(VARIABLE_DOES_NOT_EXIST);
 
-if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
 
 
 /* update variable */
 
-if(next->type_int == VAR_NUMBER) {		/* double precision */			
+//DEBUG_PRINT_HEX(next->type_int);
+
+if(next->type_int == VAR_NUMBER) {		/* double precision */	
+	      //DEBUG_PRINT_DOUBLE(val->d);
+	      //DEBUG_PRINT_DEC(x);
+	      //DEBUG_PRINT_DEC(y);
+	      //DEBUG_PRINT_DEC(next->xsize);
+	      //DEBUG_PRINT_DEC(next->ysize);
+	      
+	      //printf("pos=%d\n",(y*next->ysize)+(x*next->xsize));
+
 	      next->val[(y*next->ysize)+(x*next->xsize)].d=val->d;
+
+	      //DEBUG_PRINT_DOUBLE(next->val[(y*next->ysize)+(x*next->xsize)].d);
 	      return(0);
 
 }
@@ -412,8 +427,14 @@ return(-1);
 int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy) {
 vars_t *next;
 UserDefinedTypeField *udtfield;
-
+7
 if(name == NULL) return(-1);
+
+//printf("************** Get value ***************\n");
+
+//DEBUG_PRINT_DEC(GetVariableType(name));
+//DEBUG_PRINT_DEC(x);
+//DEBUG_PRINT_DEC(y);
 
 if(((char) *name >= '0') && ((char) *name <= '9')) {
 	  switch(GetVariableType(name)) {
@@ -460,10 +481,16 @@ while(next != NULL) {
 
 if(next == NULL) return(-1);
 
-//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+printf("%d %d %d %d\n",x,next->xsize,y,next->ysize);
+
+if( (x > next->xsize) || (y > next->ysize)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
 
 if(next->type_int == VAR_NUMBER) {
 	val->d=next->val[(y*next->ysize)+(x*next->xsize)].d;
+
+//	//DEBUG_PRINT_DOUBLE(val->d);
+//	//printf("Get pos=%d\n",(y*next->ysize)+(x*next->xsize));
+
 	return(0);
 }
 else if(next->type_int == VAR_STRING) {
@@ -490,7 +517,7 @@ else {					/* User-defined type */
 	return(0);
 }	
 
-return(INVALID_VARIABLE_TYPE);
+return(-1);
 }
 
 /*
@@ -530,7 +557,7 @@ return(-1);
  *  In: char *name	Variable name
 	      varsplit *split	Variable split object
  * 
- *  Returns error value on error or 0 on success
+ *  Returns error value on error or number of tokens parsed on success
  * 
   */
 int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split) {
@@ -539,9 +566,9 @@ int fieldstart=0;
 int fieldend;
 int subscriptend;
 int commafound=FALSE;
-int parse_end=0;
 char ParseEndChar;
 char *evaltokens[MAX_SIZE][MAX_SIZE];
+int evaltc;
 
 memset(split,0,sizeof(varsplit));
 
@@ -580,6 +607,8 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 				if(strcmp(tokens[count],"[") == 0) ParseEndChar=']';
 
 				while(*tokens[count] != ParseEndChar) {
+					printf("Missing end\n");
+
 					if(count == end) {		/* Missing end */
 						PrintError(SYNTAX_ERROR);
 						return(SYNTAX_ERROR);
@@ -590,16 +619,24 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 			}
 
 			if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
-				if((IsValidExpression(tokens,1,count) == FALSE) || (IsValidExpression(tokens,count+1,end) == FALSE)) {  /* invalid expression */
-					PrintError(SYNTAX_ERROR);
-					return(SYNTAX_ERROR);
-				}
-	
-				SubstituteVariables(start+2,count,tokens,evaltokens);
-				SubstituteVariables(count+1,end,tokens,evaltokens);
+				//if((IsValidExpression(tokens,start,count-1) == FALSE) || (IsValidExpression(tokens,count+1,end) == FALSE)) {  /* invalid expression */
+				//	printf("bad comma\n");
 
-				split->x=EvaluateExpression(evaltokens,start+2,count);
-				split->y=EvaluateExpression(evaltokens,count+1,end);
+				//	PrintError(INVALID_EXPRESSION);
+				//	return(-1);
+				//}
+	
+				evaltc=SubstituteVariables(start+1,count,tokens,evaltokens);
+				split->x=EvaluateExpression(evaltokens,0,evaltc);
+
+				for(int countx=start+1;countx<count;countx++) {
+					printf("tokens[%d]=%s\n",countx,tokens[countx]);
+				}
+
+				evaltc=SubstituteVariables(count+1,end,tokens,evaltokens);
+				split->y=EvaluateExpression(evaltokens,0,evaltc);
+
+				printf("3d array=%d %d\n",split->x,split->y);
 
 				commafound=TRUE;
 			 	break;
@@ -607,14 +644,15 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	}
 
 	if(commafound == FALSE) {			/* 2d array */
-		if(IsValidExpression(tokens,start+2,count) == FALSE) {	/* invalid expression */
-			PrintError(SYNTAX_ERROR);
-			return(-1);
-		}
+	//	if(IsValidExpression(tokens,start+1,count-1) == FALSE) {	/* invalid expression */
+			
+	//		PrintError(SYNTAX_ERROR);
+	//		return(-1);
+	//	}
 
-		SubstituteVariables(start+2,count,tokens,evaltokens);
+		evaltc=SubstituteVariables(start+1,count,tokens,evaltokens);
 
-		split->x=EvaluateExpression(evaltokens,start+2,count);
+		split->x=EvaluateExpression(evaltokens,0,evaltc);
 	 	split->y=1;
 	}
 	
@@ -626,43 +664,43 @@ if(fieldstart != start) {					/* if there is a field name and possible subscript
 	if((strcmp(tokens[fieldstart+1],"(") == 0) || (strcmp(tokens[fieldstart+1],"[") == 0)) {
 
 		for(fieldend=start+2;count<end;count++) {
-			if(strcmp(tokens[fieldend],")") == 0) {
-				parse_end=fieldend;
-				break;
-			}
+			if(strcmp(tokens[fieldend],")") == 0) break;
+
 		}
 
 		for(count=fieldstart+1;count<end;count++) {
 	   		if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
-				SubstituteVariables(fieldstart+2,count,tokens,tokens);
-				SubstituteVariables(count+1,end-1,tokens,tokens);
+				evaltc=SubstituteVariables(fieldstart+2,count,tokens,evaltokens);
+				split->fieldx=EvaluateExpression(tokens,0,evaltc);
 
-				if((IsValidExpression(tokens,fieldstart+2,count) == FALSE) || (IsValidExpression(tokens,count+1,end-1) == FALSE)) {  /* invalid expression */
-					PrintError(SYNTAX_ERROR);
-					return(-1);
-				}
+				SubstituteVariables(count+1,end-1,tokens,evaltokens);
+				split->fieldy=EvaluateExpression(evaltokens,0,evaltc);
 
-				split->fieldx=EvaluateExpression(tokens,fieldstart+2,count);
-				split->fieldy=EvaluateExpression(tokens,count+1,end-1);
+			//	if((IsValidExpression(tokens,fieldstart+2,count) == FALSE) || (IsValidExpression(tokens,count+1,end-1) == FALSE)) {  /* invalid expression */
+			//		PrintError(SYNTAX_ERROR);
+			//		return(-1);
+			//	}
+
+			
 				break;
 			}
 	      }
 
 	      if(count == end) {			/* 2d array */  
-		      		SubstituteVariables(start+2,end-1,tokens,tokens);
+		      	evaltc=SubstituteVariables(start+2,end-1,tokens,evaltokens);
 
-			if(IsValidExpression(tokens,start+2,end-1) == FALSE) {  /* invalid expression */
-				PrintError(SYNTAX_ERROR);
-				return(SYNTAX_ERROR);
-			}
+			//if(IsValidExpression(tokens,start+2,end-1) == FALSE) {  /* invalid expression */
+			//	PrintError(SYNTAX_ERROR);
+			//	return(SYNTAX_ERROR);
+			//}
 
-		  	split->fieldx=EvaluateExpression(tokens,start+2,end);
+		  	split->fieldx=EvaluateExpression(evaltokens,0,evaltc);
 		        split->fieldy=1;
 	   }
    }
 }
 
-return(parse_end);
+return(end-start);
 }
 
 /*
@@ -932,6 +970,7 @@ int endcount;
 FUNCTIONCALLSTACK newfunc;
 UserDefinedType userdefinedtype;
 int returnvalue;
+char *evaltokens[MAX_SIZE][MAX_SIZE];
 
 retval.has_returned_value=FALSE;			/* clear has returned value flag */
 
@@ -946,7 +985,7 @@ while(next != NULL) {
 
 if(next == NULL) return(INVALID_STATEMENT);
 
-returnvalue=SubstituteVariables(start+2,end,tokens,tokens);			/* substitute variables */
+returnvalue=SubstituteVariables(start+2,end,tokens,evaltokens);			/* substitute variables */
 //if(returnvalue > 0) return(substreturnvalue);
 
 /* save information about the calling function. The calling function is already on the stack */
@@ -985,19 +1024,19 @@ while(parameters != NULL) {
 	}
 
 	if(parameters->type_int == VAR_NUMBER) {
-		val.d=atof(tokens[count]);
+		val.d=atof(evaltokens[count]);
 	}
 	else if(parameters->type_int == VAR_STRING) {
-		strcpy(val.s,tokens[count]);
+		strcpy(val.s,evaltokens[count]);
 	}
 	else if(parameters->type_int == VAR_INTEGER) {
-		val.i=atoi(tokens[count]);
+		val.i=atoi(evaltokens[count]);
 	}
 	else if(parameters->type_int == VAR_SINGLE) {
-		val.f=atof(tokens[count]);
+		val.f=atof(evaltokens[count]);
 	}
 	else if(parameters->type_int == VAR_LONG) {
-		val.l=atol(tokens[count]);
+		val.l=atol(evaltokens[count]);
 	}
 	else {
 	  	
@@ -1106,7 +1145,7 @@ return(num);
 	      int end			End of variables in tokens array
 	      char *tokens[][MAX_SIZE] Tokens array
  * 
- *  Returns error number on error or 0 on success
+ *  Returns error number on error or number of substituted tokens on success
  * 
   */
 
@@ -1128,7 +1167,6 @@ varval subst_returnvalue;
 int s;
 int type;
 int skiptokens=0;
-int numberofouttokens=0;
 int returnvalue;
 int arraysize;
 
@@ -1172,8 +1210,6 @@ for(count=start;count<end;count++) {
 
 }
 
-outcount=start;
-
 for(count=start;count<end;count++) { 
 	tokentype=0;
 
@@ -1198,30 +1234,28 @@ for(count=start;count<end;count++) {
 
 		  	if(retval.val.type == VAR_STRING) {		/* returning string */   
 		  		sprintf(temp[outcount++],"\"%s\"",retval.val.s);
-		  		numberofouttokens++;
 		  	}
 		  	else if(retval.val.type == VAR_INTEGER) {		/* returning integer */
 				sprintf(temp[outcount++],"%d",retval.val.i);
-				numberofouttokens++;
 	 	  	}
 		  	else if(retval.val.type == VAR_NUMBER) {		/* returning double */
 				sprintf(temp[outcount++],"%.6g",retval.val.d);		 		
-				numberofouttokens++;	
 		  	}
 		  	else if(retval.val.type == VAR_SINGLE) {		/* returning single */
 				sprintf(temp[outcount++],"%f",retval.val.f);
-				numberofouttokens++;
 		  	}
 		 	else if(retval.val.type == VAR_LONG) {			/* returning long */
 				sprintf(temp[outcount++],"%ld",retval.val.l);
-				numberofouttokens++;
 		  	}
-		  	count=countx-1;
+
+		  	count += skiptokens;
 	    }
 
 	 }
 	 else if(IsVariable(tokens[count]) == TRUE) {
 	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
+
+	    //DEBUG_PRINT_DEC(skiptokens);
 
 	    tokentype=SUBST_VAR;
 
@@ -1240,13 +1274,13 @@ for(count=start;count<end;count++) {
 	    
 	    if(type == VAR_UDT) {
 		type=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);		/* get field type id udt */
-		if(type == -1) return(TYPE_FIELD_DOES_NOT_EXIST);	
+		if(type == -1) return(-1);	
 	    }
-	
+
 	    if(type == VAR_STRING) {
 		   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
 			returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
-		      	if(returnvalue != NO_ERROR) return(returnvalue);
+		      	if(returnvalue != NO_ERROR) return(-1);
 
 			b=val.s;			/* get start */
 			b += split.x;
@@ -1255,8 +1289,6 @@ for(count=start;count<end;count++) {
 
 			d=temp[outcount++];
 		 	*d++='"';
-
-			numberofouttokens++;
 
 			if(split.y == 0) split.y=1;
 
@@ -1270,7 +1302,6 @@ for(count=start;count<end;count++) {
 		    {
 		      if(*tokens[count] == '"') {
 			strcpy(temp[outcount++],tokens[count]);
-			numberofouttokens++;
 		      }
 		      else
 		      {
@@ -1281,7 +1312,6 @@ for(count=start;count<end;count++) {
 		        GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
 
 		  	sprintf(temp[outcount++],"\"%s\"",val.s);
-			numberofouttokens++;
 
 		      }
 	      
@@ -1291,29 +1321,23 @@ for(count=start;count<end;count++) {
 		}
 		else if(type == VAR_NUMBER) {
 		    sprintf(temp[outcount++],"%.6g",val.d);
-		    numberofouttokens++;
 		}
 		else if(type == VAR_INTEGER) {
 		    sprintf(temp[outcount++],"%d",val.i);
-	  	    numberofouttokens++;
 		}
 		else if(type == VAR_SINGLE) {   
 		    sprintf(temp[outcount++],"%f",val.f);
-		    numberofouttokens++;
+
 	       	}
 		else if(type == VAR_LONG) {   
 		    sprintf(temp[outcount++],"%ld",val.l);
-		    numberofouttokens++;
+
 	       	}
-
-	 	count += skiptokens;
-
 	 }
-	 else
-	 {
-	  	strcpy(temp[outcount++],tokens[count]);
-	 	numberofouttokens++; 
-	 }   
+	else
+	{
+		strcpy(temp[outcount++],tokens[count]);
+	}   
 
 	if(count >= end) break;
 }
@@ -1324,9 +1348,11 @@ memset(out,0,MAX_SIZE*MAX_SIZE);
 
 for(count=0;count<outcount;count++) {
 	strcpy(out[count],temp[count]);
+
+//	//printf("out[%d]=%s\n",count,out[count]);
 }
 
-return(0);
+return(outcount);
 }
 
 /*

@@ -160,4 +160,3 @@ void GetCurrentFunctionFilename(char *buf);
 void FreeFunctionsAndVariables(void);
 void FreeVariablesList(vars_t *vars);
 
-

@@ -63,12 +63,18 @@ int LoadFile(char *filename) {
 FILE *handle; 
 int filesize;
 
+sigsetjmp(savestate,1);		/* save current context */
+
 handle=fopen(filename,"r");				/* open file */
 if(!handle) return(FILE_NOT_FOUND);
+
+sigsetjmp(savestate,1);		/* save current context */
 
 fseek(handle,0,SEEK_END);				/* get file size */
 filesize=ftell(handle);
 fseek(handle,0,SEEK_SET);				/* seek back to start */
+
+sigsetjmp(savestate,1);		/* save current context */
 	
 if(FileBuffer == NULL) {				/* first time */
 	FileBuffer=malloc(filesize+1);			/* allocate buffer */
@@ -80,6 +86,8 @@ else
 	if(realloc(FileBuffer,FileBufferSize+filesize) == NULL) return(NO_MEM);		/* resize buffer */
 }
 
+sigsetjmp(savestate,1);		/* save current context */
+
 FileBufferPosition=FileBuffer;
 
 if(fread(FileBuffer,filesize,1,handle) != 1) return(READ_ERROR);		/* read to buffer */
@@ -90,6 +98,8 @@ endptr=(FileBuffer+filesize);		/* point to end */
 FileBufferSize += filesize;
 
 strcpy(CurrentFile,filename);
+
+sigsetjmp(savestate,1);		/* save current context */
 
 SetIsFileLoadedFlag();
 ClearIsRunningFlag();
@@ -120,6 +130,8 @@ if(filename != NULL) {
 SetIsRunningFlag();
 SwitchToFileBuffer();			/* switch to file buffer */
 
+SetCurrentFunctionLine(1);
+
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
 SetFunctionCallPtr(saveCurrentBufferPosition);		/* set start of current function to buffer start */
 
@@ -141,6 +153,8 @@ do {
 
 	memset(linebuf,0,MAX_SIZE);
 
+	SetCurrentFunctionLine(GetCurrentFunctionLine()+1);
+
 }    while(*CurrentBufferPosition != 0); 			/* until end */
 
 CurrentBufferPosition=saveCurrentBufferPosition;
@@ -159,6 +173,7 @@ return(NO_ERROR);
 
 int ExecuteLine(char *lbuf) {
 char *tokens[MAX_SIZE][MAX_SIZE];
+char *outtokens[MAX_SIZE][MAX_SIZE];
 double exprone;
 int tc;
 varsplit split;
@@ -175,13 +190,14 @@ int returnvalue;
 char *functionname[MAX_SIZE];
 int lc=GetCurrentFunctionLine();
 int end;
+int IsValid=FALSE;
+
+GetCurrentFunctionName(functionname);
 
 c=*lbuf;
 if((c == '\r') || (c == '\n') || (c == 0)) return(0);			/* blank line */
 
 if(GetTraceFlag()) {		/* print statement if trace is enabled */
-	GetCurrentFunctionName(functionname);
-
 	printf("***** Tracing line %d in function %s: %s\n",GetCurrentFunctionLine(),functionname,lbuf);
 }
 
@@ -200,7 +216,7 @@ tc=TokenizeLine(lbuf,tokens,TokenCharacters);			/* tokenize line */
 
 for(count=0;count < tc;count++) {
 	if(strcmp(tokens[count],"#") == 0) {	/* found comment */
-		if(count == 0) return;		/* ignore lines with only comments */
+		if(count == 0) return(0);		/* ignore lines with only comments */
 
 		/* remove comments from array */
 
@@ -213,13 +229,20 @@ for(count=0;count < tc;count++) {
 	}
 }
 
-if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) return(SYNTAX_ERROR);		/* check syntax */
+//if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) return(SYNTAX_ERROR);		/* check syntax */
 
-SetCurrentFunctionLine(lc++);
+if(IsStatement(tokens[0])) {
+	returnvalue=CallIfStatement(tc,tokens); /* run if statement */
 
-if(IsStatement(tokens[0])) return(CallIfStatement(tc,tokens)); /* run  if statement */
+	printf("%s\n",tokens[0]);
 
-setjmp(savestate);		/* save current context */
+	if(returnvalue > 0) {
+		PrintError(returnvalue);
+		return(-1);
+	}
+
+	IsValid=TRUE;
+}
 
 /*
  *
@@ -230,11 +253,21 @@ setjmp(savestate);		/* save current context */
 for(count=1;count<tc;count++) {
 
 	if(strcmp(tokens[count],"=") == 0) {
- 		ParseVariableName(tokens,0,count-1,&split);			/* split variable */  	
+		IsValid=TRUE;
 
-		SubstituteVariables(count+1,tc,tokens,tokens);
- 		//if(returnvalue > 0) return(returnvalue);
-		
+		//for(int countx=0;countx<count;countx++) {
+		//	printf("assign tokens[%d]=%s\n",countx,tokens[countx]);
+		//}
+
+ 		ParseVariableName(tokens,0,count,&split);			/* split variable */  	
+
+		//printf("assign name=%s\n",split.name);
+		//printf("assign x=%d\n",split.x);
+		//printf("assign y=%d\n",split.y);
+
+		returnvalue=SubstituteVariables(count+1,tc,tokens,outtokens);
+ 		if(returnvalue == -1) return(returnvalue);
+
 	 	if(strlen(split.fieldname) == 0) {			/* use variable name */
 	 		vartype=GetVariableType(split.name);
 		}
@@ -244,14 +277,14 @@ for(count=1;count<tc;count++) {
 			if(vartype == -1) return(TYPE_FIELD_DOES_NOT_EXIST);
 		}
 
-		c=*tokens[count+1];
+		c=*outtokens[count+1];
 
 		if((c != '"') && (vartype == VAR_STRING)) return(TYPE_ERROR);
 
 		if( (c == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
 			if(vartype == -1) CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
 		  		 
-		  	ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
+		  	ConatecateStrings(count+1,tc,outtokens,&val);					/* join all the strings on the line */
 
 		  	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);		/* set variable */
 		  	return(0);
@@ -261,18 +294,18 @@ for(count=1;count<tc;count++) {
 
 		 if( ((c == '"') && (vartype != VAR_STRING))) return(TYPE_ERROR);
 	
-		 if(IsValidExpression(tokens,count+1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+		// if(IsValidExpression(outtokens,0,returnvalue) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 	
-		 exprone=EvaluateExpression(tokens,count+1,tc);
+		 exprone=EvaluateExpression(outtokens,0,returnvalue);
 
 		 if(vartype == VAR_NUMBER) {
 	 		val.d=exprone;
 	 	 }
 		 else if(vartype == VAR_STRING) {
-			returnvalue=SubstituteVariables(count+1,count+1,tokens,tokens);
- 			if(returnvalue > 0) return(returnvalue);
+			returnvalue=SubstituteVariables(count+1,count+1,tokens,outtokens);
+ 			if(returnvalue == -1) return(returnvalue);
 
-		 	strcpy(val.s,tokens[count+1]);  
+		 	strcpy(val.s,outtokens[0]);  
 		}
 		else if(vartype == VAR_INTEGER) {
 	 		val.i=exprone;
@@ -312,10 +345,19 @@ for(count=1;count<tc;count++) {
 /* call user function */
 
 if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
-	return(CallFunction(tokens,0,tc));
+	CallFunction(tokens,0,tc);
+	IsValid=TRUE;
 } 
 
-return(INVALID_STATEMENT);
+if(IsValid == FALSE) return(INVALID_STATEMENT);
+
+if(check_breakpoint(GetCurrentFunctionLine(),functionname) == TRUE) {	/* if there is a breakpoint */
+	printf("***** Reached breakpoint: function %s line %d\n",functionname,GetCurrentFunctionLine());
+
+	ClearIsRunningFlag();
+}
+
+return(0);
 }
 
 /*
@@ -351,11 +393,16 @@ int returnvalue;
 char *printtokens[MAX_SIZE][MAX_SIZE];
 int endtoken;
 bool IsInBracket;
+vars_t *tokenvar;
+
+sigsetjmp(savestate,1);		/* save current context */
 
 for(count=1;count<tc;count++) {
 	IsInBracket=FALSE;
 
 	/* if string literal, string variable or function returning string */
+
+	sigsetjmp(savestate,1);		/* save current context */
 
 	for(endtoken=count;endtoken<tc;endtoken++) {
 		/* is function parameter or array subscript */
@@ -365,31 +412,44 @@ for(count=1;count<tc;count++) {
 		if((IsInBracket == FALSE) && (strcmp(tokens[endtoken],",") == 0)) break;		/* found separator not subscript */
 	}
 
+	sigsetjmp(savestate,1);		/* save current context */
+
+	/* if printing array */
+
+	if((GetVariableXSize(tokens[count]) > 0) || (GetVariableYSize(tokens[count]) > 0)) {		/* is array */
+		if(IsInBracket == FALSE) {
+			PrintError(MISSING_SUBSCRIPT);
+			return(-1);
+		}
+	}
+
+	/* printing string */
 	if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
-
 		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
-
+	
 		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);	
-		if(returnvalue > 0) return(returnvalue);		/* error occurred */
+		if(returnvalue == -1) return(returnvalue);		/* error occurred */
 
-		count += ConatecateStrings(count,endtoken,printtokens,&val);		/* join all the strings in the token */
+		count += ConatecateStrings(0,returnvalue,printtokens,&val);		/* join all the strings in the token */
 
 		printf("%s ",val.s);
 	}
 	else
 	{
+		sigsetjmp(savestate,1);		/* save current context */
+
 		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
 
 		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);
-		if(returnvalue > 0) return(returnvalue);		/* error occurred */
+		if(returnvalue == -1) return(returnvalue);		/* error occurred */
 
-		memcpy(printtokens,tokens,MAX_SIZE*4);
+		//memcpy(printtokens,tokens,MAX_SIZE*4);
 
-		if(IsValidExpression(tokens,count,endtoken) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+		//if(IsValidExpression(tokens,count,endtoken) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 	
 		retval.val.type=0;
-		retval.val.d=EvaluateExpression(printtokens,count,endtoken);
-
+		retval.val.d=EvaluateExpression(printtokens,0,returnvalue);
+	
 		/* if it's a condition print True or False */
 
 		for(countx=count;countx<tc;countx++) {
@@ -412,6 +472,8 @@ for(count=1;count<tc;count++) {
 
 	count=endtoken;
 }
+
+sigsetjmp(savestate,1);		/* save current context */
 
 printf("\n");
 
@@ -470,21 +532,21 @@ SetFunctionFlags(IF_STATEMENT);
 while(*CurrentBufferPosition != 0) {
 
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
-		exprtrue=EvaluateCondition(tokens,1,tc);
 
-		if(exprtrue == -1) return;
+		exprtrue=EvaluateCondition(tokens,1,tc);
+		if(exprtrue == -1) return(-1);
 
 		if(exprtrue == 1) {
 			saveexprtrue=exprtrue;
 
 			do {
-				setjmp(savestate);		/* save current context */
+				sigsetjmp(savestate,1);		/* save current context */
 
 		   		CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 				if(*CurrentBufferPosition == 0) return(0);
 
 				returnvalue=ExecuteLine(buf);
-				if(returnvalue > 0) return(returnvalue);
+				if( returnvalue == -1) return(returnvalue);
 
 				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 				if(tc == -1) return(SYNTAX_ERROR);
@@ -520,13 +582,13 @@ while(*CurrentBufferPosition != 0) {
 
 		if(saveexprtrue == 0) {
 	    		do {
-				setjmp(savestate);		/* save current context */
+				sigsetjmp(savestate,1);		/* save current context */
 
 	   			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 				if(*CurrentBufferPosition == 0) return(0);
 
 				returnvalue=ExecuteLine(buf);
-				if(returnvalue > 0) return(returnvalue);
+				if( returnvalue == -1) return(returnvalue);
 
 				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
@@ -587,6 +649,7 @@ int vartype;
 varsplit split;
 int returnvalue;
 int lc=GetSaveInformationLineCount();
+char *outtokens[MAX_SIZE][MAX_SIZE];
 
 SetFunctionFlags(FOR_STATEMENT);
 
@@ -606,46 +669,42 @@ if(IsValidVariableOrKeyword(tokens[1]) == FALSE) {		/* check if variable name is
 	return(SYNTAX_ERROR);
 }
 
-ParseVariableName(tokens,1,count-1,&split);
+returnvalue=SubstituteVariables(countx+1,tc,tokens,outtokens);
+if(returnvalue == -1) return(returnvalue);
 
+ParseVariableName(tokens,1,count-1,&split);
 
 //  0  1     2 3 4  5
 // for count = 1 to 10
 
-for(count=1;count<tc;count++) {
-	if(strcmpi(tokens[count],"TO") == 0) break;		/* found to */
+for(count=3;count<tc;count++) {
+	if(strcmpi(outtokens[count],"TO") == 0) break;		/* found to */
 }
 
 if(count == tc) return(SYNTAX_ERROR);
 
 for(countx=1;countx<tc;countx++) {
-	if(strcmpi(tokens[countx],"step") == 0) break;		/* found step */
+	if(strcmpi(outtokens[countx],"step") == 0) break;		/* found step */
 }
 
 if(countx == tc) {
 	steppos=1;
 }
 else
-{
-	returnvalue=SubstituteVariables(countx+1,tc,tokens,tokens);
-	if(returnvalue > 0) return(returnvalue);
-	
+{	
 	if(IsValidExpression(tokens,countx+1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 
-	steppos=EvaluateExpression(tokens,countx+1,tc);
+	steppos=EvaluateExpression(tokens,0,returnvalue);
 }
 
 //  0   1    2 3 4  5
 // for count = 1 to 10
 
-returnvalue=SubstituteVariables(1,tc,tokens,tokens);
-if(returnvalue > 0) return(returnvalue);
+//if(IsValidExpression(outtokens,0,count) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+//if(IsValidExpression(outtokens,count+1,countx) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 
-if(IsValidExpression(tokens,3,count) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
-if(IsValidExpression(tokens,count+1,countx) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
-
-exprone=EvaluateExpression(tokens,3,count);			/* start value */
-exprtwo=EvaluateExpression(tokens,count+1,countx);			/* end value */
+exprone=EvaluateExpression(outtokens,3,count-1);			/* start value */
+exprtwo=EvaluateExpression(outtokens,count+1,countx);			/* end value */
 
 if(IsVariable(split.name) == FALSE) {				/* create variable if it doesn't exist */
 	CreateVariable(split.name,"DOUBLE",split.x,split.y);
@@ -692,7 +751,11 @@ PushSaveInformation();					/* save line information */
 CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
 	
 do {
-	setjmp(savestate);		/* save current context */
+	sigsetjmp(savestate,1);		/* save current context */
+
+	SetCurrentFunctionLine(GetCurrentFunctionLine()+1);
+
+	sigsetjmp(savestate,1);		/* save current context */
 
 	returnvalue=ExecuteLine(buf);
 	if(returnvalue != 0) {
@@ -700,28 +763,30 @@ do {
 		return(returnvalue);
 	}
 
-	setjmp(savestate);		/* save current context */
+	sigsetjmp(savestate,1);		/* save current context */
 
 	if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program halted */
+
+	sigsetjmp(savestate,1);		/* save current context */
 
 	d=*buf+(strlen(buf)-1);
 	if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
 	if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
 
-	SetCurrentFunctionLine(lc++);
-
  	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
-	setjmp(savestate);
+	sigsetjmp(savestate,1);
 
 	if(strcmpi(tokens[0],"NEXT") == 0) {   
-		setjmp(savestate);		/* save current context */
+		sigsetjmp(savestate,1);		/* save current context */
   
 		SetCurrentFunctionLine(GetSaveInformationLineCount());
 		lc=GetSaveInformationLineCount();
 
 		CurrentBufferPosition=GetSaveInformationBufferPointer();			/* get pointer to start of for statement */
 
+		sigsetjmp(savestate,1);		/* save current context */
+  
 	      /* increment or decrement counter */
 	      	if( (vartype == VAR_NUMBER) && (ifexpr == 1)) loopcount.d -= steppos;
 	      	if( (vartype == VAR_NUMBER) && (ifexpr == 0)) loopcount.d += steppos;      
@@ -732,6 +797,8 @@ do {
 
 	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
+		sigsetjmp(savestate,1);		/* save current context */
+
 	      	if(*CurrentBufferPosition == 0) {
 	      		PopSaveInformation();				 
 			ClearFunctionFlags(FOR_STATEMENT);
@@ -740,11 +807,11 @@ do {
 	     	 }
     	} 
 
-	setjmp(savestate);		/* save current context */
+	sigsetjmp(savestate,1);		/* save current context */
   
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
 
-	setjmp(savestate);		/* save current context */
+	sigsetjmp(savestate,1);		/* save current context */
   
 } while(
        ( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d >= exprtwo)) ||
@@ -755,7 +822,7 @@ do {
        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f <= exprtwo))
        );
 
-setjmp(savestate);		/* save current context */
+sigsetjmp(savestate,1);		/* save current context */
 
 return(NO_ERROR);	
 }
@@ -774,6 +841,7 @@ int return_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;
 int vartype;
 int substreturnvalue=0;
+char *outtokens[MAX_SIZE][MAX_SIZE];
 
 SetFunctionFlags(FUNCTION_STATEMENT);
 
@@ -810,37 +878,37 @@ if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 	ConatecateStrings(1,tc,tokens,&retval.val);		/* get strings */
 }
 else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
-	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
-	if(substreturnvalue > 0) {
+	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
+	if(substreturnvalue == -1) {
 		retval.has_returned_value=FALSE;	/* clear has returned value flag */
 		return(substreturnvalue);
 	}
 	
 	 if(IsValidExpression(tokens,1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 	
-	retval.val.i=EvaluateExpression(tokens,1,tc);
+	retval.val.i=EvaluateExpression(outtokens,0,substreturnvalue);
 }
 else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 
-	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
-	if(substreturnvalue > 0) {
+	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
+	if(substreturnvalue == -1) {
 		retval.has_returned_value=FALSE;	/* clear has returned value flag */
 		return(substreturnvalue);
 	}
 
-	 if(IsValidExpression(tokens,1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+	 if(IsValidExpression(outtokens,0,substreturnvalue) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 	
-	 retval.val.d=EvaluateExpression(tokens,1,tc);
+	 retval.val.d=EvaluateExpression(outtokens,0,substreturnvalue);
 }
 else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
-	substreturnvalue=SubstituteVariables(1,tc,tokens,tokens);
-	if(substreturnvalue > 0) {
+	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
+	if(substreturnvalue == -1) {
 		retval.has_returned_value=FALSE;	/* clear has returned value flag */
 		return(substreturnvalue);
 	}
 
 	 if(IsValidExpression(tokens,1,tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 	
-	retval.val.f=EvaluateExpression(tokens,1,tc);	
+	retval.val.f=EvaluateExpression(outtokens,0,substreturnvalue);	
 }
 
 ReturnFromFunction();			/* return */
@@ -880,14 +948,20 @@ int exprtrue;
 char *d;
 int count;
 char *condition_tokens[MAX_SIZE][MAX_SIZE];
-char *condition_tokens_substituted[MAX_SIZE][MAX_SIZE];
 int condition_tc;
 int substreturnvalue;
 char *saveBufferPosition;
+int copycount;
 
 if(tc < 1) return(SYNTAX_ERROR);			/* Too few parameters */
 
 PushSaveInformation();					/* save line information */
+
+count=0;
+
+for(copycount=1;copycount<tc;copycount++) {
+	strcpy(tokens[count++],tokens[copycount]);
+}
 
 memcpy(condition_tokens,tokens,((tc*MAX_SIZE)*MAX_SIZE)/sizeof(tokens));		/* save copy of condition */
 
@@ -897,20 +971,20 @@ SetFunctionFlags(WHILE_STATEMENT);
 saveBufferPosition=CurrentBufferPosition;
 	
 do {
-	     setjmp(savestate);		/* save current context */
+	     sigsetjmp(savestate,1);		/* save current context */
 
 	     CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
-	     if(IsValidExpression(tokens,1,condition_tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
+	//     if(IsValidExpression(tokens,1,condition_tc) == FALSE) return(INVALID_EXPRESSION);	/* invalid expression */
 
-	     setjmp(savestate);		/* save current context */
+	     sigsetjmp(savestate,1);		/* save current context */
 
-	     exprtrue=EvaluateCondition(condition_tokens,1,condition_tc);			/* do condition */
+	     exprtrue=EvaluateCondition(condition_tokens,0,condition_tc+1);			/* do condition */
 
 	     if(exprtrue == 0) {			/* if condition is true, skip to end */
 	     		while(*CurrentBufferPosition != 0) {
 
-				setjmp(savestate);		/* save current context */
+				sigsetjmp(savestate,1);		/* save current context */
 
 	     		  	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
@@ -928,7 +1002,7 @@ do {
 
 	     /* if condition is false, execute lines until condition is true */
 
-	     setjmp(savestate);		/* save current context */
+	     sigsetjmp(savestate,1);		/* save current context */
 
 	     tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	     if(tc == -1) return(SYNTAX_ERROR);
@@ -1048,13 +1122,13 @@ else
 while(*CurrentBufferPosition != 0) {
 	savebuffer=CurrentBufferPosition;
 
-	setjmp(savestate);		/* save current context */
+	sigsetjmp(savestate,1);		/* save current context */
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,MAX_SIZE);			/* get data */
 
 	TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
-	SetBreakFlag();		/* set break flag - will exit from for loop then it returns to the for loop */
+	ClearIsRunningFlag();
 
 	if((strcmpi(tokens[1],"WEND") == 0) && (GetFunctionFlags() & WHILE_STATEMENT)){
 	 	ClearFunctionFlags(WHILE_STATEMENT);
@@ -1095,18 +1169,24 @@ for(count=1;count<tc;count++) {
 }
 
 if(count < tc) {		/* found type */
-	retval.val.i=VAR_INTEGER;
+	vartype=CheckVariableType(tokens[count+1]);	/* get variable type */
+	if(vartype == -1) {
+		PrintError(INVALID_VARIABLE_TYPE);
+		return(-1);
+	}
+
+	retval.val.type=vartype;
 	retval.val.i=CreateVariable(split.name,tokens[count+1],split.x,split.y);
 }
 else
 {
-	retval.val.i=VAR_INTEGER;
+	retval.val.type=VAR_NUMBER;
 	retval.val.i=CreateVariable(split.name,"DOUBLE",split.x,split.y);
 }
 
 if(retval.val.i != NO_ERROR) return(retval.val.i);
 
-return;
+return(0);
 }
 
 /*
@@ -1227,7 +1307,7 @@ while(*CurrentBufferPosition != 0) {
 
 	if(strcmpi(trytokens[0],"CATCH") == 0) {	/* reached catch statement without error occurring in try block */
 		while(*CurrentBufferPosition != 0) {
-			setjmp(savestate);		/* save current context */
+			sigsetjmp(savestate,1);		/* save current context */
 
 			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
@@ -1259,7 +1339,7 @@ while(*CurrentBufferPosition != 0) {
 					if(strcmpi(trytokens[0],"ENDTRY") == 0) return(0);		/* at end of catch block */
 
 					returnvalue=ExecuteLine(buf);
-					if(returnvalue > 0) return(returnvalue);		/* run statement and return if error */
+					if( returnvalue == -1) return(returnvalue);		/* run statement and return if error */
 				}
 			}
 		}
@@ -1757,18 +1837,6 @@ strcpy(tbuf,TokenCharacters);
 
 void SwitchToFileBuffer(void) {
 CurrentBufferPosition=FileBufferPosition;
-}
-
-void SetBreakFlag(void) {
-Flags |= BREAK_FLAG;
-}	
-
-void ClearBreakFlag(void) {
-Flags &= ~BREAK_FLAG;
-}	
-
-int GetBreakFlag(void) {
-return((Flags & BREAK_FLAG) >> 4);
 }
 
 int IncludeFile(char *filename) {
