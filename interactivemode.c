@@ -157,11 +157,8 @@ while(1) {
 
 			SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));	/* read line from buffer */
 		
-			returnvalue=ExecuteLine(linebuf);		/* run line */
-	   		if(returnvalue != 0) {
-				SetLastError(returnvalue);
-
-				PrintError(returnvalue);
+			if(ExecuteLine(linebuf) == -1) {		/* run line */
+				PrintError(GetLastError());
 				break;
 			}
 				
@@ -291,10 +288,11 @@ ExecuteFile(currentfile);
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns: nothing
  *
  */
-int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+
+void trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if(tc < 2) {			/* Display trace status */
 	if(GetTraceFlag() == TRUE) {
 		printf("Trace is ON\n");
@@ -304,7 +302,7 @@ if(tc < 2) {			/* Display trace status */
 		printf("Trace is OFF\n");
 	}
 
-	return(0);	
+	return;	
 }
 
 if(strcmpi(tokens[1],"ON") == 0) {		/* enable trace */
@@ -318,7 +316,7 @@ else
 	PrintError(INVALID_VALUE);
 }
 
-return(0);
+return;
 }
 
 /*
@@ -330,7 +328,7 @@ return(0);
  * Returns error number on error or 0 on success
  *
  */
-int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+void set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 //if(tc < 2) {						/* Not enough parameters */
 //	PrintError(SYNTAX_ERROR);

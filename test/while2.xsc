@@ -1,7 +1,14 @@
-b = 1
+x=0
 
-while b < 9
- print b
- b = b + 1
+while x < 5
+	y=0
+
+	while y < 5
+		print x,y
+		y=y+1
+	wend 
+
+	x=x+1
 wend
+
 

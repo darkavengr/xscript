@@ -1,4 +1,0 @@
-foreach a in "apples" "pears" "oranges" do
-print a
-endeach
-

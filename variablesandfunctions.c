@@ -58,7 +58,7 @@ extern char *TokenCharacters;
  *  Returns: Nothing
  * 
  */
-void InitializeMainFunction(char *args) {
+void InitializeMainFunction(char *progname,char *args) {
 FUNCTIONCALLSTACK newfunc;
 functions mainfunc;
 char *tokens[MAX_SIZE][MAX_SIZE];
@@ -66,7 +66,10 @@ char *tokens[MAX_SIZE][MAX_SIZE];
 strcpy(newfunc.name,"main");			/* create main function */
 PushFunctionCallInformation(&newfunc);
 
-DeclareBuiltInVariables(args);			/* declare built-in variables */
+DeclareBuiltInVariables(progname,args);			/* declare built-in variables */
+
+/* Add main function to list of functions */
+
 strcpy(tokens[0],"main");
 strcpy(tokens[1],args);
 
@@ -81,15 +84,24 @@ DeclareFunction(tokens,2);
  * Returns: Nothing
  * 
  */
-void DeclareBuiltInVariables(char *args) {
+void DeclareBuiltInVariables(char *progname,char *args) {
 varval cmdargs;
+
+cmdargs.s=malloc(MAX_SIZE);
+
+/* get program name */
+
+if(progname != NULL) {
+	CreateVariable("PROGRAMNAME","STRING",0,0);
+
+	strcpy(cmdargs.s,progname);
+	UpdateVariable("PROGRAMNAME",NULL,&cmdargs,0,0);
+}
 
 /* get command-line arguments, if any */
 
 if(args != NULL) {
 	CreateVariable("COMMAND","STRING",0,0);
-
-	cmdargs.s=malloc(MAX_SIZE);
 
 	strcpy(cmdargs.s,args);
 	UpdateVariable("COMMAND",NULL,&cmdargs,0,0);
@@ -133,15 +145,21 @@ int count;
 
 /* Check if variable name is a reserved name */
 
-if(IsStatement(name)) return(INVALID_VARIABLE_NAME);
+if(IsStatement(name)) {
+	SetLastError(INVALID_VARIABLE_NAME);
+	return(-1);
+}
 
-if(IsVariable(name)) return(VARIABLE_EXISTS);
+if(IsVariable(name)) {
+	SetLastError(VARIABLE_EXISTS);
+	return(-1);
+}
 
 /* Add entry to variable list */
 
 if(currentfunction->vars == NULL) {			/* first entry */
 	currentfunction->vars=malloc(sizeof(vars_t));		/* add new item to list */
-	if(currentfunction->vars == NULL) return(NO_MEM);
+	if(currentfunction->vars == NULL) SetLastError(NO_MEM);
 
 	currentfunction->vars_end=currentfunction->vars;
 	currentfunction->vars_end->last=NULL;
@@ -150,7 +168,7 @@ if(currentfunction->vars == NULL) {			/* first entry */
 else
 {
 	currentfunction->vars_end->next=malloc(sizeof(vars_t));		/* add new item to list */
-	if(currentfunction->vars_end->next == NULL) return(NO_MEM);
+	if(currentfunction->vars_end->next == NULL) SetLastError(NO_MEM);
 
 	currentfunction->vars_end=currentfunction->vars_end->next;
 }
@@ -159,31 +177,51 @@ else
 
 if(strcmpi(type,"DOUBLE") == 0) {		/* double precision */			
 	currentfunction->vars_end->val=malloc((xsize*sizeof(double))*(ysize*sizeof(double)));
-	if(currentfunction->vars_end->val == NULL) return(NO_MEM);
+
+	if(currentfunction->vars_end->val == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	currentfunction->vars_end->type_int=VAR_NUMBER;
 }
 else if(strcmpi(type,"STRING") == 0) {	/* string */
+
 	currentfunction->vars_end->val=calloc(((xsize*MAX_SIZE)+(ysize*MAX_SIZE)),sizeof(char *));
-	if(currentfunction->vars_end->val == NULL) return(NO_MEM);
+
+	if(currentfunction->vars_end->val == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	currentfunction->vars_end->type_int=VAR_STRING;
 }
 else if(strcmpi(type,"INTEGER") == 0) {	/* integer */
 	currentfunction->vars_end->val=malloc((xsize*sizeof(int))*(ysize*sizeof(int)));
-	if(currentfunction->vars_end->val == NULL) return(NO_MEM);
+
+	if(currentfunction->vars_end->val == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	currentfunction->vars_end->type_int=VAR_INTEGER;
 }
 else if(strcmpi(type,"SINGLE") == 0) {	/* single */
 	currentfunction->vars_end->val=malloc((xsize*sizeof(float))*(ysize*sizeof(float)));
-	if(currentfunction->vars_end->val == NULL) return(NO_MEM);
+
+	if(currentfunction->vars_end->val == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	currentfunction->vars_end->type_int=VAR_SINGLE;
 }
 else if(strcmpi(type,"LONG") == 0) {	/* long */
 	currentfunction->vars_end->val=malloc((xsize*sizeof(long long))*(ysize*sizeof(long long)));
-	if(currentfunction->vars_end->val == NULL) return(NO_MEM);
+	if(currentfunction->vars_end->val == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	currentfunction->vars_end->type_int=VAR_LONG;
 }
@@ -194,14 +232,20 @@ else {					/* user-defined type */
 	strcpy(currentfunction->vars_end->udt_type,type);		/* set udt type */
 
 	usertype=GetUDT(type);
-	if(usertype == NULL) return(INVALID_VARIABLE_TYPE);
+	if(usertype == NULL) SetLastError(INVALID_VARIABLE_TYPE);
 
 	currentfunction->vars_end->udt=malloc((xsize*ysize)*sizeof(UserDefinedType));	/* allocate user-defined type */
-	if(currentfunction->vars_end->udt == NULL) return(NO_MEM);
+	if(currentfunction->vars_end->udt == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	currentfunction->vars_end->udt->field=malloc(sizeof(UserDefinedTypeField));
-	if(currentfunction->vars_end->udt->field == NULL) return(NO_MEM);
-
+	if(currentfunction->vars_end->udt->field == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
+	
 	fieldptr=currentfunction->vars_end->udt->field;	
 	udtfieldptr=udt->field;
 	
@@ -218,10 +262,16 @@ else {					/* user-defined type */
 			memcpy(fieldptr,udtfieldptr,sizeof(UserDefinedTypeField));	/* copy udt */
 
 			fieldptr->fieldval=malloc(sizeof(vars_t));
-			if(fieldptr->fieldval == NULL) return(NO_MEM);
+			if(fieldptr->fieldval == NULL) {
+				SetLastError(NO_MEM);
+				return(-1);
+			}
 
 			fieldptr->next=malloc(sizeof(UserDefinedTypeField));		/* allocate field in user-defined type */
-			if(fieldptr->next == NULL) return(NO_MEM);
+			if(fieldptr->next == NULL) {
+				SetLastError(NO_MEM);
+				return(-1);
+			}
 
 			fieldptr=fieldptr->next;			udtfieldptr=udtfieldptr->next;
 
@@ -229,13 +279,13 @@ else {					/* user-defined type */
 	}
 }
 
-//DEBUG_PRINT_DEC(xsize);
 currentfunction->vars_end->xsize=xsize;				/* set size */
 currentfunction->vars_end->ysize=ysize;
 
 strcpy(currentfunction->vars_end->varname,name);		/* set name */
 currentfunction->vars_end->next=NULL;
 
+SetLastError(0);
 return(0);
 }
 
@@ -261,8 +311,6 @@ UserDefinedType *udtptr;
 UserDefinedTypeField *fieldptr;
 UserDefinedTypeField *udtfield;
 
-//printf("********** Update ***********\n");
-
 /* Find variable */
 
 next=currentfunction->vars;
@@ -273,29 +321,16 @@ while(next != NULL) {
 	next=next->next;
 }
 
-if(next == NULL) return(VARIABLE_DOES_NOT_EXIST);
+if(next == NULL) return(-1);
 
-//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
-
+//if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) return(-1);	/* outside array */
 
 /* update variable */
 
-//DEBUG_PRINT_HEX(next->type_int);
-
 if(next->type_int == VAR_NUMBER) {		/* double precision */	
-	      //DEBUG_PRINT_DOUBLE(val->d);
-	      //DEBUG_PRINT_DEC(x);
-	      //DEBUG_PRINT_DEC(y);
-	      //DEBUG_PRINT_DEC(next->xsize);
-	      //DEBUG_PRINT_DEC(next->ysize);
-	      
-	      //printf("pos=%d\n",(y*next->ysize)+(x*next->xsize));
-
 	      next->val[(y*next->ysize)+(x*next->xsize)].d=val->d;
 
-	      //DEBUG_PRINT_DOUBLE(next->val[(y*next->ysize)+(x*next->xsize)].d);
 	      return(0);
-
 }
 else if(next->type_int == VAR_STRING) {	/* string */
 	if(next->val[( (y*next->ysize)+(next->xsize*x))].s == NULL) {		/* if string element not allocated */
@@ -311,21 +346,24 @@ else if(next->type_int == VAR_STRING) {	/* string */
 	return(0);
 }
 else if(next->type_int == VAR_INTEGER) {	/* integer */
-	      next->val[(y*next->ysize)+(x*next->xsize)].i=val->i;
-	      return(0);
+	next->val[(y*next->ysize)+(x*next->xsize)].i=val->i;
+
+	return(0);
 }
 else if(next->type_int == VAR_SINGLE) {	/* single */
-	      next->val[x*sizeof(float)+(y*sizeof(float))].f=val->f;
-	      return(0);
+	next->val[x*sizeof(float)+(y*sizeof(float))].f=val->f;
+
+	return(0);
 }
 else if(next->type_int == VAR_LONG) {	/* long */
-	      next->val[x*sizeof(long long)+(y*sizeof(long long))].l=val->l;
-	      return(0);
+	next->val[x*sizeof(long long)+(y*sizeof(long long))].l=val->l;
+
+	return(0);
 }
 else {					/* user-defined type */	
 	next=GetVariablePointer(name);		/* get variable entry */
 	if(next == NULL) return(-1);
-	
+
 	udtfield=next->udt->field;
 
 	while(udtfield != NULL) {
@@ -334,7 +372,8 @@ else {					/* user-defined type */
 
 			if(udtfield->type == VAR_NUMBER) {
 			        udtfield->fieldval[(next->ysize*y)+(next->xsize*x)].d=val->d;
-			        return(0);
+
+				return(0);
 			 }
 			 else if(udtfield->type == VAR_STRING) {
 			 	if(udtfield->fieldval[( (y*next->ysize)+(next->xsize*x))].s == NULL) {		/* if string element not allocated */
@@ -346,7 +385,7 @@ else {					/* user-defined type */
 	      			}
 		
 			        strcpy(udtfield->fieldval[(next->ysize*y)+(next->xsize*x)].s,val->s);		/* assign value */
-			        return(0);
+				return(0);
 			 }
 			 else if(udtfield->type == VAR_INTEGER) {
 			        udtfield->fieldval[(y*next->ysize)+(next->xsize*x)].i=val->i;
@@ -357,7 +396,6 @@ else {					/* user-defined type */
 				return(0);
 			 }
 			 else {
-				SetLastError(INVALID_VARIABLE_TYPE);
 				return(-1);
 			}	
 		 }
@@ -395,16 +433,23 @@ while(next != NULL) {
 	if(strcmpi(next->varname,name) == 0) {		/* found variable */
 
 		if(next->type_int == VAR_UDT) {		/* if user-defined type */
-			if(realloc(next->udt,(x*y)*sizeof(UserDefinedType)) == NULL) return(NO_MEM);	/* resize buffer */
+			if(realloc(next->udt,(x*y)*sizeof(UserDefinedType)) == NULL) {
+				SetLastError(NO_MEM);	/* resize buffer */
+				return(-1);
+			}
 	  	}
 		else
 		{
-			if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) return(NO_MEM);	/* resize buffer */
+			if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) {
+				SetLastError(NO_MEM);	/* resize buffer */
+				return(-1);
+			}
 		}
   
 		next->xsize=x;		/* update x subscript */
 		next->ysize=y;		/* update y subscript */
 
+		SetLastError(0);
 		return(0);
  	}
 
@@ -427,14 +472,11 @@ return(-1);
 int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy) {
 vars_t *next;
 UserDefinedTypeField *udtfield;
-7
-if(name == NULL) return(-1);
 
-//printf("************** Get value ***************\n");
-
-//DEBUG_PRINT_DEC(GetVariableType(name));
-//DEBUG_PRINT_DEC(x);
-//DEBUG_PRINT_DEC(y);
+if(name == NULL) {
+	SetLastError(VARIABLE_DOES_NOT_EXIST);
+	return(-1);
+}
 
 if(((char) *name >= '0') && ((char) *name <= '9')) {
 	  switch(GetVariableType(name)) {
@@ -459,15 +501,15 @@ if(((char) *name >= '0') && ((char) *name <= '9')) {
 		break;
 	   }
 
-	return(0);
+	SetLastError(0);
 }
 
 if((char) *name == '"') {
 	val->s=malloc(strlen(name));				/* allocate string */
-	if(val->s == NULL) return(-1);
+	if(val->s == NULL) SetLastError(NO_MEM);
 
 	strcpy(val->s,name);
-	return(0);
+	SetLastError(0);
 }
 
 /* Find variable */
@@ -479,44 +521,62 @@ while(next != NULL) {
 	next=next->next;
 }
 
-if(next == NULL) return(-1);
+if(next == NULL) {
+	SetLastError(NO_MEM);
+	return(-1);
+}
 
-printf("%d %d %d %d\n",x,next->xsize,y,next->ysize);
-
-if( (x > next->xsize) || (y > next->ysize)) return(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+if((x > 1) || (y > 1)) {
+	if( (x > next->xsize) || (y > next->ysize)) {
+		SetLastError(INVALID_ARRAY_SUBSCRIPT);	/* outside array */
+		return(-1);
+	}
+}
 
 if(next->type_int == VAR_NUMBER) {
 	val->d=next->val[(y*next->ysize)+(x*next->xsize)].d;
 
-//	//DEBUG_PRINT_DOUBLE(val->d);
-//	//printf("Get pos=%d\n",(y*next->ysize)+(x*next->xsize));
-
+	SetLastError(0);
 	return(0);
 }
 else if(next->type_int == VAR_STRING) {
 	val->s=malloc(strlen(next->val[( (y*next->ysize)+(next->xsize*x))].s));				/* allocate string */
-	if(val->s == NULL) return(-1);
+	if(val->s == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	strcpy(val->s,next->val[( (y*next->ysize)+(next->xsize*x))].s);
+
+	SetLastError(0);
 	return(0);
 }
 else if(next->type_int == VAR_INTEGER) {
 	val->i=next->val[(y*next->ysize)+(x*next->xsize)].i;
+
+	SetLastError(0);
 	return(0);
 }
 else if(next->type_int == VAR_SINGLE) {
 	val->f=next->val[(y*next->ysize)+(x*next->xsize)].f;
+
+	SetLastError(0);
 	return(0);
 }
 else if(next->type_int == VAR_LONG) {
 	val->l=next->val[(y*next->ysize)+(x*next->xsize)].l;
+
+	SetLastError(0);
 	return(0);
 }
 else {					/* User-defined type */
-	if(GetFieldValueFromUserDefinedType(next->varname,fieldname,val,x,y) == -1) return(-1);
+	if(GetFieldValueFromUserDefinedType(next->varname,fieldname,val,x,y) == -1) SetLastError(-1);
+
+	SetLastError(0);
 	return(0);
 }	
 
+SetLastError(VARIABLE_DOES_NOT_EXIST);
 return(-1);
 }
 
@@ -532,12 +592,14 @@ return(-1);
 int GetVariableType(char *name) {
 vars_t *next;
 
-if(name == NULL) return(-1);				/* Variable does not exist */
-
+if(name == NULL) {
+	SetLastError(VARIABLE_DOES_NOT_EXIST);
+	return(-1);
+}
 
 if(((char) *name >= '0') && ((char) *name <= '9')) return(VAR_NUMBER);	/* Literal number */
 
-if((char) *name == '"') return(VAR_STRING);			/* Literal string */
+if((char) *name == '"') SetLastError(VAR_STRING);			/* Literal string */
 	
 /* Find variable name */
 
@@ -548,6 +610,7 @@ while(next != NULL) {
 	next=next->next;
 }
 
+SetLastError(-1);
 return(-1);
 }
 
@@ -607,11 +670,9 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 				if(strcmp(tokens[count],"[") == 0) ParseEndChar=']';
 
 				while(*tokens[count] != ParseEndChar) {
-					printf("Missing end\n");
-
 					if(count == end) {		/* Missing end */
-						PrintError(SYNTAX_ERROR);
-						return(SYNTAX_ERROR);
+						SetLastError(SYNTAX_ERROR);
+						return(-1);
 					}
 
 					count++;
@@ -619,24 +680,18 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 			}
 
 			if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
-				//if((IsValidExpression(tokens,start,count-1) == FALSE) || (IsValidExpression(tokens,count+1,end) == FALSE)) {  /* invalid expression */
-				//	printf("bad comma\n");
+				if((IsValidExpression(tokens,start,count-1) == FALSE) || (IsValidExpression(tokens,count+1,end) == FALSE)) {  /* invalid expression */
+					printf("bad comma\n");
 
-				//	PrintError(INVALID_EXPRESSION);
-				//	return(-1);
-				//}
+					SetLastError(INVALID_EXPRESSION);
+					return(-1);
+				}
 	
 				evaltc=SubstituteVariables(start+1,count,tokens,evaltokens);
 				split->x=EvaluateExpression(evaltokens,0,evaltc);
 
-				for(int countx=start+1;countx<count;countx++) {
-					printf("tokens[%d]=%s\n",countx,tokens[countx]);
-				}
-
 				evaltc=SubstituteVariables(count+1,end,tokens,evaltokens);
 				split->y=EvaluateExpression(evaltokens,0,evaltc);
-
-				printf("3d array=%d %d\n",split->x,split->y);
 
 				commafound=TRUE;
 			 	break;
@@ -644,11 +699,10 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	}
 
 	if(commafound == FALSE) {			/* 2d array */
-	//	if(IsValidExpression(tokens,start+1,count-1) == FALSE) {	/* invalid expression */
-			
-	//		PrintError(SYNTAX_ERROR);
-	//		return(-1);
-	//	}
+		if(IsValidExpression(tokens,start+1,count-1) == FALSE) {	/* invalid expression */
+			SetLastError(SYNTAX_ERROR);
+			return(-1);
+		}
 
 		evaltc=SubstituteVariables(start+1,count,tokens,evaltokens);
 
@@ -676,10 +730,10 @@ if(fieldstart != start) {					/* if there is a field name and possible subscript
 				SubstituteVariables(count+1,end-1,tokens,evaltokens);
 				split->fieldy=EvaluateExpression(evaltokens,0,evaltc);
 
-			//	if((IsValidExpression(tokens,fieldstart+2,count) == FALSE) || (IsValidExpression(tokens,count+1,end-1) == FALSE)) {  /* invalid expression */
-			//		PrintError(SYNTAX_ERROR);
-			//		return(-1);
-			//	}
+				if((IsValidExpression(tokens,fieldstart+2,count) == FALSE) || (IsValidExpression(tokens,count+1,end-1) == FALSE)) {  /* invalid expression */
+					SetLastError(INVALID_EXPRESSION);
+					return(-1);
+				}
 
 			
 				break;
@@ -689,10 +743,10 @@ if(fieldstart != start) {					/* if there is a field name and possible subscript
 	      if(count == end) {			/* 2d array */  
 		      	evaltc=SubstituteVariables(start+2,end-1,tokens,evaltokens);
 
-			//if(IsValidExpression(tokens,start+2,end-1) == FALSE) {  /* invalid expression */
-			//	PrintError(SYNTAX_ERROR);
-			//	return(SYNTAX_ERROR);
-			//}
+			if(IsValidExpression(tokens,start+2,end-1) == FALSE) {  /* invalid expression */
+				SetLastError(INVALID_EXPRESSION);
+				return(-1);
+			}
 
 		  	split->fieldx=EvaluateExpression(evaltokens,0,evaltc);
 		        split->fieldy=1;
@@ -735,12 +789,14 @@ while(next != NULL) {
 			free(next);
 		}
 
-   		return(0);    
+   		SetLastError(0);
+		return(0);   
 	  }
 
 	 next=next->next;
 }
 
+SetLastError(VARIABLE_DOES_NOT_EXIST);
 return(-1);
 }
 
@@ -768,9 +824,15 @@ char *vartype[MAX_SIZE];
 UserDefinedType *udtptr;
 UserDefinedTypeField *udtfieldptr;
 
-if((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT) return(NESTED_FUNCTION);
+if((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT) {
+	SetLastError(NESTED_FUNCTION);
+	return(-1);
+}
 
-if(IsFunction(tokens[0]) == TRUE) return(FUNCTION_EXISTS);	/* Check if function already exists */
+if(IsFunction(tokens[0]) == TRUE) {
+	SetLastError(FUNCTION_EXISTS);	/* Check if function already exists */
+	return(-1);
+}
 
 if(funcs == NULL) {
 	funcs=malloc(sizeof(functions));		/* add new item to list */
@@ -781,7 +843,10 @@ if(funcs == NULL) {
 else
 {
 	funcs_end->next=malloc(sizeof(functions));		/* add new item to list */
-	if(funcs_end->next == NULL) return(NO_MEM);
+	if(funcs_end->next == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	previous=funcs_end;
 	funcs_end=funcs_end->next;
@@ -796,12 +861,13 @@ funcs_end->funcstart=GetCurrentBufferPosition();
 if(funcargcount <= 3) {		/* no parameters, only function () */
 	funcs_end->parameters=NULL;
 
-	if(strcmp(tokens[0],"main") == 0) {
+	if(strcmp(tokens[0],"main") == 0) {		/* main function doesn't need any parameters */
+		SetLastError(0);
 		return(0);
 	}
 	else
 	{
-		return(FindEndOfunction());			/* find end of declared function */
+		if(FindEndOfunction() == -1) return(-1);			/* find end of declared function */
 	}	
 }
 
@@ -823,7 +889,10 @@ for(count=2;count<funcs_end->funcargcount-1;count++) {
 
 	 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
 				udtptr=GetUDT(tokens[count+2]);
-				if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
+				if(udtptr == NULL) {
+					SetLastError(INVALID_VARIABLE_TYPE);
+					return(-1);
+				}
 
 				strcpy(vartype,tokens[count+2]);
 		}
@@ -895,19 +964,21 @@ for(count=2;count<funcs_end->funcargcount-1;count++) {
 
 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
 		udtptr=GetUDT(tokens[count+1]);
-		if(udtptr == NULL) return(INVALID_VARIABLE_TYPE);
+		if(udtptr == NULL) SetLastError(INVALID_VARIABLE_TYPE);
 	}
 
 	strcpy(funcs_end->returntype,tokens[funcargcount-1]);
 
 if(strcmp(tokens[0],"main") == 0) {
+	SetLastError(0);
 	return(0);
 }
 else
 {
-	return(FindEndOfunction());			/* find end of declared function */
+	if(FindEndOfunction() == -1) return(-1);			/* find end of declared function */
 }
 
+SetLastError(0);
 return(0);
 }
 
@@ -922,11 +993,15 @@ do {
 
 	TokenizeLine(linebuf,tokens,TokenCharacters);			/* tokenize line */
 
-	if(strcmpi(tokens[0],"ENDFUNCTION") == 0) return(0);  
+	if(strcmpi(tokens[0],"ENDFUNCTION") == 0) {
+		SetLastError(0);  
+		return(0);
+	}
 	
 }  while(*GetCurrentBufferPosition() != 0); 			/* until end */
 
-return(FUNCTION_NO_ENDFUNCTION);
+SetLastError(FUNCTION_NO_ENDFUNCTION);
+return(-1);
 }
 
 int CheckFunctionExists(char *name) {
@@ -937,11 +1012,15 @@ next=funcs;						/* point to variables */
 /* find function name */
 
 while(next != NULL) {
-	if(strcmpi(next->name,name) == 0) return(0);		/* found name */   
+	if(strcmpi(next->name,name) == 0) {
+		SetLastError(0);		/* found name */
+		return(0);
+	}
 
 	next=next->next;
 }
 
+SetLastError(-1);
 return(-1);
 }
 
@@ -983,10 +1062,13 @@ while(next != NULL) {
 	next=next->next;
 }
 
-if(next == NULL) return(INVALID_STATEMENT);
+if(next == NULL) {
+	SetLastError(INVALID_STATEMENT);
+	return(-1);
+}
 
 returnvalue=SubstituteVariables(start+2,end,tokens,evaltokens);			/* substitute variables */
-//if(returnvalue > 0) return(substreturnvalue);
+if(returnvalue == -1) return(-1);
 
 /* save information about the calling function. The calling function is already on the stack */
 
@@ -1007,12 +1089,12 @@ PushFunctionCallInformation(&newfunc);			/* push function information onto call 
 
 currentfunction=functioncallstackend;			/* point to function */
 
-DeclareBuiltInVariables("");				/* add built-in variables */
+DeclareBuiltInVariables("","");				/* add built-in variables */
 
 /* add variables from parameters */
 
 parameters=next->parameters;
-count=start+2;		/* skip function name and ( */
+count=0;		/* skip function name and ( */
 
 while(parameters != NULL) {
 	if(parameters->type_int == VAR_UDT) {			/* user defined type */
@@ -1058,8 +1140,10 @@ while(*GetCurrentBufferPosition() != 0) {
 
 	if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
-	returnvalue=ExecuteLine(buf);			/* Run line */
-	if(returnvalue != 0) return(returnvalue);
+	if(ExecuteLine(buf) == -1) {			/* Run line */
+		SetLastError(returnvalue);
+		return(-1);
+	}
 
 	if(strcmpi(argbuf[0],"RETURN") == 0) break;
 
@@ -1069,6 +1153,7 @@ currentfunction->stat &= FUNCTION_STATEMENT;
 
 ReturnFromFunction();			/* return */
 
+SetLastError(0);
 return(0);
 }
 
@@ -1145,7 +1230,7 @@ return(num);
 	      int end			End of variables in tokens array
 	      char *tokens[][MAX_SIZE] Tokens array
  * 
- *  Returns error number on error or number of substituted tokens on success
+ *  Returns -1 on error or number of substituted tokens on success
  * 
   */
 
@@ -1213,7 +1298,7 @@ for(count=start;count<end;count++) {
 for(count=start;count<end;count++) { 
 	tokentype=0;
 
-	 if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
+	if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
 	 	tokentype=SUBST_FUNCTION;
 
 	 	s=count;	/* save start */
@@ -1255,32 +1340,39 @@ for(count=start;count<end;count++) {
 	 else if(IsVariable(tokens[count]) == TRUE) {
 	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 
-	    //DEBUG_PRINT_DEC(skiptokens);
-
 	    tokentype=SUBST_VAR;
 
 	    arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
 
-	    GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+	    if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy) == -1) return(-1);
+
 
 	    if(split.arraytype == ARRAY_SUBSCRIPT) {
-	//	    if(((split.x*split.y) > arraysize) || (arraysize < 0)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	//	    if(((split.x*split.y) > arraysize) || (arraysize < 0)) {
+	//		SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	//		return(-1);
+	//	    }
 	    }
 	    else if(split.arraytype == ARRAY_SLICE) {
-		    if((split.x*split.y) > strlen(val.s)) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+		    if((split.x*split.y) > strlen(val.s)) {
+		    	SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+			return(-1);
+		    }
 	    }
 
 	    type=GetVariableType(split.name); 	/* Get variable type */
 	    
 	    if(type == VAR_UDT) {
 		type=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);		/* get field type id udt */
-		if(type == -1) return(-1);	
+		if(type == -1) {
+			SetLastError(FIELD_DOES_NOT_EXIST);
+			return(-1);
+		}
 	    }
 
 	    if(type == VAR_STRING) {
 		   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
-			returnvalue=GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
-		      	if(returnvalue != NO_ERROR) return(-1);
+			if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy) == -1) return(-1);
 
 			b=val.s;			/* get start */
 			b += split.x;
@@ -1307,9 +1399,12 @@ for(count=start;count<end;count++) {
 		      {
 	    	      	arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
 
-	    		if(((split.x*split.y) > arraysize) || arraysize < 0) return(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+	    		if(((split.x*split.y) > arraysize) || arraysize < 0) {
+				SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+				return(-1);
+			}
 	
-		        GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy);
+		        if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy) == -1) return(-1);
 
 		  	sprintf(temp[outcount++],"\"%s\"",val.s);
 
@@ -1391,8 +1486,8 @@ while(*b != 0) {
 for(count=start+1;count<end;count++) {
 	if(strcmpi(tokens[count],"+") == 0) { 
 	   if(GetVariableType(tokens[count+1]) != VAR_STRING) {	/* not a string literal or string variable */
-	    PrintError(TYPE_ERROR);
-	    return(TYPE_ERROR);
+	   	SetLastError(TYPE_ERROR);
+		return(-1);
 	   }
 
 	   b=tokens[count+1];
@@ -1411,7 +1506,9 @@ for(count=start+1;count<end;count++) {
 	 }
 
 *d++=0;
-	return(0);
+
+SetLastError(0);
+return(0);
 }
 
 /*
@@ -1419,7 +1516,7 @@ for(count=start+1;count<end;count++) {
  * 
  *  In: char *typename		Variable type as string
  * 
- *  Returns error value on error or variable type on success
+ *  Returns -1 on error or variable type on success
  * 
   */
 int CheckVariableType(char *typename) {
@@ -1431,9 +1528,12 @@ int CheckVariableType(char *typename) {
 	  typecount++;
 	}
 
-	if(vartypenames[typecount] == NULL) return(-1);		/* invalid type */
+	if(vartypenames[typecount] == NULL) {
+		SetLastError(VARIABLE_DOES_NOT_EXIST);		/* invalid type */
+		return(-1);
+	}
 
-	return(typecount);
+return(typecount);
 }
 
 /*
@@ -1485,7 +1585,10 @@ FUNCTIONCALLSTACK *previous;
 
 if(functioncallstack == NULL) {
 	functioncallstack=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
-	if(functioncallstack == NULL) return(NO_MEM);
+	if(functioncallstack == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 	
 	functioncallstackend=functioncallstack;
 	functioncallstackend->last=NULL;
@@ -1493,7 +1596,10 @@ if(functioncallstack == NULL) {
 else
 {
 	functioncallstackend->next=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
-	if(functioncallstackend->next == NULL) return(NO_MEM);
+	if(functioncallstackend->next == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
 
 	previous=functioncallstackend;			/* save previous */
 	
@@ -1515,6 +1621,7 @@ functioncallstackend->next=NULL;
 
 currentfunction=functioncallstackend;
 
+SetLastError(0);
 return(0);
 }
 
@@ -1539,7 +1646,10 @@ SetCurrentBufferPosition(currentfunction->callptr);
 }
 
 int FindFirstVariable(vars_t *var) {
-if(currentfunction->vars == NULL) return(-1);
+if(currentfunction->vars == NULL) {
+	SetLastError(VARIABLE_DOES_NOT_EXIST);
+	return(-1);
+}
 
 findvar=currentfunction->vars;
 
@@ -1549,7 +1659,10 @@ findvar=findvar->next;
 }
 
 int FindNextVariable(vars_t *var) {
-if(findvar == NULL) return(-1);
+if(findvar == NULL) {
+	SetLastError(VARIABLE_DOES_NOT_EXIST);
+	return(-1);
+}
 
 memcpy(var,findvar,sizeof(vars_t));
 
@@ -1564,12 +1677,15 @@ next=currentfunction->vars;
 while(next != NULL) {
 	if(strcmp(next->varname,name) == 0) {
 		memcpy(var,next,sizeof(vars_t));
+
+		SetLastError(0);
 		return(0);
 	}
 
 	next=next->next;
 }
 
+SetLastError(VARIABLE_DOES_NOT_EXIST);
 return(-1);
 }
 
@@ -1591,7 +1707,10 @@ int AddUserDefinedType(UserDefinedType *newudt) {
 
 	if(udt == NULL) {			/* first entry */
 		udt=malloc(sizeof(UserDefinedType));		/* add link to the end */
-		if(udt == NULL) return(NO_MEM); 
+		if(udt == NULL) {
+			SetLastError(NO_MEM); 
+			return(-1);
+		}
 
 	last=udt;
 	}
@@ -1604,23 +1723,24 @@ int AddUserDefinedType(UserDefinedType *newudt) {
 		while(next != NULL) {
 	 		last=next;
 
-	 		if(strcmpi(next->name,newudt->name) == 0) return(-1);	/* udt exists */
+	 		if(strcmpi(next->name,newudt->name) == 0) {	/* udt exists */
+				/* add link to the end */	
 
-		next=next->next;
+				last->next=malloc(sizeof(UserDefinedType));
+				if(last->next == NULL) {
+					SetLastError(NO_MEM); 
+					return(-1);
+				}
+
+				last=last->next;
+
+				memcpy(last,newudt,sizeof(UserDefinedType));
+
+				SetLastError(0);
+				return(0);
+			}
+		}
 	}
-
-	
-	/* add link to the end */
-
-	last->next=malloc(sizeof(UserDefinedType));
-		if(last->next == NULL) return(NO_MEM); 
-
-	last=last->next;
-	}
-
-	memcpy(last,newudt,sizeof(UserDefinedType));
-
-	return(0);
 }
 
 int CopyUDT(UserDefinedType *source,UserDefinedType *dest) {
@@ -1629,7 +1749,10 @@ UserDefinedTypeField *destnext;
 int count;
 
 dest->field=malloc(sizeof(UserDefinedTypeField));
-if(dest->field == NULL) return(NO_MEM);
+if(dest->field == NULL) {
+	SetLastError(NO_MEM);
+	return(-1);
+}
 
 sourcenext=source->field;
 destnext=dest->field;
@@ -1644,47 +1767,72 @@ while(sourcenext != NULL) {
 
 	if(sourcenext->type == VAR_NUMBER) {		/* double precision */			
 		destnext->fieldval=malloc((sourcenext->xsize*sizeof(double))*(sourcenext->ysize*sizeof(double)));
-		if(destnext->fieldval == NULL) return(NO_MEM);
+		if(destnext->fieldval == NULL) {
+			SetLastError(NO_MEM);
+			return(-1);
+		}
 
 		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(double))*(sourcenext->ysize*sizeof(double)));
 	}
 	else if(sourcenext->type == VAR_SINGLE) {		/* single precision */			
 		destnext->fieldval=malloc((sourcenext->xsize*sizeof(float))*(sourcenext->ysize*sizeof(float)));
-		if(destnext->fieldval == NULL) return(NO_MEM);
+		if(destnext->fieldval == NULL) {
+			SetLastError(NO_MEM);
+			return(-1);
+		}
 
 		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(float))*(sourcenext->ysize*sizeof(float)));
 	}
 	if(sourcenext->type == VAR_INTEGER) {		/* integer */
 	destnext->fieldval=malloc((sourcenext->xsize*sizeof(int))*(sourcenext->ysize*sizeof(int)));
-		if(destnext->fieldval == NULL) return(NO_MEM);
+		if(destnext->fieldval == NULL) {
+			SetLastError(NO_MEM);
+			return(-1);
+		}
 
 		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(int))*(sourcenext->ysize*sizeof(int)));
 	}
 	if(sourcenext->type == VAR_LONG) {		/* long */
 	destnext->fieldval=malloc((sourcenext->xsize*sizeof(long long))*(sourcenext->ysize*sizeof(long long)));
-		if(destnext->fieldval == NULL) return(NO_MEM);
+		if(destnext->fieldval == NULL) {
+			SetLastError(NO_MEM);
+			return(-1);
+		}
 
 		memcpy(destnext->fieldval,sourcenext->fieldval,(sourcenext->xsize*sizeof(long long))*(sourcenext->ysize*sizeof(long long)));
 	}
 	else if(sourcenext->type == VAR_STRING) {	/* string */			
 		destnext->fieldval=calloc(((sourcenext->xsize*MAX_SIZE)*(sourcenext->ysize*MAX_SIZE)),sizeof(char *));
-		if(destnext->fieldval == NULL) return(NO_MEM);
+		if(destnext->fieldval == NULL) {
+			SetLastError(NO_MEM);
+			return(-1);
+		}
 
 	/* copy strings in array */
 
-	for(count=0;count<(sourcenext->xsize*sourcenext->ysize);count++) {
-	 	if(sourcenext->fieldval->s[count] == NULL) {
-			sourcenext->fieldval[count].s=malloc(strlen(destnext->fieldval[count].s));
-			if(sourcenext->fieldval[count].s == NULL) return(NO_MEM);
+		for(count=0;count<(sourcenext->xsize*sourcenext->ysize);count++) {
+	 		if(sourcenext->fieldval->s[count] == NULL) {
+				sourcenext->fieldval[count].s=malloc(strlen(destnext->fieldval[count].s));
+				if(sourcenext->fieldval[count].s == NULL) {
+					SetLastError(NO_MEM);
+					return(-1);
+				}
 
-			strcpy(destnext->fieldval[count].s,sourcenext->fieldval->s[count]);
+				strcpy(destnext->fieldval[count].s,sourcenext->fieldval->s[count]);
+			}
 		}
-	}
 	 }
 
 	 destnext->next=malloc(sizeof(UserDefinedTypeField));
-	 if(dest->next == NULL) return(NO_MEM);
+	 if(dest->next == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	 }
+
 	}
+
+SetLastError(0);
+return(0);
 }
 
 vars_t *GetVariablePointer(char *name) {
@@ -1721,7 +1869,10 @@ UserDefinedTypeField *udtfield;
 vars_t *next;
 
 next=GetVariablePointer(varname);		/* get variable entry */
-if(next == NULL) return(-1);
+if(next == NULL) {
+	SetLastError(VARIABLE_DOES_NOT_EXIST);
+	return(-1);
+}
 
 udtfield=next->udt->field;
 
@@ -1731,31 +1882,41 @@ while(udtfield != NULL) {
 		val->type=udtfield->type;
 		if(udtfield->type == VAR_NUMBER) {
 		        val->d=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].d;
-		        return(0);
+
+		        SetLastError(0);
+			return(0);
 		 }
 		 else if(udtfield->type == VAR_STRING) {
 			val->s=malloc(strlen(udtfield->fieldval[(fieldy*next->ysize)+(next->xsize*fieldx)].s)+1);	/* allocate string */
-			if(val->s == NULL) return(-1);
+			if(val->s == NULL) {
+				SetLastError(NO_MEM);
+				return(-1);
+			}
 
 		        strcpy(val->s,udtfield->fieldval[(fieldy*next->ysize)+(next->xsize*fieldx)].s);
-		        return(0);
+
+		        SetLastError(0);
+			return(0);
 		 }
 		 else if(udtfield->type == VAR_INTEGER) {
 		        val->i=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].i;
-			return(0);
+			SetLastError(0);
 		 }
 		 else if(udtfield->type == VAR_SINGLE) {
 		        val->f=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].f;
+		        SetLastError(0);
 			return(0);
 		 }
 		 else {
-			return(-1);
+		        SetLastError(0);
+			return(0);
 		}	
 	 }
 
 	udtfield=udtfield->next;
 	}
 
+SetLastError(VARIABLE_DOES_NOT_EXIST);
 return(-1);
 }	
 
@@ -1764,7 +1925,7 @@ return(-1);
 * 
 *  In: type	variable type name
 * 
-*  Returns 0 if valid type, -1 otherwise
+*  Returns variable type, -1 otherwise
 * 
 */
 
@@ -1777,7 +1938,7 @@ while(vartypenames[count] != NULL) {
 	count++;
 }
 
-return(-1);
+SetLastError(-1);
 }
 
 /*
@@ -1799,7 +1960,10 @@ UserDefinedTypeField *udtfield;
 vars_t *next;
 
 next=GetVariablePointer(varname);		/* get variable entry */
-if(next == NULL) return(-1);
+if(next == NULL) {
+	SetLastError(VARIABLE_DOES_NOT_EXIST);
+	return(-1);
+}
 
 udtfield=next->udt->field;
 
@@ -1809,7 +1973,9 @@ while(udtfield != NULL) {
 	udtfield=udtfield->next;
 }
 
+SetLastError(TYPE_DOES_NOT_EXIST);
 return(-1);
+
 }
 
 /*
@@ -1913,7 +2079,20 @@ char *ptr;
 if(currentfunction->saveinformation_top->bufptr == NULL) return(NULL);
 
 ptr=currentfunction->saveinformation_top->bufptr;
+
 return(ptr);
+}
+
+/*
+*  Set save information buffer pointer
+*
+*  In: buffer pointer
+* 
+*  Returns: nothing
+* 
+*/
+void SetSaveInformationBufferPointer(char *ptr) {
+currentfunction->saveinformation_top->bufptr=ptr;
 }
 
 /*
@@ -1955,8 +2134,8 @@ if(currentfunction->saveinformation_top == NULL) {
 	currentfunction->saveinformation_top=malloc(sizeof(SAVEINFORMATION));		/* allocate new entry */
 
 	if(currentfunction->saveinformation_top == NULL) {
-		PrintError(NO_MEM);
-		return(NO_MEM);
+		SetLastError(NO_MEM);
+		return(-1);
 	}
 
 	info=currentfunction->saveinformation_top;
@@ -1968,8 +2147,8 @@ else
 
 	previousinfo->next=malloc(sizeof(SAVEINFORMATION));		/* allocate new entry */
 	if(previousinfo->next == NULL) {
-		PrintError(NO_MEM);
-		return(NO_MEM);
+		SetLastError(NO_MEM);
+		return(-1);
 	}
 
 	info=previousinfo->next;
@@ -2026,6 +2205,7 @@ while(next != NULL) {
 	next=next->next;
 }
 
+SetLastError(VARIABLE_DOES_NOT_EXIST);
 return(-1);
 }
 
@@ -2049,6 +2229,7 @@ while(next != NULL) {
 	next=next->next;
 }
 
+SetLastError(VARIABLE_DOES_NOT_EXIST);
 return(-1);
 }
 

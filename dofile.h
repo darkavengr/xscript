@@ -31,16 +31,14 @@ int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int stacktrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
 int IsSeperator(char *token,char *sep);
 int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int end);
-int touppercase(char *token);
+void touppercase(char *token);
 char *ReadLineFromBuffer(char *buf,char *linebuf,int size);
 int strcmpi(char *source,char *dest);
 char *GetCurrentBufferAddress(void);
@@ -69,6 +67,7 @@ int IncludeFile(char *filename);
 void SetBreakFlag(void);
 void ClearBreakFlag(void);
 int GetBreakFlag(void);
+void StripQuotesFromString(char *str,char *buf);
 
 typedef struct {
  char *statement;

@@ -45,4 +45,7 @@
 #define NO_RUNNING_PROGRAM			44
 #define NOT_ARRAY				45
 #define MISSING_SUBSCRIPT			46
+#define FIELD_DOES_NOT_EXIST			47
+#define TYPE_DOES_NOT_EXIST			48
+#define TYPE_NO_END_TYPE			49
 

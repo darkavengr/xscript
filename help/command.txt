@@ -1,6 +1,6 @@
-PROGRAMNAME
+COMMAND
 
-The PROGRAMNAME variables holds the name of the current program.
+The COMMAND variables holds the name of the current program.
 
 See also: COMMAND
 

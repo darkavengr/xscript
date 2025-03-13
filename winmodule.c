@@ -39,6 +39,7 @@ if(dlhandle == NULL) {
 	return(-1);		/* can't open */
 }
 
+SetLastError(0);
 return(dlhandle);
 }
 

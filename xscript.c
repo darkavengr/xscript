@@ -81,7 +81,7 @@ for(count=2;count<argc;count++) {
 	if(count < argc-1) strcat(args," ");
 }
 
-InitializeMainFunction(args);			/* Initialize main function */
+InitializeMainFunction(argv[1],args);			/* Initialize main function */
 
 signalaction.sa_sigaction=&signalhandler;
 signalaction.sa_flags=SA_NODEFER;
@@ -100,14 +100,10 @@ else
 {
 	ClearInteractiveModeFlag();
 
-	returnvalue=ExecuteFile(argv[1]);	/* execute file */
-	if(returnvalue) {
-		SetLastError(returnvalue);
-
-		PrintError(returnvalue);
+	if(ExecuteFile(argv[1]) == -1) {	/* execute file */
+		PrintError(GetLastError());
 
 		cleanup();		/* deallocate lists */
-
 		exit(returnvalue);
 	}
 }

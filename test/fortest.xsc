@@ -1,9 +1,6 @@
-for count=1 to 10
-	print count
+for x=0 to 2
+	for y=0 to 2
+		print x,y
+	next y
 
-	if count = 5 then
-		print "Yes"
-		exit for
-	endif
-
-next count
+next x

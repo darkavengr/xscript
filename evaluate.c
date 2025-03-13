@@ -88,7 +88,8 @@ for(count=start;count<end;count++) {
 			}
 		
 			subtc=SubstituteVariables(startexpr,count,tokens,subexpr);
-	
+			if(subtc == -1) return(-1);
+
 			exprone=EvaluateExpression(subexpr,0,subtc);
 	
 			sprintf(temp[exprcount++],"%.6g",exprone);
@@ -321,7 +322,7 @@ for(exprpos=start;exprpos<end;exprpos++) {
 
 if(ifexpr == -1) {	/* evaluate non-zero or zero */
 	if(GetVariableType(tokens[start]) == VAR_STRING) {		/* comparing string */
-		PrintError(TYPE_ERROR);
+		SetLastError(TYPE_ERROR);
 		return(-1);
 	}
 
@@ -410,6 +411,7 @@ struct {
 // Evaluate sub-conditions
 
 evaltc=SubstituteVariables(start,end,tokens,evaltokens);
+if(evaltc == -1) return(-1);
 
 startcount=start;
 count=0;
@@ -522,7 +524,7 @@ return(overallresult);
 
 int IsValidExpression(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
-char *ValidExpressionCharacters = { "+-*/<>=&|!%" };
+char *ValidExpressionCharacters="+-*/<>=&|!%";
 int endexpression;
 
 /* Valid expressions can't start or end with an operator */
@@ -536,27 +538,26 @@ for(count=start+1;count<end;count += 2) {
 		endexpression=count+1;
 
 		while(endexpression < end) {
-			if(strcmp(tokens[endexpression],")") == 0) {		/* sub-expression */
-				if(IsValidExpression(tokens,count,endexpression-1) == TRUE) return(TRUE);
-
-				return(FALSE);
-			}
-
+			if(strcmp(tokens[endexpression],")") == 0) return(IsValidExpression(tokens,count,endexpression-1));/* sub-expression */
+		
 			endexpression++;
 		}
 
 		count=endexpression+1;
 	}
 
-	if(strpbrk(tokens[count],ValidExpressionCharacters) == NULL) {
-	   	if((strcmp(tokens[count],"*") == 0) && (strcmp(tokens[count+1],"*") == 0)) {
-			count++;
-			return(TRUE);		/* power is an exception */
-		}
+//	printf("tokens[%d]=%s %s\n",count,tokens[count],ValidExpressionCharacters);
 
-		return(FALSE);
-	}
+//	if(strpbrk(tokens[count],ValidExpressionCharacters) == NULL) {
+//	   	if((strcmp(tokens[count],"*") == 0) && (strcmp(tokens[count+1],"*") == 0)) {
+//			count++;
+//			return(TRUE);		/* power is an exception */
+//		}
 
+//		return(FALSE);
+//	}
+
+return(TRUE);
 }
 
 return(TRUE);

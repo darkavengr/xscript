@@ -24,6 +24,8 @@
 #include "variablesandfunctions.h"
 #include "debugmacro.h"
 
+int last_error=0;
+
 char *errs[] = { "No error",\
 		 "File not found",\
 		 "Missing parameters in statement",\
@@ -118,6 +120,8 @@ void SetLastError(int errornumber) {
 varval errval;
 char *errfunc[MAX_SIZE];
 
+last_error=errornumber;
+
 errval.i=errornumber;				/* update error number */
 UpdateVariable("ERR","",&errval,0,0);
 
@@ -134,5 +138,9 @@ strcpy(errval.s,errfunc);
 UpdateVariable("ERRFUNC","",&errval,0,0);
 
 free(errval.s);
+}
+
+int GetLastError(void) {
+return(last_error);
 }
 

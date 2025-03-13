@@ -29,10 +29,11 @@ int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+void set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 void SwitchToInteractiveModeBuffer(void);
 int list_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+void trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 typedef struct {
 	int linenumber;

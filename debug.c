@@ -135,7 +135,7 @@ int clear_breakpoint(int linenumber,char *functionname) {
  * In: linenumber	Line number to set breakpoint at
  *     functionname	Function to set breakpoint in
  *
- * Returns error number on error or 0 on success
+ * Returns TRUE or FALSE
  *
  */
 int check_breakpoint(int linenumber,char *functionname) {
@@ -157,7 +157,7 @@ return(FALSE);
  *
  * In: var		Variable to print
  *
- * Returns error number on error or 0 on success
+ * Returns: nothing
  *
  */
 void PrintVariableValue(vars_t *var) {
@@ -169,8 +169,8 @@ vartype=GetVariableType(var->varname);
 
 if((var->xsize > 1) || (var->ysize > 1)) printf("(");
 
-for(ycount=1;ycount != var->ysize+1;ycount++) {
-	for(xcount=0;xcount != var->xsize;xcount++) {
+for(ycount=0;ycount < var->ysize+1;ycount++) {
+	for(xcount=0;xcount < var->xsize+1;xcount++) {
 
 		 switch(vartype) {
 
@@ -191,7 +191,7 @@ for(ycount=1;ycount != var->ysize+1;ycount++) {
 			        break;
   		}
 	
-		  if(xcount < var->xsize+1) printf(",");		 
+		  if(xcount < var->xsize) printf(",");		 
 	
 	  }
 }
@@ -206,10 +206,10 @@ printf("\n");
  *
  * In: name		Variable to list. Empty string to print all variables
  *
- * Returns: error number on error or 0 on success
+ * Returns: -1 on error or 0 on success
  *
  */
-void list_variables(char *name) {
+int list_variables(char *name) {
 vars_t var;
 int padcount;
 
@@ -219,24 +219,23 @@ if(strlen(name) > 0) {
 		return(-1);
 	}
 
+	printf("%s=",var.varname);
 	PrintVariableValue(&var);
-	return;
+
+	SetLastError(0);	
+	return(0);
 }
 
 FindFirstVariable(&var);
 	
 do {
-	printf("%s",name);
-	
-	for(padcount=0;padcount<12-strlen(name);padcount++) {	/* pad out with spaces */
-		printf(" ");
-	}
-
-	printf(" = ");
+	printf("%s=",var.varname);
 
 	PrintVariableValue(&var);
 
 } while(FindNextVariable(&var) != -1);
 
+SetLastError(0);	
+return(0);
 }
 

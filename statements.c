@@ -95,7 +95,8 @@ do {
 
 } while(statements[statementcount].statement != NULL);
 
-return(INVALID_STATEMENT);
+SetLastError(INVALID_STATEMENT);
+return(-1);
 }
 
 int IsStatement(char *statement) {
@@ -140,3 +141,4 @@ do {
 
 return(FALSE);
 }
+
