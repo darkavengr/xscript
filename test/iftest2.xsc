@@ -1,6 +1,6 @@
 b=4
 
-if b = 2+2 then
+if b < 5 then
  print "Yay"
 endif
 

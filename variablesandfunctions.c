@@ -89,11 +89,12 @@ varval cmdargs;
 
 cmdargs.s=malloc(MAX_SIZE);
 
+CreateVariable("PROGRAMNAME","STRING",0,0);
+CreateVariable("COMMAND","STRING",0,0);
+
 /* get program name */
 
 if(progname != NULL) {
-	CreateVariable("PROGRAMNAME","STRING",0,0);
-
 	strcpy(cmdargs.s,progname);
 	UpdateVariable("PROGRAMNAME",NULL,&cmdargs,0,0);
 }
@@ -101,8 +102,6 @@ if(progname != NULL) {
 /* get command-line arguments, if any */
 
 if(args != NULL) {
-	CreateVariable("COMMAND","STRING",0,0);
-
 	strcpy(cmdargs.s,args);
 	UpdateVariable("COMMAND",NULL,&cmdargs,0,0);
 }

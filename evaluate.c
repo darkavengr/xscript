@@ -526,19 +526,23 @@ int IsValidExpression(char *tokens[][MAX_SIZE],int start,int end) {
 int count;
 char *ValidExpressionCharacters="+-*/<>=&|!%";
 int endexpression;
+int IsOperator=FALSE;
+int IsValid=TRUE;
 
-/* Valid expressions can't start or end with an operator */
+if(start == end) {	/* kludge */
+	if(strpbrk(tokens[start],ValidExpressionCharacters) != NULL) return(FALSE);
+	
+	return(TRUE);
+}
 
-if((strpbrk(tokens[start],ValidExpressionCharacters) != NULL) || (strpbrk(tokens[end],ValidExpressionCharacters) != NULL)) return(FALSE);
-
-for(count=start+1;count<end;count += 2) {
+for(count=start;count<end;count++) {
 	if(strcmp(tokens[count-1],"(") == 0) {		/* sub-expression */
 		/* find end of sub-expression */
 
 		endexpression=count+1;
 
 		while(endexpression < end) {
-			if(strcmp(tokens[endexpression],")") == 0) return(IsValidExpression(tokens,count,endexpression-1));/* sub-expression */
+			if(strcmp(tokens[endexpression],")") == 0) return(IsValidExpression(tokens,count,endexpression-1)); /* sub-expression */
 		
 			endexpression++;
 		}
@@ -546,18 +550,26 @@ for(count=start+1;count<end;count += 2) {
 		count=endexpression+1;
 	}
 
-//	printf("tokens[%d]=%s %s\n",count,tokens[count],ValidExpressionCharacters);
+	if(IsOperator == FALSE) {
+		if(strpbrk(tokens[count],ValidExpressionCharacters) != NULL) {
+			IsValid=FALSE;
+		}
+		else {
+			IsValid=TRUE;	
+		}
+	}
+	else {
+		if(strpbrk(tokens[count],ValidExpressionCharacters) == NULL) {
+			IsValid=FALSE;
+		}
+		else {
+			IsValid=TRUE;
+		}
+	}
 
-//	if(strpbrk(tokens[count],ValidExpressionCharacters) == NULL) {
-//	   	if((strcmp(tokens[count],"*") == 0) && (strcmp(tokens[count+1],"*") == 0)) {
-//			count++;
-//			return(TRUE);		/* power is an exception */
-//		}
+	IsOperator=!IsOperator;
 
-//		return(FALSE);
-//	}
-
-return(TRUE);
+	if(IsValid == FALSE) return(FALSE);
 }
 
 return(TRUE);

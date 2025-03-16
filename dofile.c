@@ -126,6 +126,12 @@ char *saveCurrentBufferPosition;
 int returnvalue;
 varval progname;
 
+progname.s=malloc(strlen(filename));
+if(progname.s == NULL) {
+	SetLastError(NO_MEM);
+	return(-1);
+}
+
 if(filename != NULL) {
 	if(LoadFile(filename) == -1) {
 		SetLastError(FILE_NOT_FOUND);
@@ -158,6 +164,9 @@ do {
 		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
 
 		ClearIsRunningFlag();
+
+
+		free(progname.s);
 		return(-1);
 	}
 
@@ -166,6 +175,10 @@ do {
 		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
 
 		CurrentBufferPosition=saveCurrentBufferPosition;
+
+
+		free(progname.s);
+
 		SetLastError(NO_ERROR);	/* program ended */
 		return(0);
 	}
@@ -181,6 +194,7 @@ CurrentBufferPosition=saveCurrentBufferPosition;
 strcpy(progname.s,"");				/* update program name */
 UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
 
+free(progname.s);
 SetLastError(NO_ERROR);
 return(0);
 }	
@@ -282,9 +296,11 @@ if(IsStatement(tokens[0])) {
 
 for(count=1;count<tc;count++) {
 
-//	printf("var=%s\n",tokens[0]);
+	if((strcmp(tokens[count],"=") == 0) && (IsValid == FALSE)) {
+		for(int countx=0;countx<tc;countx++) {
+			printf("var=%s\n",tokens[countx]);
+		}
 
-	if(strcmp(tokens[count],"=") == 0) {
 		IsValid=TRUE;
 
  		ParseVariableName(tokens,0,count,&split);			/* split variable */  	
@@ -328,10 +344,12 @@ for(count=1;count<tc;count++) {
 			return(-1);
 		}
 	
-		 //if(IsValidExpression(tokens,0,returnvalue) == FALSE) {
-		//		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-		//		return(-1);
-		// }
+		 if(IsValidExpression(tokens,0,returnvalue) == FALSE) {
+			printf("assign expression invalid\n");
+
+			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+			return(-1);
+		 }
 
 		 exprone=EvaluateExpression(outtokens,0,returnvalue);
 
@@ -391,7 +409,7 @@ for(count=1;count<tc;count++) {
 
 /* call user function */
 
-if(CheckFunctionExists(tokens[0]) != -1) {	/* user function */
+if((CheckFunctionExists(tokens[0]) != -1) && (IsValid == FALSE)) {	/* user function */
 	CallFunction(tokens,0,tc);
 	IsValid=TRUE;
 } 
@@ -604,7 +622,12 @@ while(*CurrentBufferPosition != 0) {
 
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
 
-		exprtrue=EvaluateCondition(tokens,1,tc);
+		if(IsValidExpression(tokens,1,tc-1) == FALSE) {
+			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+			return(-1);
+		 }
+
+		exprtrue=EvaluateCondition(tokens,1,tc-1);
 		if(exprtrue == -1) return(-1);
 
 		if(exprtrue == 1) {
@@ -732,8 +755,9 @@ return(0);
  *
  */
 int for_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-int count;
-int countx;
+int StartOfFirstExpression;
+int StartOfSecondExpression;
+int StartOfStepExpression;
 int steppos;
 double exprone;
 double exprtwo;
@@ -748,21 +772,20 @@ int lc=GetSaveInformationLineCount();
 char *outtokens[MAX_SIZE][MAX_SIZE];
 int endcount;
 
-for(countx=0;countx<tc;countx++) {
-	printf("for token=%s\n",tokens[countx]);
-}
-
 PushSaveInformation();
 
 SetFunctionFlags(FOR_STATEMENT);
 
-/* find end of variable name */
+/* find start of first expression */
 
-for(count=1;count<tc;count++) {
-	if(strcmpi(tokens[count],"=") == 0) break;
+for(StartOfFirstExpression=1;StartOfFirstExpression<tc;StartOfFirstExpression++) {
+	if(strcmpi(tokens[StartOfFirstExpression],"=") == 0) {
+		StartOfFirstExpression++;
+		break;
+	}
 }
 
-if(count == tc) {		/* no = */
+if(StartOfFirstExpression == tc) {		/* no = */
 	ClearFunctionFlags(FOR_STATEMENT);
 
 	SetLastError(SYNTAX_ERROR);
@@ -781,11 +804,14 @@ if(IsValidVariableOrKeyword(tokens[1]) == FALSE) {		/* check if variable name is
 //  0  1     2 3 4  5
 // for count = 1 to 10
 
-for(endcount=3;endcount<tc;endcount++) {
-	if(strcmpi(tokens[endcount],"TO") == 0) break;		/* found to */
+for(StartOfSecondExpression=3;StartOfSecondExpression<tc;StartOfSecondExpression++) {
+	if(strcmpi(tokens[StartOfSecondExpression],"TO") == 0) {		/* found start of second expression */
+		StartOfSecondExpression++;
+		break;
+	}
 }
 
-if(count == tc) {
+if(StartOfSecondExpression == tc) {
 	PopSaveInformation();
 
 	SetLastError(SYNTAX_ERROR);
@@ -793,47 +819,50 @@ if(count == tc) {
 }
 
 
-ParseVariableName(tokens,1,endcount,&split);
+ParseVariableName(tokens,1,StartOfFirstExpression,&split);
 
-for(countx=1;countx<tc;countx++) {
-	if(strcmpi(tokens[countx],"step") == 0) break;		/* found step */
+for(StartOfStepExpression=1;StartOfStepExpression<tc;StartOfStepExpression++) {
+	if(strcmpi(tokens[StartOfStepExpression],"step") == 0) {		/* found start of step expression */
+		StartOfStepExpression++;
+		break;
+	}
 }
 
-if(countx == tc) {
+if(StartOfStepExpression == tc) {		/* no step keyword */
 	steppos=1;
 }
-else
+else			/* have step keyword */
 {	
-	if(IsValidExpression(outtokens,countx+1,tc) == FALSE) {
+	if(IsValidExpression(outtokens,StartOfStepExpression,tc) == FALSE) {
 		PopSaveInformation();
 
 		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
 		return(-1);
 	}
 
-	returnvalue=SubstituteVariables(countx+1,tc,tokens,outtokens);
+	returnvalue=SubstituteVariables(StartOfStepExpression,tc,tokens,outtokens);	/* substitute variables for step expression */
 	if(returnvalue == -1) {
 		PopSaveInformation();
 		return(-1);
 	}
 
-	steppos=EvaluateExpression(tokens,0,returnvalue);
+	steppos=EvaluateExpression(tokens,0,returnvalue);		/* evaulate for step expression */
 }
 
 //  0   1    2 3 4  5
 // for count = 1 to 10
 
-//if(IsValidExpression(tokens,3,count) == FALSE) {
-//	SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-//	return(-1);
-//}
+if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression-1) == FALSE) {
+	SetLastError(INVALID_EXPRESSION);
+	return(-1);
+}
 
-//if(IsValidExpression(tokens,count+1,countx) == FALSE) {
-//	SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-//	return(-1);
-//}
+if(IsValidExpression(tokens,StartOfSecondExpression,StartOfStepExpression) == FALSE) {
+	SetLastError(INVALID_EXPRESSION);
+	return(-1);
+}
 
-returnvalue=SubstituteVariables(3,endcount-1,tokens,outtokens);
+returnvalue=SubstituteVariables(StartOfFirstExpression,StartOfSecondExpression-1,tokens,outtokens);
 if(returnvalue == -1) {
 	PopSaveInformation();
 
@@ -842,7 +871,7 @@ if(returnvalue == -1) {
 
 exprone=EvaluateExpression(outtokens,0,returnvalue);			/* start value */
 
-returnvalue=SubstituteVariables(endcount+1,tc,tokens,outtokens);
+returnvalue=SubstituteVariables(StartOfSecondExpression,StartOfStepExpression,tokens,outtokens);
 if(returnvalue == -1) {
 	PopSaveInformation();
 
@@ -882,8 +911,6 @@ switch(vartype) {
 
 UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
-printf("%s %d\n",split.name,loopcount.d);
-
 if(exprone >= exprtwo) {
 	ifexpr=1;
 }
@@ -896,14 +923,12 @@ SetFunctionFlags(FOR_STATEMENT);
 
 SetSaveInformationBufferPointer(CurrentBufferPosition);
 
-printf("Start of for loop with variable %s\n",split.name);
+//printf("Start of for loop with variable %s\n",split.name);
 
-do {
+while(1) {
 	sigsetjmp(savestate,1);		/* save current context */
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
-
-	printf("for buf=%s\n",buf);
 
 	if(ExecuteLine(buf) == -1) {
 		PopSaveInformation();
@@ -930,17 +955,12 @@ do {
 	sigsetjmp(savestate,1);
 
 	if(strcmpi(tokens[0],"NEXT") == 0) {   
-		printf("Current loop end for variable %s\n",split.name);
+//		printf("Current loop end for variable %s\n",split.name);
 	
 		sigsetjmp(savestate,1);		/* save current context */
   
 		SetCurrentFunctionLine(GetSaveInformationLineCount());
 		lc=GetSaveInformationLineCount();
-
-		CurrentBufferPosition=GetSaveInformationBufferPointer();			/* get pointer to start of for statement */
-//		CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
-
-		printf("Current loop end buf=%s\n",CurrentBufferPosition);
 
 		sigsetjmp(savestate,1);		/* save current context */
   
@@ -952,15 +972,13 @@ do {
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=steppos;
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += steppos;      
 
-		printf("loopcount.d=%s %.6g %.6g\n",split.name,loopcount.d,exprtwo);
+//		printf("loopcount.d=%s %.6g %.6g\n",split.name,loopcount.d,exprtwo);
 
 	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
 		sigsetjmp(savestate,1);		/* save current context */
 
 	      	if(*CurrentBufferPosition == 0) {
-			printf("Error end\n");
-
 	      		PopSaveInformation();				 
 			ClearFunctionFlags(FOR_STATEMENT);
 
@@ -969,32 +987,26 @@ do {
 			SetLastError(SYNTAX_ERROR);
 			return(-1);
 	     	 }
+
+		if(
+       		( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d < exprtwo)) ||
+		((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d > exprtwo)) ||
+		((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i < exprtwo)) ||
+	        ((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i > exprtwo)) ||
+	        ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f < exprtwo)) ||
+	        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f > exprtwo))
+       		) break;
+
+		CurrentBufferPosition=GetSaveInformationBufferPointer();			/* get pointer to start of for statement */
     	} 
 
 	sigsetjmp(savestate,1);		/* save current context */
   
-} while(
-       ( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d >= exprtwo)) ||
-       ((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d <= exprtwo)) ||
-       ((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i >= exprtwo)) ||
-       ((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i <= exprtwo)) ||
-       ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f >= exprtwo)) ||
-       ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f <= exprtwo))
-       );
-
-printf("End of for loop with variable %s\n",split.name);
-//if(strcmp(split.name,"y") == 0) asm("int $3");
-
-/*if(strcmp(split.name,"x") == 0) {
-			printf("pos=%lX\n",CurrentBufferPosition);
-			asm("int $3");
-}*/
-
-CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
+} 
 
 sigsetjmp(savestate,1);		/* save current context */
 
-PopSaveInformation();
+//PopSaveInformation();
 //CurrentBufferPosition=GetSaveInformationBufferPointer();
 
 SetLastError(NO_ERROR);
@@ -1174,10 +1186,10 @@ do {
 
      CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
    
-// if(IsValidExpression(tokens,1,condition_tc) == FALSE) {
-//	SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-//	return(-1);
-  //  }
+     if(IsValidExpression(condition_tokens,0,condition_tc) == FALSE) {
+	SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+	return(-1);
+     }
 
      exprtrue=EvaluateCondition(condition_tokens,0,condition_tc);			/* do condition */
 

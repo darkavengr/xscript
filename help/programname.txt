@@ -1,0 +1,7 @@
+PROGRAMNAME
+
+The PROGRAMNAME variables holds the filename of the current program.
+
+See also: COMMAND
+
+
