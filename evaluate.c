@@ -62,20 +62,20 @@ exprcount=0;
 
 for(count=start;count<end;count++) {
 	if((strcmp(tokens[count],"(") == 0)) {				/* start of expression */ 
+
 		if(CheckFunctionExists(tokens[count-1]) == 0) {
 			while(count < end) {
-				if(strcmp(tokens[count] ,")") == 0) break;
-		 		count++;
+				if(strcmp(tokens[count++] ,")") == 0) break;
 			}
 		
 			continue;
 		}
 		else if(IsVariable(tokens[count-1]) == TRUE) {
 			for(countx=count+1;countx<end;countx++) {
-	 		 if(strcmp(tokens[countx] ,")") == 0) break;
-		}
+	 			if(strcmp(tokens[countx] ,")") == 0) break;
+			}
 		
-		continue;
+			continue;
 		}
 		else
 		{
@@ -87,19 +87,19 @@ for(count=start;count<end;count++) {
 		 		count++;
 			}
 		
-			subtc=SubstituteVariables(startexpr,count,tokens,subexpr);
+			subtc=SubstituteVariables(startexpr,count+1,tokens,subexpr);
 			if(subtc == -1) return(-1);
 
 			exprone=EvaluateExpression(subexpr,0,subtc);
-	
+
 			sprintf(temp[exprcount++],"%.6g",exprone);
-		}			
+
+		}
 	}
 	else
 	{		
 		strcpy(temp[exprcount++],tokens[count]);
 	}
-
 }
 
 for(count=0;count<exprcount;count++) {
@@ -110,7 +110,7 @@ for(count=0;count<exprcount;count++) {
 }
 
 val.d=atof(temp[0]);
-
+	
 for(count=0;count<exprcount;count++)  {
 
 	if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {
@@ -285,16 +285,9 @@ varval firstval,secondval;
 exprone=0;
 exprtwo=0;
 
-//for(exprpos=0;exprpos<end;exprpos++) {
-//	printf("exprtoken[%d]=%s\n",exprpos,tokens[exprpos]);
-//}
-
 for(exprpos=start;exprpos<end;exprpos++) {
 
 	if(strcmp(tokens[exprpos],"=") == 0) {
-	//	printf("EQUAL\n");
-	//	printf("exprpos=%d\n",exprpos);
-
 		ifexpr=EQUAL;
 		break;
 	}
@@ -336,17 +329,6 @@ if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
 	return(!strcmp(firstval.s,secondval.s));
 }
 
-//printf("exprposxxx=%d %d\n",start,exprpos);
-
-
-//for(int countx=0;countx < exprpos;countx++) {
-//	printf("first tokens[%d]=%s\n",countx,tokens[countx]);
-//}
-
-//for(int countx=exprpos+1;countx < end;countx++) {
-//	printf("second tokens[%d]=%s\n",countx,tokens[countx]);
-//}
-
 exprone=EvaluateExpression(tokens,start,exprpos);				/* evaluate expressions */
 exprtwo=EvaluateExpression(tokens,exprpos+1,end);
 
@@ -355,8 +337,6 @@ exprtrue=0;
 switch(ifexpr) {
 
 	case EQUAL:
-//		printf("expr=%.6g %.6g\n",exprone,exprtwo);
-
 		return(exprone == exprtwo);
 
 	case NOTEQUAL:					/* exprone != exprtwo */ 
@@ -379,7 +359,7 @@ switch(ifexpr) {
 }
 
 /*
- * Evalue condition
+ * Evaluate condition
  *
  * In: char *tokens[][MAX_SIZE]		Tokens array containing expression
  *     int start			Start in array
@@ -408,7 +388,7 @@ struct {
 	int and_or;
 } results[MAX_SIZE];
 
-// Evaluate sub-conditions
+/* Evaluate sub-conditions */
 
 evaltc=SubstituteVariables(start,end,tokens,evaltokens);
 if(evaltc == -1) return(-1);
@@ -416,18 +396,16 @@ if(evaltc == -1) return(-1);
 startcount=start;
 count=0;
 
-//
-// Do conditions in brackets first
-//
+/* Do conditions in brackets first */
 
 while(count < evaltc) {
-	 if(strcmp(evaltokens[count],"(") == 0) {		// if sub-expression
+	 if(strcmp(evaltokens[count],"(") == 0) {		/* if sub-expression */
 
 	  subcount++;
 	  startcount=count;
 
 	  while(count < exprend) {
-	    if(strcmp(evaltokens[count],")") == 0) {		// end of sub-expression
+	    if(strcmp(evaltokens[count],")") == 0) {		/* end of sub-expression */
 	      results[resultcount].result=EvaluateSingleCondition(evaltokens,0,count+1);
 
 	      resultcount++;
@@ -435,7 +413,7 @@ while(count < evaltc) {
 	      if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
 	      if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
 
-	      count += subcount;		// Add length of expression
+	      count += subcount;		/* Add length of expression */
 	    }
 
 	    count++;
@@ -514,7 +492,7 @@ return(overallresult);
 /*
  * Check if expression is valid
  *
- * In: tokens				Tokens array containing expression
+ * In: tokens				Token array containing expression
  *     int start			Start in array
  *     int end				End in array
  *
@@ -528,6 +506,60 @@ char *ValidExpressionCharacters="+-*/<>=&|!%";
 int endexpression;
 int IsOperator=FALSE;
 int IsValid=TRUE;
+int bracketcount=0;
+int squarebracketcount=0;
+bool IsInBracket=FALSE;
+int statementcount=0;
+int commacount=0;
+int variablenameindex=0;
+int starttoken;
+int commastart;
+
+/* check if brackets are balanced */
+
+for(count=start;count<end;count++) {
+	if(strcmp(tokens[count],"(") == 0) {
+		commacount=0;
+
+		if(IsInBracket == FALSE) variablenameindex=(count-1);			/* save name index */
+
+		IsInBracket=TRUE;
+		bracketcount++;
+	}
+
+	if(strcmp(tokens[count],")") == 0) {
+		IsInBracket=FALSE;
+		bracketcount--;
+	}
+
+	if(strcmp(tokens[count],"[") == 0) {
+		IsInBracket=TRUE;
+		squarebracketcount++;
+	}
+
+	if(strcmp(tokens[count],"]") == 0) {
+		IsInBracket=FALSE;
+		squarebracketcount--;
+	}
+
+	/* check if number of commas is correct for array or function call */
+	if(strcmp(tokens[count],",") == 0) {		/* list of expressions */
+		commacount++;
+
+		if(IsInBracket == FALSE) return(FALSE);	/* list not in brackets */
+
+		if((bracketcount > 1) || (squarebracketcount > 1)) return(FALSE);
+
+		if(IsVariable(tokens[variablenameindex]) == TRUE) {
+			if(commacount >= 2) return(FALSE); /* too many commas for array */
+		}
+	}
+}
+
+if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
+
+
+/* check if expression is in form {symbol} {op}... */
 
 if(start == end) {	/* kludge */
 	if(strpbrk(tokens[start],ValidExpressionCharacters) != NULL) return(FALSE);
@@ -536,13 +568,29 @@ if(start == end) {	/* kludge */
 }
 
 for(count=start;count<end;count++) {
-	if(strcmp(tokens[count-1],"(") == 0) {		/* sub-expression */
+	if(strcmp(tokens[count],"(") == 0) {		/* sub-expression */
 		/* find end of sub-expression */
 
 		endexpression=count+1;
 
 		while(endexpression < end) {
-			if(strcmp(tokens[endexpression],")") == 0) return(IsValidExpression(tokens,count,endexpression-1)); /* sub-expression */
+			if(strcmp(tokens[endexpression],")") == 0) {
+				commastart=count+1;
+
+				/* check expression in list */
+
+				for(commacount=count+1;commacount<endexpression-1;commacount++) {
+			
+					if(strcmp(tokens[commacount],",") == 0) {	/* found end */					
+						if(IsValidExpression(tokens,commastart,commacount-1) == FALSE) return(FALSE);	
+
+						commastart=commacount+1;	/* save start of next */
+					}
+				}
+			
+
+				return(IsValidExpression(tokens,count+1,endexpression-1)); /* sub-expression */
+			}
 		
 			endexpression++;
 		}
@@ -551,6 +599,8 @@ for(count=start;count<end;count++) {
 	}
 
 	if(IsOperator == FALSE) {
+		if(IsValidVariableOrKeyword(tokens[count]) == FALSE) IsValid=FALSE;	/* not valid variable name */
+
 		if(strpbrk(tokens[count],ValidExpressionCharacters) != NULL) {
 			IsValid=FALSE;
 		}

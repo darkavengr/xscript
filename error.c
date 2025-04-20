@@ -89,6 +89,8 @@ char *functionname[MAX_SIZE];
 
 GetCurrentFunctionName(functionname);
 
+if(errornumber == 0) return;
+
 if(GetIsFileLoadedFlag() == TRUE) {
 	printf("Error %d in function %s (line %d): %s\n",errornumber,functionname,GetCurrentFunctionLine(),errs[errornumber]);
 }

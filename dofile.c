@@ -68,7 +68,7 @@ sigsetjmp(savestate,1);		/* save current context */
 handle=fopen(filename,"r");				/* open file */
 if(!handle) {
 	SetLastError(FILE_NOT_FOUND);
-	SetLastError(-1);
+	return(-1);
 }
 
 sigsetjmp(savestate,1);		/* save current context */
@@ -89,14 +89,20 @@ if(FileBuffer == NULL) {				/* first time */
 }
 else
 {
-	if(realloc(FileBuffer,FileBufferSize+filesize) == NULL) SetLastError(NO_MEM);		/* resize buffer */
+	if(realloc(FileBuffer,FileBufferSize+filesize) == NULL) {
+		SetLastError(NO_MEM);		/* resize buffer */
+		return(-1);
+	}
 }
 
 sigsetjmp(savestate,1);		/* save current context */
 
 FileBufferPosition=FileBuffer;
 
-if(fread(FileBuffer,filesize,1,handle) != 1) SetLastError(READ_ERROR);		/* read to buffer */
+if(fread(FileBuffer,filesize,1,handle) != 1) {
+	SetLastError(READ_ERROR);		/* read to buffer */
+	return(-1);
+}
 		
 endptr=(FileBuffer+filesize);		/* point to end */
 *endptr=0;			/* put null at end */
@@ -109,7 +115,9 @@ sigsetjmp(savestate,1);		/* save current context */
 
 SetIsFileLoadedFlag();
 ClearIsRunningFlag();
+
 SetLastError(0);
+return(0);
 }
 
 /*
@@ -164,7 +172,6 @@ do {
 		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
 
 		ClearIsRunningFlag();
-
 
 		free(progname.s);
 		return(-1);
@@ -272,11 +279,6 @@ for(count=0;count < tc;count++) {
 	}
 }
 
-//if(CheckSyntax(tokens,TokenCharacters,1,tc) == FALSE) {
-//	SetLastError(SYNTAX_ERROR);		/* check syntax */
-//	return(-1);
-//}
-
 if(IsStatement(tokens[0])) {
 	returnvalue=CallIfStatement(tc,tokens); /* run if statement */
 
@@ -297,13 +299,19 @@ if(IsStatement(tokens[0])) {
 for(count=1;count<tc;count++) {
 
 	if((strcmp(tokens[count],"=") == 0) && (IsValid == FALSE)) {
-		for(int countx=0;countx<tc;countx++) {
-			printf("var=%s\n",tokens[countx]);
-		}
-
 		IsValid=TRUE;
 
  		ParseVariableName(tokens,0,count,&split);			/* split variable */  	
+
+		if(IsValidVariableOrKeyword(split.name) == FALSE) {	/* Variable name is invalid */
+			SetLastError(SYNTAX_ERROR);
+			return(-1);
+		}
+
+		if((strlen(split.fieldname) > 0) && (IsValidVariableOrKeyword(split.name) == FALSE)) {	/* if there is a field name, check its validity */
+			SetLastError(SYNTAX_ERROR);
+			return(-1);
+		}
 
 		returnvalue=SubstituteVariables(count+1,tc,tokens,outtokens);
  		if(returnvalue == -1) return(-1);
@@ -345,15 +353,11 @@ for(count=1;count<tc;count++) {
 		}
 	
 		 if(IsValidExpression(tokens,0,returnvalue) == FALSE) {
-			printf("assign expression invalid\n");
-
 			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
 			return(-1);
 		 }
 
 		 exprone=EvaluateExpression(outtokens,0,returnvalue);
-
-		// printf("exprone=%s %.6g\n",split.name,exprone);
 
 		 if(vartype == VAR_NUMBER) {
 	 		val.d=exprone;
@@ -433,7 +437,7 @@ return(0);
  * Declare function statement
  *
  * In: tc Token count
- *     tokens Tokens array
+ *     tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -450,7 +454,7 @@ return(0);
  * Print statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -479,6 +483,7 @@ for(count=1;count<tc;count++) {
 		/* is function parameter or array subscript */
 
 		if((strcmp(tokens[endtoken],"(") == 0) || (strcmp(tokens[endtoken],"[") == 0)) IsInBracket=TRUE;														
+		if((strcmp(tokens[endtoken],")") == 0) || (strcmp(tokens[endtoken],"]") == 0)) IsInBracket=FALSE;														
 
 		if((IsInBracket == FALSE) && (strcmp(tokens[endtoken],",") == 0)) break;		/* found separator not subscript */
 	}
@@ -489,8 +494,6 @@ for(count=1;count<tc;count++) {
 
 	if((GetVariableXSize(tokens[count]) > 0) || (GetVariableYSize(tokens[count]) > 0)) {		/* is array */
 		if(IsInBracket == FALSE) {
-			PrintError(MISSING_SUBSCRIPT);
-
 			SetLastError(MISSING_SUBSCRIPT);
 			return(-1);
 		}
@@ -505,7 +508,7 @@ for(count=1;count<tc;count++) {
 
 		count += ConatecateStrings(0,returnvalue,printtokens,&val);		/* join all the strings in the token */
 
-		printf("%s ",val.s);
+		printf("%s",val.s);
 	}
 	else
 	{
@@ -513,15 +516,15 @@ for(count=1;count<tc;count++) {
 
 		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
 
-		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);
-		if(returnvalue == -1) return(-1);
-
-		//memcpy(printtokens,tokens,MAX_SIZE*4);
-
-		if(IsValidExpression(tokens,count,endtoken-1) == FALSE) {
-			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+		if(IsValidExpression(tokens,count,endtoken) == FALSE) {
+			SetLastError(INVALID_EXPRESSION);
 			return(-1);
 		}
+
+		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
+	
+		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);
+		if(returnvalue == -1) return(-1);
 
 		retval.val.type=0;
 		retval.val.d=EvaluateExpression(printtokens,0,returnvalue);
@@ -543,9 +546,9 @@ for(count=1;count<tc;count++) {
 	 		} 
 		}
 
-		if(countx == tc) printf("%.6g ",retval.val.d);	/* Not conditional */
+		if(endtoken <= tc) printf("%.6g ",retval.val.d);	/* Not conditional */
 	}
-
+ 
 	count=endtoken;
 }
 
@@ -561,7 +564,7 @@ return(0);
  * Import statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -597,7 +600,7 @@ return(0);
  * If statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -729,7 +732,7 @@ return(-1);
  * Endif statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number
  *
@@ -749,7 +752,7 @@ return(0);
  * For statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -923,8 +926,6 @@ SetFunctionFlags(FOR_STATEMENT);
 
 SetSaveInformationBufferPointer(CurrentBufferPosition);
 
-//printf("Start of for loop with variable %s\n",split.name);
-
 while(1) {
 	sigsetjmp(savestate,1);		/* save current context */
 
@@ -955,8 +956,6 @@ while(1) {
 	sigsetjmp(savestate,1);
 
 	if(strcmpi(tokens[0],"NEXT") == 0) {   
-//		printf("Current loop end for variable %s\n",split.name);
-	
 		sigsetjmp(savestate,1);		/* save current context */
   
 		SetCurrentFunctionLine(GetSaveInformationLineCount());
@@ -971,8 +970,6 @@ while(1) {
 	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += steppos;      
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=steppos;
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += steppos;      
-
-//		printf("loopcount.d=%s %.6g %.6g\n",split.name,loopcount.d,exprtwo);
 
 	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
 
@@ -1006,8 +1003,7 @@ while(1) {
 
 sigsetjmp(savestate,1);		/* save current context */
 
-//PopSaveInformation();
-//CurrentBufferPosition=GetSaveInformationBufferPointer();
+PopSaveInformation();
 
 SetLastError(NO_ERROR);
 return(0);
@@ -1017,7 +1013,7 @@ return(0);
  * Return statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1065,12 +1061,12 @@ retval.has_returned_value=TRUE;				/* set has returned value flag */
 
 if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
 
-//	if(IsValidExpression(tokens,2,tc) == FALSE) {   /* invalid expression */
-//		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+	if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
 
-//		SetLastError(INVALID_EXPRESSION);
-//		return(-1);	
-//	}
+		SetLastError(INVALID_EXPRESSION);
+		return(-1);	
+	}
 }
 
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
@@ -1078,17 +1074,18 @@ if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 }
 else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
 	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
+
 	if(substreturnvalue == -1) {
 		retval.has_returned_value=FALSE;	/* clear has returned value flag */
 		return(-1);
 	}
 	
-//	 if(IsValidExpression(tokens,1,tc) == FALSE) {
-//		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-//		return(-1);
-//	}
+	 if(IsValidExpression(tokens,1,tc) == FALSE) {
+		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+		return(-1);
+	}
 	
-	retval.val.i=EvaluateExpression(outtokens,0,substreturnvalue);
+	retval.val.i=EvaluateExpression(outtokens,0,substreturnvalue+1);
 }
 else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 
 	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
@@ -1133,14 +1130,20 @@ int get_return_value(varval *val) {
 }
 
 int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	if((GetFunctionFlags() & WHILE_STATEMENT) == 0) SetLastError(WEND_NOWHILE);
+	if((GetFunctionFlags() & WHILE_STATEMENT) == 0) {
+		SetLastError(WEND_NOWHILE);
+		return(-1);
+	}
 
 	SetLastError(0);
 	return(0);
 }
 
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	if((GetFunctionFlags() & FOR_STATEMENT) == 0) SetLastError(NEXT_WITHOUT_FOR);
+	if((GetFunctionFlags() & FOR_STATEMENT) == 0) {
+		SetLastError(NEXT_WITHOUT_FOR);
+		return(-1);
+	}
 
 	SetLastError(0);
 	return(0);
@@ -1150,7 +1153,7 @@ int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * While statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1164,11 +1167,12 @@ int count;
 char *condition_tokens[MAX_SIZE][MAX_SIZE];
 int condition_tc;
 int substreturnvalue;
-char *saveBufferPosition;
 int copycount;
-int saveline=GetCurrentFunctionLine();
 
-if(tc < 1) return(SYNTAX_ERROR);			/* Too few parameters */
+if(tc < 1) {			/* Too few parameters */
+	SetLastError(SYNTAX_ERROR);
+	return(-1);
+}
 
 count=0;
 
@@ -1179,14 +1183,19 @@ for(copycount=1;copycount<tc;copycount++) {
 condition_tc=tc-1;
 
 SetFunctionFlags(WHILE_STATEMENT);
-saveBufferPosition=CurrentBufferPosition;		/* save current buffer position */
+
+PushSaveInformation();		/* save while loop state */
+
+SetSaveInformationBufferPointer(CurrentBufferPosition);
 	
 do {
      sigsetjmp(savestate,1);		/* save current context */
 
      CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
-   
+
      if(IsValidExpression(condition_tokens,0,condition_tc) == FALSE) {
+	PopSaveInformation();
+
 	SetLastError(INVALID_EXPRESSION);	/* invalid expression */
 	return(-1);
      }
@@ -1197,6 +1206,7 @@ do {
 
      tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
      if(tc == -1) {	
+	PopSaveInformation();
 	SetLastError(SYNTAX_ERROR);
 	return(-1);
      }
@@ -1204,6 +1214,7 @@ do {
      substreturnvalue=ExecuteLine(buf);
 
      if(substreturnvalue != 0) {
+	PopSaveInformation();
      	ClearIsRunningFlag();
 	return(substreturnvalue);
      }
@@ -1211,11 +1222,14 @@ do {
      if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
 
      if((strcmpi(tokens[0],"WEND") == 0) && (exprtrue == 1)) {				/* at end of block, go back to start */
-	     CurrentBufferPosition=saveBufferPosition;
-     	     SetCurrentFunctionLine(saveline);		/* return line counter to start */
+    //	SetCurrentFunctionLine(GetSaveInformationLineCount());
+     	
+	CurrentBufferPosition=GetSaveInformationBufferPointer();
      }
 
 } while(exprtrue == 1);
+
+PopSaveInformation();
 	
 return(0);		      
 }
@@ -1224,7 +1238,7 @@ return(0);
  * End statement
  *
  * In: tc Token count
- *     tokens Tokens array
+ *     tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1249,7 +1263,7 @@ int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
  * Else statement
  *
  * In: tc Token count
- *     tokens Tokens array
+ *     tokens Token array
  *
  */
 
@@ -1267,18 +1281,24 @@ return(0);
  * Elseif statement
  *
  * In: tc	Token count
-		tokens	Tokens array
+	tokens	Token array
  *
  */
 
 int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if((GetFunctionFlags() & IF_STATEMENT) != IF_STATEMENT) SetLastError(ELSE_WITHOUT_IF);
+if((GetFunctionFlags() & IF_STATEMENT) != IF_STATEMENT) {
+	SetLastError(ELSE_WITHOUT_IF);
+	return(-1);
+}
+
+SetLastError(0);
+return(0);
 }
 /*
  * Endfunction statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1298,7 +1318,7 @@ SetLastError(0);
  * Exit statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1340,12 +1360,14 @@ while(*CurrentBufferPosition != 0) {
 
 	if((strcmpi(tokens[1],"WEND") == 0) && (GetFunctionFlags() & WHILE_STATEMENT)){
 	 	ClearFunctionFlags(WHILE_STATEMENT);
+
 		SetLastError(0);
 		return(0);
 	}
 
 	if((strcmpi(tokens[1],"FOR") == 0) && (GetFunctionFlags() & FOR_STATEMENT)){
 	 	ClearFunctionFlags(FOR_STATEMENT);
+
 		SetLastError(0);
 		return(0);
 	}
@@ -1360,7 +1382,7 @@ return(0);
  * Declare statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1405,7 +1427,7 @@ return(0);
  * Iterate statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error on error or 0 on success
  *
@@ -1421,7 +1443,7 @@ if(((GetFunctionFlags() & FOR_STATEMENT)) || ((GetFunctionFlags() & WHILE_STATEM
 	return(0);
 }
 
-SetLastError(CONTINUE_NO_LOOP);
+SetLastError(ITERATE_WITHOUT_LOOP);
 return(-1);
 }
 
@@ -1429,7 +1451,7 @@ return(-1);
  * Type statement
  *
  * In: tc Token count
- *	tokens Tokens array
+ *	tokens Token array
  *
  * Returns error on error or 0 on success
  *
@@ -1527,7 +1549,7 @@ return(-1);
  * try...catch statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1602,7 +1624,7 @@ return(-1);
  * endtry statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1617,7 +1639,7 @@ return(-1);
  * catch statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1632,7 +1654,7 @@ return(-1);
  * Resize statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns error number on error or 0 on success
  *
@@ -1666,7 +1688,7 @@ return(-1);
  * Help command
  *
  * In: tc Token count
- *	tokens Tokens array
+ *	tokens Token array
  *
  * Returns error on error or 0 on success
  *
@@ -1686,7 +1708,7 @@ return(0);
  * Non-statement keyword as statement
  *
  * In: tc Token count
- * tokens Tokens array
+ * tokens Token array
  *
  * Returns nothing
  *
@@ -1806,114 +1828,6 @@ if(IsStatement(token) == TRUE) return(TRUE);
 
 return(FALSE);
 }
-
-/*
- * Check syntax
- *
- * In: tokens	Tokens to check
-		separators	Separator characters to check against
-		start		Array start
-		end		Array end
- *
- * Returns TRUE or FALSE
- *
- */ 
-int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int end) {
-int count;
-int bracketcount=0;
-int squarebracketcount=0;
-bool IsInBracket=FALSE;
-int statementcount=0;
-int commacount=0;
-int variablenameindex=0;
-int starttoken;
-
-/* check if brackets are balanced */
-
-for(count=start;count<end;count++) {
-	if(strcmp(tokens[count],"(") == 0) {
-		commacount=0;
-
-		if(IsInBracket == FALSE) variablenameindex=(count-1);			/* save name index */
-
-		IsInBracket=TRUE;
-		bracketcount++;
-	}
-
-	if(strcmp(tokens[count],")") == 0) {
-		IsInBracket=FALSE;
-		bracketcount--;
-	}
-
-	if(strcmp(tokens[count],"[") == 0) {
-		IsInBracket=TRUE;
-		squarebracketcount++;
-	}
-
-	if(strcmp(tokens[count],"]") == 0) {
-		IsInBracket=FALSE;
-		squarebracketcount--;
-	}
-
-	/* check if number of commas is correct for array or function call */
-	if(strcmp(tokens[count],",") == 0) {		/* list of expressions */
-		commacount++;
-
-		if(IsInBracket == FALSE) return(FALSE);	/* list not in brackets */
-
-		if((bracketcount > 1) || (squarebracketcount > 1)) return(FALSE);
-
-		if(IsVariable(tokens[variablenameindex]) == TRUE) {
-			if(commacount >= 2) return(FALSE); /* too many commas for array */
-		}
-	}
-}
-
-if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
-
-for(count=start;count<end;count++) {
-
-/* check if two separators are together */
-
-	if(*tokens[count] == 0) break;
-
-	if((strcmpi(tokens[0],"HELP") != 0) && (strcmpi(tokens[0],"PRINT") != 0)  && (strcmpi(tokens[0],"EXIT") != 0)) {
-		if((IsSeperator(tokens[count],separators) == 1) && (*tokens[count] == 0)) return(TRUE);
-	   
-		if((IsSeperator(tokens[count],separators) == 1) && (IsSeperator(tokens[count+1],separators) == 1)) {
-		/* brackets can be next to separators */
-
-			if((strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
-			if( (strcmp(tokens[count],"(") == 0 && strcmp(tokens[count+1],"(") != 0)) return(TRUE);
-			if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],")") != 0)) return(TRUE);
-			if( (strcmp(tokens[count],"(") != 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
-			if( (strcmp(tokens[count],")") != 0 && strcmp(tokens[count+1],")") == 0)) return(TRUE);
-			if( (strcmp(tokens[count],"[") == 0 && strcmp(tokens[count+1],"(") == 0)) return(TRUE);
-			if( (strcmp(tokens[count],")") == 0 && strcmp(tokens[count+1],"]") == 0)) return(TRUE);
-			if( (strcmp(tokens[count],")") == 0) && (*tokens[count+1] == 0)) return(TRUE);
-			if( (strcmp(tokens[count],"]") == 0) && (*tokens[count+1] == 0)) return(TRUE);
-
-			return(FALSE);
-		}
-	}
-}
-
-  /* check if two non-separator tokens are next to each other */
-
-for(count=start;count<end;count++) {   
-	if((IsSeperator(tokens[count],separators) == 0) && (count < end) && (IsSeperator(tokens[count+1],separators) == 0)) return(FALSE);
-}
-
-for(count=start+1;count<end;count++) {   		/* check if using keyword in statement */
-
-	if((IsStatement(tokens[count]) == TRUE) && (strcmpi(tokens[0],"HELP") != 0)  && (strcmpi(tokens[0],"PRINT") != 0)) {
-  		return(FALSE);
-	}
-}
-
-return(TRUE);
-}
-
 	 
 /*
  * Convert to uppercase

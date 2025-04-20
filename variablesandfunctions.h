@@ -159,4 +159,5 @@ void DeclareBuiltInVariables(char *progname,char *args);
 void GetCurrentFunctionFilename(char *buf);
 void FreeFunctionsAndVariables(void);
 void FreeVariablesList(vars_t *vars);
+int IsNumber(char *str);
 

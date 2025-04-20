@@ -193,7 +193,6 @@ while(1) {
  *
  */
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-free(InteractiveModeBuffer);
 cleanup();		/* deallocate lists */
 
 exit(0);
@@ -328,20 +327,17 @@ return;
  * Returns error number on error or 0 on success
  *
  */
-void set_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+void sbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
-//if(tc < 2) {						/* Not enough parameters */
-//	PrintError(SYNTAX_ERROR);
-//	return(SYNTAX_ERROR);
-//}
-
-if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
-	set_breakpoint(atoi(tokens[2]),tokens[3]);
-	return(0);
+if(tc < 2) {						/* Too few parameters */
+	SetLastError(NO_PARAMS);
+	return(-1);
 }
 
-printf("Invalid sub-command\n");
-return(INVALID_VALUE);
+set_breakpoint(atoi(tokens[2]),tokens[3]);
+
+SetLastError(NO_ERROR);
+return(0);
 }
 
 /*
@@ -353,18 +349,15 @@ return(INVALID_VALUE);
  * Returns error number on error or 0 on success
  *
  */
-int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int cbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if(tc < 2) {						/* Not enough parameters */
 	PrintError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
 }
 
-if(strcmpi(tokens[1],"BREAKPOINT") == 0) {		/* set breakpoint */
-	clear_breakpoint(atoi(tokens[2]),tokens[3]);
-	return(0);
-}
+clear_breakpoint(atoi(tokens[2]),tokens[3]);
 
-printf("Invalid sub-command\n");
+SetLastError(NO_ERROR);
 return(0);
 }
 

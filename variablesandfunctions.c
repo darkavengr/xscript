@@ -866,7 +866,7 @@ if(funcargcount <= 3) {		/* no parameters, only function () */
 	}
 	else
 	{
-		if(FindEndOfunction() == -1) return(-1);			/* find end of declared function */
+		return(FindEndOfunction());			/* find end of declared function */
 	}	
 }
 
@@ -976,6 +976,7 @@ else
 {
 	if(FindEndOfunction() == -1) return(-1);			/* find end of declared function */
 }
+
 
 SetLastError(0);
 return(0);
@@ -1304,31 +1305,28 @@ for(count=start;count<end;count++) {
 		count++;		/* skip ( */
 
 	 	for(countx=count;countx<end;countx++) {		/* find end of function call */
-			if(strcmp(tokens[countx],")") == 0) {
-				countx++;
-				break;
-			}
+			if(strcmp(tokens[countx],")") == 0) break;
 	 	 }
 
 	
-	  	CallFunction(tokens,s,countx-1);
+	  	CallFunction(tokens,s,countx);
 
 		if(retval.has_returned_value == TRUE) {		/* function has returned value */
 		  	get_return_value(&subst_returnvalue);
 
-		  	if(retval.val.type == VAR_STRING) {		/* returning string */   
+		  	if(subst_returnvalue.type == VAR_STRING) {		/* returning string */   
 		  		sprintf(temp[outcount++],"\"%s\"",retval.val.s);
 		  	}
-		  	else if(retval.val.type == VAR_INTEGER) {		/* returning integer */
+		  	else if(subst_returnvalue.type == VAR_INTEGER) {		/* returning integer */
 				sprintf(temp[outcount++],"%d",retval.val.i);
 	 	  	}
-		  	else if(retval.val.type == VAR_NUMBER) {		/* returning double */
+		  	else if(subst_returnvalue.type == VAR_NUMBER) {		/* returning double */
 				sprintf(temp[outcount++],"%.6g",retval.val.d);		 		
 		  	}
-		  	else if(retval.val.type == VAR_SINGLE) {		/* returning single */
+		  	else if(subst_returnvalue.type == VAR_SINGLE) {		/* returning single */
 				sprintf(temp[outcount++],"%f",retval.val.f);
 		  	}
-		 	else if(retval.val.type == VAR_LONG) {			/* returning long */
+		 	else if(subst_returnvalue.type == VAR_LONG) {			/* returning long */
 				sprintf(temp[outcount++],"%ld",retval.val.l);
 		  	}
 
@@ -1336,7 +1334,7 @@ for(count=start;count<end;count++) {
 	    }
 
 	 }
-	 else if(IsVariable(tokens[count]) == TRUE) {
+	 else if(IsVariable(tokens[count]) == TRUE) { 
 	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 
 	    tokentype=SUBST_VAR;
@@ -1441,9 +1439,9 @@ for(count=start;count<end;count++) {
 memset(out,0,MAX_SIZE*MAX_SIZE);
 
 for(count=0;count<outcount;count++) {
-	strcpy(out[count],temp[count]);
+	//printf("temp[%d]=%s\n",count,temp[count]);
 
-//	//printf("out[%d]=%s\n",count,out[count]);
+	strcpy(out[count],temp[count]);
 }
 
 return(outcount);
@@ -1937,7 +1935,8 @@ while(vartypenames[count] != NULL) {
 	count++;
 }
 
-SetLastError(-1);
+SetLastError(INVALID_VARIABLE_TYPE);
+return(-1);
 }
 
 /*
@@ -2069,17 +2068,13 @@ return(currentfunction->stat);
 *
 *  In: Nothing
 * 
-*  Returns: buffer pointer
+*  Returns: buffer pointer or NULL.
 * 
 */
 char *GetSaveInformationBufferPointer(void) {
-char *ptr;
-
 if(currentfunction->saveinformation_top->bufptr == NULL) return(NULL);
 
-ptr=currentfunction->saveinformation_top->bufptr;
-
-return(ptr);
+return(currentfunction->saveinformation_top->bufptr);
 }
 
 /*
@@ -2099,7 +2094,7 @@ currentfunction->saveinformation_top->bufptr=ptr;
 *
 *  In: Nothing
 * 
-*  Returns: buffer pointer
+*  Returns: buffer pointer or NULL on error
 * 
 */
 int GetSaveInformationLineCount(void) {
@@ -2189,7 +2184,7 @@ return(currentfunction->saveinformation_top);
 * 
 *  In: Nothing
 * 
-*  Returns: return variable type
+*  Returns: return variable X size or -1 on error
 * 
 */
 
@@ -2213,7 +2208,7 @@ return(-1);
 * 
 *  In: Nothing
 * 
-*  Returns: return variable type
+*  Returns: return variable Y size or -1 on error
 * 
 */
 
@@ -2258,8 +2253,6 @@ int IsValidVariableOrKeyword(char *name) {
 char *InvalidChars = { "¬`\"$%^&*()-+={}[]:;@'~#<>,.?/|\\" };
 
 if(strpbrk(name,InvalidChars) != NULL) return(FALSE);		/* can't start with invalid character */
-
-if((*name >= '0') && (*name <= '9')) return(FALSE);		/* can't start with number */
 
 return(TRUE);
 }

@@ -133,12 +133,12 @@ if(sig == SIGINT) {			/* ctrl-c */
 	   	}
 	   	else
 	   	{
-			printf("\nCtrl-C. Type QUIT to leave.\n");
+			printf("\nCtrl-C. Type QUIT to exit.\n");
 	   	}
 	}
 	else
 	{
-			printf("Terminated by Ctrl-C\n");
+			printf("xscript: Terminated by Ctrl-C\n");
 
 			cleanup();		/* deallocate lists */
 			exit(0);
@@ -147,7 +147,7 @@ if(sig == SIGINT) {			/* ctrl-c */
    	return;
 }
 
-printf("Signal %d received\n",sig);
+printf("xscript: Signal %d received\n",sig);
 }
 
 void GetExecutableDirectoryName(char *name) {
@@ -160,6 +160,5 @@ FreeModulesList();				/* free modules */
 
 FreeInteractiveModeBuffer();	/* free interactive mode buffer */
 FreeFileBuffer();		/* free file buffer */
-
 }
 

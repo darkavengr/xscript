@@ -24,7 +24,7 @@
 #define INVALID_ARRAY_SUBSCRIPT			23
 #define TYPE_ERROR	    			24
 #define INVALID_VARIABLE_TYPE 			25
-#define CONTINUE_NO_LOOP    			26
+#define ITERATE_WITHOUT_LOOP   			26
 #define ELSEIF_NOIF	    			27
 #define NO_MODULE_PATH 	    			28
 #define VARIABLE_EXISTS	    			29

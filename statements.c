@@ -71,12 +71,22 @@ statement statements[] = {
 	     { "CONTINUE",NULL,&continue_command,FALSE},\
 	     { "LOAD",NULL,&load_command,FALSE},\
 	     { "RUN",NULL,&run_command,FALSE},\
-	     { "SET",NULL,&set_command,FALSE},\
-	     { "CLEAR",NULL,&clear_command,FALSE},\
+	     { "SBREAK",NULL,&sbreak_command,FALSE},\
+	     { "CBREAK",NULL,&cbreak_command,FALSE},\
 	     { "HELP",NULL,&help_command,FALSE},\
 	     { "TRACE",NULL,&trace_command,FALSE},\
 	     { "STACKTRACE",NULL,&stacktrace_command,FALSE},\
 	     { NULL,NULL,NULL } };
+
+/*
+ * Call statement function
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
 
 int CallIfStatement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int statementcount=0;
@@ -99,6 +109,14 @@ SetLastError(INVALID_STATEMENT);
 return(-1);
 }
 
+/*
+ * Check if statement
+ *
+ * In: statement	Statement
+ *
+ * Returns TRUE or FALSE
+ *
+ */
 int IsStatement(char *statement) {
 int statementcount=0;
 
@@ -112,6 +130,15 @@ do {
 return(FALSE);
 }
 
+/*
+ * Check if statement is end-statement keyword for statement keyword
+ *
+ * In: statement	statement keyword
+ *     endstatement	end of statement keyword
+ *
+ * Returns: TRUE or FALSE
+ *
+ */
 int IsEndStatementForStatement(char *statement,char *endstatement) {
 int statementcount=0;
 

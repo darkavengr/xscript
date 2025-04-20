@@ -1,4 +1,0 @@
-for count=1 to 10000000
-	print "Counter is ",count
-next count
-
