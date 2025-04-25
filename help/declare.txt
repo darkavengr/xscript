@@ -1,12 +1,6 @@
 DECLARE variable-name {AS type}
 
-Declare a variable with optional type:
-
-DOUBLE  : double-precision number
-INTEGER : integer
-SINGLE  : single-precision number
-
-Or it may be a user-defined type. 
+Declare a variable with optional type; see help on DATATYPES for data types
 
 Without the optional type, variable declarations uses the single-precision data type.
 

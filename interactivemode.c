@@ -278,7 +278,7 @@ if(strlen(currentfile) == 0) {		/* check if there is a file */
 	return(0);
 }
 
-ExecuteFile(currentfile);
+return(ExecuteFile(currentfile));	/* run file */
 }
 
 /*
@@ -374,7 +374,7 @@ SetCurrentBufferPosition(InteractiveModeBuffer);
 }
 
 /*
- * Stack trace command
+ * backtrace command
  *
  * In: tc Token count
  * tokens Tokens array
@@ -382,7 +382,7 @@ SetCurrentBufferPosition(InteractiveModeBuffer);
  * Returns error number on error or 0 on success
  *
  */
-int stacktrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int backtrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 FUNCTIONCALLSTACK *stack;
 int callstackcount=0;
 	

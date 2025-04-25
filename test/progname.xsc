@@ -1,0 +1,3 @@
+print "The filename of this script is ",PROGRAMNAME
+print "The arguments to this script are ",COMMAND
+

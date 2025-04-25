@@ -164,26 +164,42 @@ void PrintVariableValue(vars_t *var) {
 int vartype=0;
 int ycount=0;
 int xcount=0;
+int xsize=GetVariableXSize(var->varname);
+int ysize=GetVariableYSize(var->varname);
+char *varprefixname[MAX_SIZE];
+
+sprintf(varprefixname,"%s=",var->varname);		/* get variable name and = to get length */
 
 vartype=GetVariableType(var->varname);
 
-if((var->xsize > 1) || (var->ysize > 1)) printf("(");
+for(ycount=0;ycount != ysize;ycount++) {
 
-for(ycount=0;ycount < var->ysize+1;ycount++) {
-	for(xcount=0;xcount < var->xsize+1;xcount++) {
+	/* print ( before arrays and pad out with spaces on subsequent lines */
 
-		 switch(vartype) {
+	if((GetVariableXSize(var->varname) > 1) || (GetVariableYSize(var->varname) > 1)) {
+		if(ycount == 0) {
+			printf("(");
+		}
+		else
+		{ 
+			printf("%*s",strlen(varprefixname)+1,"(");
+		}
+	}
+		
+	for(xcount=0;xcount != xsize;xcount++) {
+
+		switch(vartype) {
 
 			 case VAR_NUMBER:				/* double precision */			
-				printf("%.6g",var->val[(ycount*var->ysize)+(xcount*var->xsize)].d);
+				printf("%.6g",var->val[(ycount*ysize)+(xcount*xsize)].d);
 			        break;
 
-			  case VAR_STRING:				/* string */
-				printf("\"%s\"",var->val[((ycount*var->ysize)+(var->xsize*xcount))].s);
+			  case VAR_STRING:				/* string */	
+				printf("\"%s\"",var->val[((ycount*ysize)+(xsize*xcount))].s);
 			        break;
 
 			  case VAR_INTEGER:	 			/* integer */
-				printf("%d",var->val[(ycount*var->ysize)+(xcount*var->xsize)].i);
+				printf("%d",var->val[(ycount*ysize)+(xcount*xsize)].i);
         			break;
 
 			  case VAR_SINGLE:				/* single */	     
@@ -191,14 +207,14 @@ for(ycount=0;ycount < var->ysize+1;ycount++) {
 			        break;
   		}
 	
-		  if(xcount < var->xsize) printf(",");		 
-	
+		  if(xcount < xsize-1) printf(",");	
 	  }
+
+	if((GetVariableXSize(var->varname) > 1) || (GetVariableYSize(var->varname) > 1)) printf(")\n");
+
 }
 
-if((var->xsize > 1) || (var->ysize > 1)) printf(")");
-  
-printf("\n");
+if((GetVariableXSize(var->varname) <= 1) || (GetVariableYSize(var->varname) <= 1)) printf("\n");
 }
 
 /*
@@ -215,7 +231,7 @@ int padcount;
 
 if(strlen(name) > 0) {
 	if(FindVariable(name,&var) == -1) {
-		SetLastError(VARIABLE_DOES_NOT_EXIST);	
+		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);	
 		return(-1);
 	}
 

@@ -56,7 +56,7 @@ char *errs[] = { "No error",\
 		 "ELSEIF without IF",\
 		 "Missing XSCRIPT_MODULE_PATH path",\
 		 "Variable already exists",\
-		 "Variable not found",\
+		 "Variable or function not defined",\
 		 "EXIT WHILE without WHILE",\
 		 "FOR without NEXT",\
 		 "User-defined type already exists",\
@@ -73,6 +73,7 @@ char *errs[] = { "No error",\
 		 "No program currently running",\
 		 "Not an array",\
 		 "Missing array subscript",\
+		 "User-defined type does not exist",\
 };
 
 /*

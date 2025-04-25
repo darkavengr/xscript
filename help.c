@@ -53,8 +53,8 @@ while(!feof(handle)) {                /* display text until end of file */
 
 	printf("%s",HelpFilename);
 
-	if(linecount == HELP_LINE_COUNT) {		/* end of paragraph */
-		printf("-- Press any key to continue -- or type q to quit");
+	if(linecount++ == HELP_LINE_COUNT) {		/* end of paragraph */
+		printf("-- Press any key to continue -- or type q to quit:");
 		
 		if(getc(stdin) == 'q') break;		/* quit help */
 	

@@ -301,7 +301,7 @@ for(count=1;count<tc;count++) {
 	if((strcmp(tokens[count],"=") == 0) && (IsValid == FALSE)) {
 		IsValid=TRUE;
 
- 		ParseVariableName(tokens,0,count,&split);			/* split variable */  	
+ 		if(ParseVariableName(tokens,0,count,&split) == -1) return(-1);		/* split variable */  	
 
 		if(IsValidVariableOrKeyword(split.name) == FALSE) {	/* Variable name is invalid */
 			SetLastError(SYNTAX_ERROR);
@@ -378,12 +378,13 @@ for(count=1;count<tc;count++) {
 	 		val.l=exprone;
 	 	}
 	 	else if(vartype == VAR_UDT) {			/* user-defined type */	 
-			ParseVariableName(tokens,count+1,tc,&assignsplit);		/* split variable */  	
+			if(ParseVariableName(tokens,count+1,tc,&assignsplit) == -1) return(-1);		/* split variable */
+
  			varptr=GetVariablePointer(split.name);		/* point to variable entry */
 			assignvarptr=GetVariablePointer(assignsplit.name);
 
 			if((varptr == NULL) || (assignvarptr == NULL)) {
-				SetLastError(VARIABLE_DOES_NOT_EXIST);
+				SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 				return(-1);
 			}
 			   
@@ -488,16 +489,17 @@ for(count=1;count<tc;count++) {
 		if((IsInBracket == FALSE) && (strcmp(tokens[endtoken],",") == 0)) break;		/* found separator not subscript */
 	}
 
+
 	sigsetjmp(savestate,1);		/* save current context */
 
 	/* if printing array */
 
-	if((GetVariableXSize(tokens[count]) > 0) || (GetVariableYSize(tokens[count]) > 0)) {		/* is array */
-		if(IsInBracket == FALSE) {
-			SetLastError(MISSING_SUBSCRIPT);
-			return(-1);
-		}
-	}
+//	if((GetVariableXSize(tokens[count]) > 0) || (GetVariableYSize(tokens[count]) > 0)) {		/* is array */
+//		if(IsInBracket == FALSE) {
+//			SetLastError(MISSING_SUBSCRIPT);
+//			return(-1);
+//		}
+//	}
 
 	/* printing string */
 	if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
@@ -513,13 +515,6 @@ for(count=1;count<tc;count++) {
 	else
 	{
 		sigsetjmp(savestate,1);		/* save current context */
-
-		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
-
-		if(IsValidExpression(tokens,count,endtoken) == FALSE) {
-			SetLastError(INVALID_EXPRESSION);
-			return(-1);
-		}
 
 		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
 	
@@ -822,7 +817,7 @@ if(StartOfSecondExpression == tc) {
 }
 
 
-ParseVariableName(tokens,1,StartOfFirstExpression,&split);
+if(ParseVariableName(tokens,1,StartOfFirstExpression,&split) == -1) return(-1);
 
 for(StartOfStepExpression=1;StartOfStepExpression<tc;StartOfStepExpression++) {
 	if(strcmpi(tokens[StartOfStepExpression],"step") == 0) {		/* found start of step expression */
@@ -854,6 +849,8 @@ else			/* have step keyword */
 
 //  0   1    2 3 4  5
 // for count = 1 to 10
+
+/* validate start and end values */
 
 if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression-1) == FALSE) {
 	SetLastError(INVALID_EXPRESSION);
@@ -931,7 +928,7 @@ while(1) {
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
 
-	if(ExecuteLine(buf) == -1) {
+	if(ExecuteLine(buf) == -1) {	/* run statement */
 		PopSaveInformation();
 
 		ClearIsRunningFlag();
@@ -975,7 +972,7 @@ while(1) {
 
 		sigsetjmp(savestate,1);		/* save current context */
 
-	      	if(*CurrentBufferPosition == 0) {
+	      	if(*CurrentBufferPosition == 0) {		/* end of data */
 	      		PopSaveInformation();				 
 			ClearFunctionFlags(FOR_STATEMENT);
 
@@ -986,12 +983,12 @@ while(1) {
 	     	 }
 
 		if(
-       		( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d < exprtwo)) ||
-		((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d > exprtwo)) ||
-		((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i < exprtwo)) ||
-	        ((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i > exprtwo)) ||
-	        ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f < exprtwo)) ||
-	        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f > exprtwo))
+       		( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d <= exprtwo)) ||
+		((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d >= exprtwo)) ||
+		((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i <= exprtwo)) ||
+	        ((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i >= exprtwo)) ||
+	        ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f <= exprtwo)) ||
+	        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f >= exprtwo))
        		) break;
 
 		CurrentBufferPosition=GetSaveInformationBufferPointer();			/* get pointer to start of for statement */
@@ -1294,6 +1291,7 @@ if((GetFunctionFlags() & IF_STATEMENT) != IF_STATEMENT) {
 SetLastError(0);
 return(0);
 }
+
 /*
  * Endfunction statement
  *
@@ -1393,8 +1391,6 @@ varsplit split;
 int vartype;
 int count;
 
-ParseVariableName(tokens,1,tc,&split);
-
 /* if there is a type in the declare statement */
 
 for(count=1;count<tc;count++) {
@@ -1402,6 +1398,8 @@ for(count=1;count<tc;count++) {
 }
 
 if(count < tc) {		/* found type */
+	if(ParseVariableName(tokens,1,count-1,&split) == -1) return(-1);	/* parse variable name */
+
 	vartype=CheckVariableType(tokens[count+1]);	/* get variable type */
 	if(vartype == -1) {
 		SetLastError(INVALID_VARIABLE_TYPE);
@@ -1413,6 +1411,8 @@ if(count < tc) {		/* found type */
 }
 else
 {
+	if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);	/* parse variable name */
+
 	retval.val.type=VAR_NUMBER;
 	retval.val.i=CreateVariable(split.name,"DOUBLE",split.x,split.y);
 }
@@ -1470,8 +1470,8 @@ if(tc < 1) {
 	return(-1);
 }
 
-if((GetUDT(tokens[1]) != NULL) || (IsValidVariableType(tokens[1]) != -1)) {
-	SetLastError(TYPE_EXISTS);		/* If type exists */
+if((GetUDT(tokens[1]) != NULL) || (IsValidVariableType(tokens[1]) != -1)) { 		/* If type exists */
+	SetLastError(TYPE_EXISTS);
 	return(-1);
 }
 
@@ -1513,7 +1513,7 @@ do {
 
 /* add field to user defined type */
 	
-	ParseVariableName(typetokens,0,typetc,&split);		/* split variable name */
+	if(ParseVariableName(typetokens,0,typetc,&split) == -1) return(-1);		/* split variable name */
 
 	strcpy(fieldptr->fieldname,split.name);		/* copy name */
 	
@@ -1671,7 +1671,7 @@ if(tc < 3) {
 
 var=GetVariablePointer(tokens[1]);		/* get pointer to variable */
 if(var == NULL) {
-	SetLastError(VARIABLE_DOES_NOT_EXIST);
+	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 	return(-1);
 }
 if((var->xsize == 0) && (var->ysize == 0)) {
@@ -1679,7 +1679,7 @@ if((var->xsize == 0) && (var->ysize == 0)) {
 	return(-1);
 }
 
-ParseVariableName(tokens,1,tc,&split);		/* parse variable name */
+if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);		/* parse variable name */
 
 SetLastError(ResizeArray(split.name,split.x,split.y));
 return(-1);

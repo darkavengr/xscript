@@ -59,6 +59,7 @@ char *aptr;
 varval cmdargs;
 int returnvalue;
 struct sigaction signalaction;
+char *fullpath[MAX_SIZE];
 
 /* get executable directory name from argv[0] */
 
@@ -71,7 +72,19 @@ while(aptr != strrchr(argv[0],'/')) {		/* from first character to last / in file
 	*dptr++=*aptr++;
 }
 
-memset(args,0,MAX_SIZE);
+/* get script's absolute path */
+
+memset(fullpath,0,MAX_SIZE);
+
+if(argc > 1) {
+	if(*argv[1] != '/') {			/* if is relative path */
+		sprintf(fullpath,"%s/%s",getcwd(args,MAX_SIZE),argv[1]);	/* prepend current directory to relative path */
+	}
+	else
+	{
+		strcpy(fullpath,argv[1]);	/* if is absolute path then just copy it */
+	}
+}
 
 /* get arguments */
 
@@ -81,7 +94,7 @@ for(count=2;count<argc;count++) {
 	if(count < argc-1) strcat(args," ");
 }
 
-InitializeMainFunction(argv[1],args);			/* Initialize main function */
+InitializeMainFunction(fullpath,args);			/* Initialize main function */
 
 signalaction.sa_sigaction=&signalhandler;
 signalaction.sa_flags=SA_NODEFER;

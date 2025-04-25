@@ -75,7 +75,7 @@ statement statements[] = {
 	     { "CBREAK",NULL,&cbreak_command,FALSE},\
 	     { "HELP",NULL,&help_command,FALSE},\
 	     { "TRACE",NULL,&trace_command,FALSE},\
-	     { "STACKTRACE",NULL,&stacktrace_command,FALSE},\
+	     { "BACKTRACE",NULL,&backtrace_command,FALSE},\
 	     { NULL,NULL,NULL } };
 
 /*

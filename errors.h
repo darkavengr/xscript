@@ -28,7 +28,7 @@
 #define ELSEIF_NOIF	    			27
 #define NO_MODULE_PATH 	    			28
 #define VARIABLE_EXISTS	    			29
-#define VARIABLE_DOES_NOT_EXIST 		30
+#define VARIABLE_OR_FUNCTION_DOES_NOT_EXIST 	30
 #define EXIT_WHILE_WITHOUT_WHILE 		31
 #define FOR_WITHOUT_NEXT   			32
 #define TYPE_EXISTS	   			33
@@ -45,7 +45,6 @@
 #define NO_RUNNING_PROGRAM			44
 #define NOT_ARRAY				45
 #define MISSING_SUBSCRIPT			46
-#define FIELD_DOES_NOT_EXIST			47
 #define TYPE_DOES_NOT_EXIST			48
 #define TYPE_NO_END_TYPE			49
 
