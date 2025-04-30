@@ -280,12 +280,7 @@ for(count=0;count < tc;count++) {
 }
 
 if(IsStatement(tokens[0])) {
-	returnvalue=CallIfStatement(tc,tokens); /* run if statement */
-
-	if(returnvalue == -1) {
-		PrintError(GetLastError());
-		return(-1);
-	}
+	if(CallIfStatement(tc,tokens) == -1) return(-1); /* run if statement */
 
 	IsValid=TRUE;
 }
@@ -414,9 +409,8 @@ for(count=1;count<tc;count++) {
 
 /* call user function */
 
-if((CheckFunctionExists(tokens[0]) != -1) && (IsValid == FALSE)) {	/* user function */
-	CallFunction(tokens,0,tc);
-	IsValid=TRUE;
+if((CheckFunctionExists(tokens[0]) != -1) && (IsValid == FALSE)) {
+	if(CallFunction(tokens,0,tc) == -1) return(-1);
 } 
 
 if(IsValid == FALSE) {
@@ -1022,7 +1016,7 @@ int vartype;
 int substreturnvalue=0;
 char *outtokens[MAX_SIZE][MAX_SIZE];
 
-SetFunctionFlags(FUNCTION_STATEMENT);
+ClearFunctionFlags(FUNCTION_STATEMENT);
 
 /* check return type */
 
@@ -1058,12 +1052,12 @@ retval.has_returned_value=TRUE;				/* set has returned value flag */
 
 if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
 
-	if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
-		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+	//if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
+	//	retval.has_returned_value=FALSE;	/* clear has returned value flag */
 
-		SetLastError(INVALID_EXPRESSION);
-		return(-1);	
-	}
+	//	SetLastError(INVALID_EXPRESSION);
+	//	return(-1);	
+	//}
 }
 
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */

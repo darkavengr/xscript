@@ -1,10 +1,14 @@
-function test()
-return 2+2
+function testfunction2(a,b,c)
+print "Test function 2"
+
+return a*b*c
 endfunction
 
-print test()
+function testfunction1(a,b,c)
+print "Test function 1"
 
+return testfunction2(a,b,c)
+endfunction
 
-
-
+print testfunction1(1,2,3)
 

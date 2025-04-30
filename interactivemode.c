@@ -385,20 +385,50 @@ SetCurrentBufferPosition(InteractiveModeBuffer);
 int backtrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 FUNCTIONCALLSTACK *stack;
 int callstackcount=0;
-	
+vars_t *varnext;
+
 stack=GetFunctionCallStackTop();
 
 while(stack != NULL) {
-	printf("#%d	%s\n",callstackcount++,stack->name);
+	printf("#%d	%s(",callstackcount++,stack->name);
+
+	/* display parameters with values */
+
+	varnext=stack->parameters;	/* point to parameters */
+
+	while(varnext != NULL) {
+		if(varnext->val != NULL) {
+			if(varnext->type_int == VAR_NUMBER) {				/* double precision */
+				printf("%s=%.6g",varnext->varname,varnext->val->d);
+			}
+			else if(varnext->type_int == VAR_STRING) {			/* string */	
+				printf("%s=\"%s\"",varnext->varname,varnext->val->s);
+			}
+			else if(varnext->type_int == VAR_INTEGER) {			/* integer */
+				printf("%s=%d",varnext->varname,varnext->val->i);
+       			}
+			else if(varnext->type_int == VAR_SINGLE) {				/* single */	     
+				printf("%f",varnext->varname,varnext->val->f);
+			}
+
+			if((varnext != NULL) && (varnext->next != NULL)) printf(", ");
+		}
+
+		varnext=varnext->next;
+
+  	}
+	
+	printf(") : %s\n",stack->returntype);
 
 	stack=stack->last;
 }
+
 
 return(0);
 }
 
 /*
- * Free interactive mode list
+ * Free interactive mode buffer
  *
  * In: Nothing
  *

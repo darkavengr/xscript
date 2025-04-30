@@ -21,6 +21,7 @@
 #define MAX_INCLUDE 10
 
 #define MAX_NEST_COUNT 256
+#define DEFAULT_TYPE_INT VAR_NUMBER
 
 typedef struct {
  double d;
@@ -87,7 +88,7 @@ typedef struct func {
  struct func *next;
 } functions;
 
-typedef struct {
+typedef struct FUNCTIONCALLSTACK {
  char *name[MAX_SIZE];
  char *callptr;
  int linenumber;
@@ -95,6 +96,7 @@ typedef struct {
  SAVEINFORMATION *saveinformation_top;
  vars_t *vars;
  vars_t *vars_end;
+ vars_t *parameters;
  int stat;	
  char *returntype[MAX_SIZE];
  int type_int;
@@ -160,4 +162,5 @@ void GetCurrentFunctionFilename(char *buf);
 void FreeFunctionsAndVariables(void);
 void FreeVariablesList(vars_t *vars);
 int IsNumber(char *str);
+functions *GetFunctionPointer(char *name);
 

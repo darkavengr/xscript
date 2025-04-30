@@ -110,7 +110,7 @@ for(count=0;count<exprcount;count++) {
 }
 
 val.d=atof(temp[0]);
-	
+
 for(count=0;count<exprcount;count++)  {
 
 	if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {

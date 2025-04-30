@@ -172,7 +172,7 @@ sprintf(varprefixname,"%s=",var->varname);		/* get variable name and = to get le
 
 vartype=GetVariableType(var->varname);
 
-for(ycount=0;ycount != ysize;ycount++) {
+for(xcount=0;xcount != xsize;xcount++) {
 
 	/* print ( before arrays and pad out with spaces on subsequent lines */
 
@@ -186,24 +186,24 @@ for(ycount=0;ycount != ysize;ycount++) {
 		}
 	}
 		
-	for(xcount=0;xcount != xsize;xcount++) {
-
+	for(ycount=0;ycount != ysize;ycount++) {
+		
 		switch(vartype) {
 
-			 case VAR_NUMBER:				/* double precision */			
-				printf("%.6g",var->val[(ycount*ysize)+(xcount*xsize)].d);
+			 case VAR_NUMBER:				/* double precision */
+				printf("%.6g",var->val[(ycount*ysize)+(xcount-1)].d);
 			        break;
 
 			  case VAR_STRING:				/* string */	
-				printf("\"%s\"",var->val[((ycount*ysize)+(xsize*xcount))].s);
+				printf("\"%s\"",var->val[((ycount*ysize)+(xcount-1))].s);
 			        break;
 
 			  case VAR_INTEGER:	 			/* integer */
-				printf("%d",var->val[(ycount*ysize)+(xcount*xsize)].i);
+				printf("%d",var->val[(ycount*ysize)+(xcount-1)].i);
         			break;
 
 			  case VAR_SINGLE:				/* single */	     
-				printf("%f",var->val[ycount*sizeof(float)+(xcount*sizeof(float))].f);
+				printf("%f",var->val[(ycount*ysize)+(xcount-1)].f);
 			        break;
   		}
 	
