@@ -48,7 +48,7 @@ if(handle == NULL) {                 /* can't open file */
 	return(-1);
 }
 
-while(!feof(handle)) {                /* display text until end of file */
+do {
 	fgets(HelpFilename,MAX_SIZE,handle);
 
 	printf("%s",HelpFilename);
@@ -61,7 +61,7 @@ while(!feof(handle)) {                /* display text until end of file */
 		linecount=0;
 	}
 
-}
+} while(!feof(handle));               /* display text until end of file */
 
 fclose(handle);
 return(0);

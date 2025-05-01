@@ -42,14 +42,13 @@ MODULES *modules_end=NULL;
  */
 
 int AddModule(char *modulename) {
-MODULES *next;
-MODULES *last;
 int handle;
 char *filename[MAX_SIZE];
 char *modpath;
 char *moddirs[MAX_SIZE][MAX_SIZE];
 int tc=0;
 int count;
+MODULES ModuleEntry;
 
 modpath=getenv("XSCRIPT_MODULE_PATH");				/* get module path */
 
@@ -71,30 +70,12 @@ for(count=0;count<tc;count++) {			/* loop through path array */
 	handle=LoadModule(filename);
 	if(handle == -1) continue;			/* can't open module */
 
-	if(modules == NULL) {			/* first in list */
-		modules=malloc(sizeof(MODULES));
-		if(modules == NULL) {
-			SetLastError(NO_MEM);
-		  	return(-1);
-		}
+	/* add module entry */
+	strcpy(ModuleEntry.modulename,filename);
+	ModuleEntry.dlhandle=handle;
+	ModuleEntry.flags=MODULE_BINARY;
 
-		modules_end=modules;
-		modules_end->last=NULL;
-	}
-	else
-	{
-		modules_end->next=malloc(sizeof(MODULES));
-	
-		if(modules_end->next == NULL) {
-	 		SetLastError(NO_MEM);
-	 		return(-1);
-		}
-
-		modules_end=modules_end->next;
-		next->dlhandle=handle;
-
-		strcpy(next->modulename,filename);
-	}
+	AddToModulesList(&ModuleEntry);
 }
 
 return(0);
@@ -146,5 +127,34 @@ while(next != NULL) {
 
 modules=NULL;
 return;
+}
+
+int AddToModulesList(MODULES *entry) {
+if(modules == NULL) {			/* first in list */
+	modules=malloc(sizeof(MODULES));
+	if(modules == NULL) {
+		SetLastError(NO_MEM);
+	  	return(-1);
+	}
+
+	modules_end=modules;
+	modules_end->last=NULL;
+}
+else
+{
+	modules_end->next=malloc(sizeof(MODULES));
+	
+	if(modules_end->next == NULL) {
+ 		SetLastError(NO_MEM);
+ 		return(-1);
+	}
+
+	modules_end=modules_end->next;
+}
+
+memcpy(modules_end,entry,sizeof(MODULES));
+
+SetLastError(0);
+return(0);
 }
 

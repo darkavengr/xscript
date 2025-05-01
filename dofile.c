@@ -36,6 +36,7 @@
 #include "variablesandfunctions.h"
 #include "dofile.h"
 #include "debugmacro.h"
+#include "module.h"
 
 extern jmp_buf savestate;
 
@@ -50,6 +51,7 @@ int NumberOfIncludedFiles=0;	/* number of included files */
 char *TokenCharacters="+-*/<>=!%~|& \t()[],{};.#";
 int Flags=0;
 char *CurrentFile[MAX_SIZE];
+int CurrentLine=0;
 
 /*
  * Load file
@@ -162,6 +164,8 @@ SetCurrentFunctionLine(1);
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
 SetFunctionCallPtr(saveCurrentBufferPosition);		/* set start of current function to buffer start */
 
+SetCurrentFile(filename);			/* set current executing file */
+
 do {
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,linebuf,LINE_SIZE);			/* get data */
 	SetCurrentFileBufferPosition(CurrentBufferPosition);
@@ -182,7 +186,6 @@ do {
 		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
 
 		CurrentBufferPosition=saveCurrentBufferPosition;
-
 
 		free(progname.s);
 
@@ -231,12 +234,12 @@ char *d;
 vars_t *varptr;
 vars_t *assignvarptr;
 int returnvalue;
-char *functionname[MAX_SIZE];
+char *filename[MAX_SIZE];
 int lc=GetCurrentFunctionLine();
 int end;
 int IsValid=FALSE;
 
-GetCurrentFunctionName(functionname);
+GetCurrentFile(filename);	/* get name of current file */
 
 c=*lbuf;
 if((c == '\r') || (c == '\n') || (c == 0)) {
@@ -245,7 +248,7 @@ if((c == '\r') || (c == '\n') || (c == 0)) {
 }
 
 if(GetTraceFlag()) {		/* print statement if trace is enabled */
-	printf("***** Tracing line %d in function %s: %s\n",GetCurrentFunctionLine(),functionname,lbuf);
+	printf("***** Tracing line %d in function %s: %s\n",GetCurrentFunctionLine(),filename,lbuf);
 }
 
 if(strlen(lbuf) > 1) {
@@ -418,8 +421,8 @@ if(IsValid == FALSE) {
 	return(-1);
 }
 
-if(check_breakpoint(GetCurrentFunctionLine(),functionname) == TRUE) {	/* if there is a breakpoint */
-	printf("***** Reached breakpoint: function %s line %d\n",functionname,GetCurrentFunctionLine());
+if(check_breakpoint(GetCurrentFunctionLine(),filename) == TRUE) {	/* if there is a breakpoint */
+	printf("***** Reached breakpoint: %s line %d\n",filename,GetCurrentFunctionLine());
 
 	ClearIsRunningFlag();
 }
@@ -486,15 +489,6 @@ for(count=1;count<tc;count++) {
 
 	sigsetjmp(savestate,1);		/* save current context */
 
-	/* if printing array */
-
-//	if((GetVariableXSize(tokens[count]) > 0) || (GetVariableYSize(tokens[count]) > 0)) {		/* is array */
-//		if(IsInBracket == FALSE) {
-//			SetLastError(MISSING_SUBSCRIPT);
-//			return(-1);
-//		}
-//	}
-
 	/* printing string */
 	if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
 		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
@@ -515,35 +509,38 @@ for(count=1;count<tc;count++) {
 		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);
 		if(returnvalue == -1) return(-1);
 
-		retval.val.type=0;
-		retval.val.d=EvaluateExpression(printtokens,0,returnvalue);
+		if(returnvalue > 0) {
+			retval.val.type=0;
+			retval.val.d=EvaluateExpression(printtokens,0,returnvalue);
+
+
+			/* if it's a condition print True or False */
 	
-		/* if it's a condition print True or False */
+			for(countx=count;countx<tc;countx++) {
+				if((strcmp(tokens[countx],">") == 0) ||
+				   (strcmp(tokens[countx],"<") == 0) ||
+				   (strcmp(tokens[countx],"=") == 0) ||
+				   (strcmp(tokens[countx],">=") == 0) ||
+				   (strcmp(tokens[countx],"<=") == 0)) {
 
-		for(countx=count;countx<tc;countx++) {
-			if((strcmp(tokens[countx],">") == 0) ||
-			   (strcmp(tokens[countx],"<") == 0) ||
-			   (strcmp(tokens[countx],"=") == 0) ||
-			   (strcmp(tokens[countx],">=") == 0) ||
-			   (strcmp(tokens[countx],"<=") == 0)) {
+					retval.val.type=0;
+		     			retval.val.d=EvaluateCondition(tokens,count,endtoken);
+	
+		     			retval.val.d == 1 ? printf("True ") : printf("False ");
+		     			break;
+		 		} 
+			}
 
-				retval.val.type=0;
-	     			retval.val.d=EvaluateCondition(tokens,count,endtoken);
-
-	     			retval.val.d == 1 ? printf("True ") : printf("False ");
-	     			break;
-	 		} 
+			if(endtoken <= tc) printf("%.6g ",retval.val.d);	/* Not conditional */
 		}
-
-		if(endtoken <= tc) printf("%.6g ",retval.val.d);	/* Not conditional */
-	}
  
-	count=endtoken;
+		count=endtoken;
+	}
+
+	sigsetjmp(savestate,1);		/* save current context */
+
+	printf("\n");
 }
-
-sigsetjmp(savestate,1);		/* save current context */
-
-printf("\n");
 
 SetLastError(0);
 return(0);
@@ -1850,9 +1847,9 @@ void touppercase(char *token) {
 /*
  * Read line from buffer
  *
- * In: char *buf	Buffer to read from
-		char *linebuf	Buffer to store line
-		int size		Maximum size of line
+ * In:	buf		Buffer to read from
+	linebuf		Buffer to store line
+	size		Maximum size of line
  *
  * Returns -1 on error or address of next address in buffer for success
  *
@@ -2009,6 +2006,7 @@ char *tempbuf;
 FILE *handle;
 size_t newptr;
 char *oldtextptr;
+MODULES ModuleEntry;
 
 if(stat(filename,&includestat) == -1) {
 	SetLastError(FILE_NOT_FOUND);
@@ -2049,7 +2047,6 @@ if(fread(CurrentBufferPosition,includestat.st_size,1,handle) != 1) {
 	return(-1);
 }
 
-
 /* copy text after included file */
 
 oldtextptr=(CurrentBufferPosition+includestat.st_size)-1;
@@ -2061,6 +2058,12 @@ oldtextptr += includestat.st_size;		/* point to end */
 free(tempbuf);
 
 fclose(handle);
+
+/* add module entry */
+strcpy(ModuleEntry.modulename,filename);
+ModuleEntry.flags=MODULE_SCRIPT;
+
+AddToModulesList(&ModuleEntry);
 
 SetLastError(0);
 return(0);
@@ -2107,4 +2110,5 @@ return;
 void FreeFileBuffer(void) {
 if(FileBuffer != NULL) free(FileBuffer);
 }
+
 

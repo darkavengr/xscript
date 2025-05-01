@@ -113,7 +113,7 @@ else
 {
 	ClearInteractiveModeFlag();
 
-	if(ExecuteFile(argv[1]) == -1) {	/* execute file */
+	if(ExecuteFile(fullpath) == -1) {	/* execute file */
 		PrintError(GetLastError());
 
 		cleanup();		/* deallocate lists */

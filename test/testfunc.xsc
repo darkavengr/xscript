@@ -5,10 +5,9 @@ return a*b*c
 endfunction
 
 function testfunction1(a,b,c)
-print "Test function 1"
-
-return testfunction2(a,b,c)
+print a,b,c
 endfunction
 
 print testfunction1(1,2,3)
+
 

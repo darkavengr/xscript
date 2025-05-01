@@ -66,6 +66,8 @@ statement statements[] = {
 	     { "OR",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "NOT",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "ENDTYPE",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "TRUE",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "FALSE",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "QUIT",NULL,&quit_command,FALSE},\
 	     { "VARIABLES",NULL,&variables_command,FALSE},\
 	     { "CONTINUE",NULL,&continue_command,FALSE},\

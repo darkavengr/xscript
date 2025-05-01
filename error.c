@@ -86,14 +86,14 @@ char *errs[] = { "No error",\
  */
 
 void PrintError(int errornumber) {
-char *functionname[MAX_SIZE];
+char *filename[MAX_SIZE];
 
-GetCurrentFunctionName(functionname);
+GetCurrentFile(filename);
 
 if(errornumber == 0) return;
 
 if(GetIsFileLoadedFlag() == TRUE) {
-	printf("Error %d in function %s (line %d): %s\n",errornumber,functionname,GetCurrentFunctionLine(),errs[errornumber]);
+	printf("Error %d in  %s (line %d): %s\n",errornumber,filename,GetCurrentFunctionLine(),errs[errornumber]);
 }
 else
 {

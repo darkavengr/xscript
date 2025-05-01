@@ -1,0 +1,2 @@
+The symbol TRUE evaluates to 1.
+

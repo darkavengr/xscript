@@ -850,7 +850,7 @@ functions *previous;
 char *linebuf[MAX_SIZE];
 char *savepos;
 int count;
-int sc;
+int lc;
 vars_t *varptr;
 vars_t *paramsptr;
 vars_t *paramslast;
@@ -892,6 +892,14 @@ else
 strcpy(funcs_end->name,tokens[0]);				/* copy name */
 funcs_end->funcargcount=funcargcount;
 funcs_end->funcstart=GetCurrentBufferPosition();
+
+if(currentfunction == NULL) {
+	funcs_end->linenumber=1;
+}
+else
+{
+	funcs_end->linenumber=currentfunction->linenumber;
+}
 
 if(funcargcount <= 3) {		/* no parameters, only function () */
 	funcs_end->parameters=NULL;	
@@ -1007,17 +1015,17 @@ if(strcmp(tokens[0],"main") == 0) {		/* special case for main() */
 }
 else
 {
-	if(FindEndOfunction() == -1) return(-1);			/* find end of declared function */
+	if(FindEndOfFunction() == -1) return(-1);		/* find end of declared function */
 }
-
 
 SetLastError(0);
 return(0);
 }
 
-int FindEndOfunction(void) {
+int FindEndOfFunction(void) {
 char *linebuf[MAX_SIZE];
 char *tokens[MAX_SIZE][MAX_SIZE];
+int lc;
 
 /* find end of function */
 
@@ -1025,6 +1033,9 @@ do {
 	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */
 
 	TokenizeLine(linebuf,tokens,TokenCharacters);			/* tokenize line */
+
+	lc=GetCurrentFunctionLine();
+	SetCurrentFunctionLine(++lc);			/* update line number */
 
 	if(strcmpi(tokens[0],"ENDFUNCTION") == 0) {
 		SetLastError(0);  
@@ -1082,7 +1093,7 @@ FUNCTIONCALLSTACK newfunc;
 UserDefinedType userdefinedtype;
 int returnvalue;
 char *evaltokens[MAX_SIZE][MAX_SIZE];
-int linenumber=1;
+int linenumber;
 
 retval.has_returned_value=FALSE;			/* clear has returned value flag */
 
@@ -1114,9 +1125,8 @@ newfunc.callptr=next->funcstart;			/* function start */
 
 SetCurrentBufferPosition(next->funcstart);
 
-newfunc.linenumber=1;
+newfunc.linenumber=next->linenumber;
 newfunc.stat |= FUNCTION_STATEMENT;
-
 strcpy(newfunc.returntype,next->returntype);
 
 PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
@@ -1171,9 +1181,9 @@ while(parameters != NULL) {
 	count += 2;	/* skip , */   
 }
 
-SetCurrentFunctionLine(linenumber);			/* set function line number */
-
 /* call function */
+
+linenumber=next->linenumber;
 
 while(*GetCurrentBufferPosition() != 0) {	
 	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),buf,LINE_SIZE));		/* read line from buffer */
@@ -1182,13 +1192,12 @@ while(*GetCurrentBufferPosition() != 0) {
 
 	if(strcmpi(argbuf[0],"ENDFUNCTION") == 0) break;
 
+	SetCurrentFunctionLine(++linenumber);			/* set function line number */
+
 	returnvalue=ExecuteLine(buf);				/* Run line */
 	if(returnvalue == -1) return(-1);
 
 	if(strcmpi(argbuf[0],"RETURN") == 0) break;
-
-	SetCurrentFunctionLine(++linenumber);			/* set function line number */
-
 }
 
 currentfunction->stat &= FUNCTION_STATEMENT;
@@ -1348,10 +1357,15 @@ for(count=start;count<end;count++) {
 		count++;		/* skip ( */
 
 	 	for(countx=count;countx<end;countx++) {		/* find end of function call */
-			if(strcmp(tokens[countx],")") == 0) break;
+			if(strcmp(tokens[countx],")") == 0) {
+				countx++;
+				break;
+			}
 	 	 }
 
-	  	CallFunction(tokens,s,countx);
+		retval.has_returned_value=FALSE;
+
+	  	if(CallFunction(tokens,s,countx) == -1) return(-1);
 
 		if(retval.has_returned_value == TRUE) {		/* function has returned value */
 		  	get_return_value(&subst_returnvalue);
@@ -1371,12 +1385,11 @@ for(count=start;count<end;count++) {
 		 	else if(subst_returnvalue.type == VAR_LONG) {			/* returning long */
 				sprintf(temp[outcount++],"%ld",retval.val.l);
 		  	}
-
-		  	count += skiptokens;
 	    }
 
+		  	count=countx+1;
 	 }
-	 else if(IsVariable(tokens[count]) == TRUE) { 	
+	 else if(IsVariable(tokens[count]) == TRUE) {
 	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 	    if(skiptokens == -1) return(-1);
 	
@@ -1486,7 +1499,7 @@ for(count=start;count<end;count++) {
 memset(out,0,MAX_SIZE*MAX_SIZE);
 
 for(count=0;count<outcount;count++) {
-	//printf("temp[%d]=%s\n",count,temp[count]);
+///	printf("temp[%d]=%s\n",count,temp[count]);
 
 	strcpy(out[count],temp[count]);
 }
