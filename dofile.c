@@ -39,7 +39,7 @@
 #include "module.h"
 
 extern jmp_buf savestate;
-
+extern char *vartypenames[];
 int saveexprtrue=0;
 functionreturnvalue retval;
 char *CurrentBufferPosition=NULL;	/* current pointer in buffer - points to either FileBufferPosition or interactive mode buffer */
@@ -1018,7 +1018,7 @@ ClearFunctionFlags(FUNCTION_STATEMENT);
 /* check return type */
 
 for(count=1;count<tc;count++) {
-	if((*tokens[count] >= '0' && *tokens[count] <= '9') && (GetFunctionReturnType() == VAR_STRING)) {
+	if((IsNumber(tokens[count]) == TRUE) && (GetFunctionReturnType() == VAR_STRING)) {
 		SetLastError(TYPE_ERROR);
 		return(-1);
 	}
@@ -1049,12 +1049,18 @@ retval.has_returned_value=TRUE;				/* set has returned value flag */
 
 if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
 
-	//if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
-	//	retval.has_returned_value=FALSE;	/* clear has returned value flag */
+	printf("tc=%d\n",tc);
 
-	//	SetLastError(INVALID_EXPRESSION);
-	//	return(-1);	
-	//}
+	for(int tokencount=1;tokencount<tc;tokencount++) {
+		printf("tokens[%d]=%s\n",tokencount,tokens[tokencount]);
+	}
+
+	if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+
+		SetLastError(INVALID_EXPRESSION);
+		return(-1);	
+	}
 }
 
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
@@ -1405,7 +1411,7 @@ else
 	if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);	/* parse variable name */
 
 	retval.val.type=VAR_NUMBER;
-	retval.val.i=CreateVariable(split.name,"DOUBLE",split.x,split.y);
+	retval.val.i=CreateVariable(split.name,vartypenames[DEFAULT_TYPE_INT],split.x,split.y);
 }
 
 if(retval.val.i == -1) return(-1);
@@ -1425,7 +1431,6 @@ return(0);
  */
 
 int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-
 
 if(((GetFunctionFlags() & FOR_STATEMENT)) || ((GetFunctionFlags() & WHILE_STATEMENT))) {
 	CurrentBufferPosition=GetSaveInformationBufferPointer();

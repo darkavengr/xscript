@@ -48,7 +48,7 @@ char *errs[] = { "No error",\
 		 "NEXT without FOR",
 		 "WEND without WHILE",\
 		 "Duplicate function name",\
-		 "Too few arguments to function call",\
+		 "Insufficient number of arguments to function call",\
 		 "Invalid array subscript",\
 		 "Type mismatch",\
 		 "Invalid variable type",\
@@ -74,6 +74,8 @@ char *errs[] = { "No error",\
 		 "Not an array",\
 		 "Missing array subscript",\
 		 "User-defined type does not exist",\
+		 "TYPE without ENDTYPE",\
+		 "Too many arguments to function call",\
 };
 
 /*

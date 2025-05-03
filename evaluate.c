@@ -568,6 +568,8 @@ if(start == end) {	/* kludge */
 }
 
 for(count=start;count<end;count++) {
+	printf("validate[%d]=%s (%d)\n",count,tokens[count],IsOperator);
+
 	if(strcmp(tokens[count],"(") == 0) {		/* sub-expression */
 		/* find end of sub-expression */
 
@@ -617,11 +619,13 @@ for(count=start;count<end;count++) {
 		}
 	}
 
+	if((IsOperator == TRUE) && (count == (end-1)) && (strpbrk(tokens[end-1l],ValidExpressionCharacters) != NULL)) return(FALSE);
+
 	IsOperator=!IsOperator;
 
 	if(IsValid == FALSE) return(FALSE);
 }
-
+	
 return(TRUE);
 }
 

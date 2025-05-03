@@ -41,14 +41,10 @@ FUNCTIONCALLSTACK *functioncallstack=NULL;
 FUNCTIONCALLSTACK *functioncallstackend=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
 UserDefinedType *udt=NULL;
-
 char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG",NULL };
 functionreturnvalue retval;
 vars_t *findvar;
-
 int callpos=0;
-
-extern char *TokenCharacters;
 
 /*
  * Intialize main function
@@ -145,7 +141,7 @@ free(cmdargs.s);
 	      xsize	Size of X subscript
 	      ysize	Size of Y subscript
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
   */
 
@@ -320,10 +316,9 @@ return(0);
 	x	X subscript
 	y	Y subscript
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
  */
-	
 int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y) {
 vars_t *next;
 char *o;
@@ -434,7 +429,6 @@ else {					/* user-defined type */
 
 return(0);
 }
-
 /*
  *  Resize array
  * 
@@ -442,7 +436,7 @@ return(0);
 	      int x		X subscript
 	      int y		Y subscript
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
   */								
 int ResizeArray(char *name,int x,int y) {
@@ -494,7 +488,7 @@ return(-1);
  *  In: char *name	Variable name
 	      varname *val	Variable value
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
   */
 int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy) {
@@ -615,7 +609,7 @@ return(-1);
  * 
  *  In: char *name	Variable name
  * 
- *  Returns error value on error or variable type on success
+ *  Returns -1 on failure or variable type on success
  * 
   */
 
@@ -652,7 +646,7 @@ return(-1);
  *  In: char *name	Variable name
 	      varsplit *split	Variable split object
  * 
- *  Returns error value on error or number of tokens parsed on success
+ *  Returns -1 on failure or number of tokens parsed on success
  * 
   */
 int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split) {
@@ -795,7 +789,7 @@ return(end-start);
  * 
  *  In: char *name	Variable name
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
   */
 int RemoveVariable(char *name) {
@@ -841,14 +835,13 @@ return(-1);
  *  In: char *tokens[MAX_SIZE][MAX_SIZE] function name and args
 	      int funcargcount			number of tokens
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
-  */
-int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount) {
+ */
+int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int end) {
 functions *next;
 functions *previous;
 char *linebuf[MAX_SIZE];
-char *savepos;
 int count;
 int lc;
 vars_t *varptr;
@@ -858,6 +851,7 @@ int typecount=0;
 char *vartype[MAX_SIZE];
 UserDefinedType *udtptr;
 UserDefinedTypeField *udtfieldptr;
+int NumberOfParameters=0;
 
 if((currentfunction != NULL) && ((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT)) {
 	SetLastError(NESTED_FUNCTION);
@@ -890,7 +884,6 @@ else
 }
 
 strcpy(funcs_end->name,tokens[0]);				/* copy name */
-funcs_end->funcargcount=funcargcount;
 funcs_end->funcstart=GetCurrentBufferPosition();
 
 if(currentfunction == NULL) {
@@ -901,93 +894,90 @@ else
 	funcs_end->linenumber=currentfunction->linenumber;
 }
 
-if(funcargcount <= 3) {		/* no parameters, only function () */
-	funcs_end->parameters=NULL;	
-}
-else
-{
-	/* skip ( and go to end */
+/* skip ( and go to end */
 
-	for(count=2;count<funcs_end->funcargcount-1;count++) {
-		if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
-		    /* check if declaring variable with type */
-			typecount=0;
+for(count=2;count<end;count++) {
+	if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
+		/* check if declaring variable with type */
+		typecount=0;
 
-			while(vartypenames[typecount] != NULL) {
-				if(strcmpi(vartypenames[typecount],tokens[count+2]) == 0) { 		/* found type */
-					strcpy(vartype,vartypenames[typecount]);
-					break;
-   				}
-
-				typecount++;
-			 }
-
-		 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
-				udtptr=GetUDT(tokens[count+2]);
-				if(udtptr == NULL) {
-					SetLastError(INVALID_VARIABLE_TYPE);
-					return(-1);
-				}
-
-				strcpy(vartype,tokens[count+2]);
+		while(vartypenames[typecount] != NULL) {
+			if(strcmpi(vartypenames[typecount],tokens[count+2]) == 0) { 		/* found type */
+				strcpy(vartype,vartypenames[typecount]);
+				break;
 			}
+
+			typecount++;
+		 }
+
+	 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
+			udtptr=GetUDT(tokens[count+2]);
+			if(udtptr == NULL) {
+				SetLastError(INVALID_VARIABLE_TYPE);
+				return(-1);
+			}
+
+			strcpy(vartype,tokens[count+2]);
 		}
+	}
 	  
 /* add parameter */
 
-		if(funcs_end->parameters == NULL) {
-			funcs_end->parameters=malloc(sizeof(vars_t));
-			paramsptr=funcs_end->parameters;
-		}
-		else
-		{
-			paramsptr=funcs_end->parameters;
-
-			while(paramsptr != NULL) {
-		  		paramslast=paramsptr;
+	if(funcs_end->parameters == NULL) {
+		funcs_end->parameters=malloc(sizeof(vars_t));
+		paramsptr=funcs_end->parameters;
+	}
+	else
+	{
+		paramsptr=funcs_end->parameters;
+		while(paramsptr != NULL) {
+	  		paramslast=paramsptr;
 	
-		  		paramsptr=paramsptr->next;
-		  	}
+	  		paramsptr=paramsptr->next;
+	  	}
 	
-			paramslast->next=malloc(sizeof(vars_t));		/* add to end */
-		  	paramsptr=paramslast->next;
-		}
+		paramslast->next=malloc(sizeof(vars_t));		/* add to end */
+	  	paramsptr=paramslast->next;
+	}
 	
-		/* add function parameters */
+	/* add function parameters */
 
-		if(vartypenames[typecount] != NULL) {			/* built-in type */
-			paramsptr->type_int=typecount;
-		}
-		else
-		{
-			paramsptr->type_int=VAR_UDT;
-			strcpy(paramsptr->udt_type,tokens[count+2]);	/* user-defined type */
-		}
+	if(vartypenames[typecount] != NULL) {			/* built-in type */
+		paramsptr->type_int=typecount;
+	}
+	else
+	{
+		paramsptr->type_int=VAR_UDT;
+		strcpy(paramsptr->udt_type,tokens[count+2]);	/* user-defined type */
+	}
 
-		strcpy(paramsptr->varname,tokens[count]);
+	strcpy(paramsptr->varname,tokens[count]);
 
-		paramsptr->xsize=0;
-		paramsptr->ysize=0;
-		paramsptr->val=NULL;
+	paramsptr->xsize=0;
+	paramsptr->ysize=0;
+	paramsptr->val=NULL;
 
-		if(strcmpi(tokens[count+1], ")") == 0) break;		/* at end */
+	NumberOfParameters++;
 
-		if(strcmpi(tokens[count+1], "AS") == 0) {
-			count += 3;		/* skip "AS", type and "," */
-		}
-		else
-		{
-			count++;		/* skip , */
-		}
+	if(strcmpi(tokens[count+1], ")") == 0) break;		/* at end */
+
+	if(strcmpi(tokens[count+1], "AS") == 0) {
+		count += 3;		/* skip "AS", type and "," */
+	}
+	else
+	{
+		count++;		/* skip , */
 	}
 }
 
+
+funcs_end->funcargcount=NumberOfParameters;
 
 /* get function return type */
 
 typecount=0;
 
-if(strcmpi(tokens[funcargcount-1], "AS") == 0) {		/* type */
+if(strcmpi(tokens[end-1], "AS") == 0) {		/* type */
 	while(vartypenames[typecount] != NULL) {
 		if(strcmpi(vartypenames[typecount],tokens[count+1]) == 0) break;	/* found type */
 
@@ -1075,25 +1065,25 @@ return(-1);
  *  In: char *tokens[MAX_SIZE][MAX_SIZE] function name and args
 	      int funcargcount			number of tokens
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
   */
 
-double CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end) {
+int CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end) {
 functions *next;
-int count,countx;
+int count;
 int tc;
 char *argbuf[MAX_SIZE][MAX_SIZE];
 char *buf[MAX_SIZE];
 varsplit split;
 vars_t *parameters;
 int varstc;
-int endcount;
 FUNCTIONCALLSTACK newfunc;
 UserDefinedType userdefinedtype;
 int returnvalue;
 char *evaltokens[MAX_SIZE][MAX_SIZE];
 int linenumber;
+int NumberOfArguments=0;
 
 retval.has_returned_value=FALSE;			/* clear has returned value flag */
 
@@ -1139,9 +1129,8 @@ currentfunction->parameters=next->parameters;		/* point to parameters */
 /* add variables from parameters */
 
 parameters=next->parameters;
-count=0;		/* skip function name and ( */
 
-while(parameters != NULL) {
+for(count=0;count<returnvalue;count += 2) {
 	if(parameters->type_int == VAR_UDT) {			/* user defined type */
 		CreateVariable(parameters->varname,parameters->udt_type,split.x,split.y);
 	}
@@ -1176,9 +1165,24 @@ while(parameters != NULL) {
 	}
 
 	UpdateVariable(parameters->varname,NULL,parameters->val,split.x,split.y);
-	parameters=parameters->next;
 
-	count += 2;	/* skip , */   
+	NumberOfArguments++;
+
+	parameters=parameters->next;
+	if(parameters == NULL) break;	
+		
+}
+
+/* check if number of arguments matches number of parameters */
+
+if(NumberOfArguments < next->funcargcount) {
+	SetLastError(TOO_FEW_ARGUMENTS_IN_FUNCTION_CALL);
+	return(-1);
+}
+
+if((returnvalue/2) > NumberOfArguments) {		/* n tokens = n/2 arguments and n/2 commas */
+	SetLastError(TOO_MANY_ARGUMENTS_IN_FUNCTION_CALL);
+	return(-1);
 }
 
 /* call function */
@@ -1209,7 +1213,15 @@ if(returnvalue != -1) SetLastError(0);
 return(returnvalue);
 }
 
-int ReturnFromFunction(void) {
+/*
+ *  Return from function
+ * 
+ *  In: Nothing
+ * 
+ *  Returns: Nothing
+ * 
+ */
+void ReturnFromFunction(void) {
 PopFunctionCallInformation();
 }
 
@@ -1219,7 +1231,7 @@ PopFunctionCallInformation();
  *  In: char *hex		char representation of number
  *	      int base			Base
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
   */
 int atoi_base(char *hex,int base) {
@@ -1353,9 +1365,6 @@ for(count=start;count<end;count++) {
 	if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
 	 	tokentype=SUBST_FUNCTION;
 
-	 	s=count;	/* save start */
-		count++;		/* skip ( */
-
 	 	for(countx=count;countx<end;countx++) {		/* find end of function call */
 			if(strcmp(tokens[countx],")") == 0) {
 				countx++;
@@ -1365,7 +1374,7 @@ for(count=start;count<end;count++) {
 
 		retval.has_returned_value=FALSE;
 
-	  	if(CallFunction(tokens,s,countx) == -1) return(-1);
+	  	if(CallFunction(tokens,count,countx) == -1) return(-1);
 
 		if(retval.has_returned_value == TRUE) {		/* function has returned value */
 		  	get_return_value(&subst_returnvalue);
@@ -1515,7 +1524,7 @@ return(outcount);
 	      char *tokens[][MAX_SIZE] Tokens array
 	      varval *val 		Variable value to return conatecated strings
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
   */
 int ConatecateStrings(int start,int end,char *tokens[][MAX_SIZE],varval *val) {
@@ -1598,7 +1607,7 @@ return(typecount);
  * 
  *  In: varname		Variable name
  * 
- *  Returns error value on error or 0 on success
+ *  Returns -1 on failure or 0 on success
  * 
  */
 int IsVariable(char *varname) {

@@ -121,8 +121,8 @@ int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varspli
 int RemoveVariable(char *name);
 int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int funcargcount);
 int CheckFunctionExists(char *name);
-double CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end);
-int ReturnFromFunction(void);
+int CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end);
+void ReturnFromFunction(void);
 int atoi_base(char *hex,int base);
 int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE],char *out[][MAX_SIZE]);
 int ConatecateStrings(int start,int end,char *tokens[][MAX_SIZE],varval *val);
