@@ -1,4 +1,9 @@
-type Person
+type Pay
+	PayGrade as integer
+	Salary as double
+endtype
+
+type Employee
 	id as integer
 	firstname as string
 	lastname as string
@@ -10,7 +15,7 @@ type Person
 	dob as string
 endtype
 
-declare someone(3) as Person
+declare someone(3) as Employee
 
 someone(2).id=666
 

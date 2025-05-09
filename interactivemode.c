@@ -204,11 +204,19 @@ exit(0);
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns: error number on error, doesn't return on success
  *
  */
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(GetIsFileLoadedFlag() == 0) return(NO_RUNNING_PROGRAM);	/* no program running */
+if(GetIsFileLoadedFlag() == FALSE) { 	/* no program running */
+	PrintError(NO_RUNNING_PROGRAM);
+	return(-1);
+}
+
+if(GetInteractiveModeFlag() == FALSE) {	/* not in interactive mode */
+	PrintError(NOT_IN_INTERACTIVE_MODE);
+	return(-1);
+}
 
 SetIsRunningFlag();
 SwitchToFileBuffer();			/* switch to file buffer */

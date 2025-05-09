@@ -76,6 +76,7 @@ char *errs[] = { "No error",\
 		 "User-defined type does not exist",\
 		 "TYPE without ENDTYPE",\
 		 "Too many arguments to function call",\
+		 "Command can only be used in interactive mode",\
 };
 
 /*

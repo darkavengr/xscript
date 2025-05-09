@@ -6,11 +6,8 @@
 
 /* dodgy code */
 
-size_t oldrsp;
-size_t oldrbp;
-(*callptr)(void);
-size_t *tempbuf;
 size_t save_tc;
+vars_t *varnext=NULL;
 
 int CallModule(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;

@@ -126,9 +126,16 @@ if(args != NULL) {
 
 /* add built-in variables */
 
+cmdargs.i=0;
+
 CreateVariable("ERR","INTEGER",1,1);			/* error number */
+UpdateVariable("ERR","",&cmdargs,1,1);
+
 CreateVariable("ERRL","INTEGER",1,1);			/* error line */
+UpdateVariable("ERRL","",&cmdargs,1,1);
+
 CreateVariable("ERRFUNC","STRING",1,1);			/* error function */
+UpdateVariable("ERRFUNC","",&cmdargs,1,1);
 
 free(cmdargs.s);
 }
@@ -251,7 +258,10 @@ else {					/* user-defined type */
 	strcpy(currentfunction->vars_end->udt_type,type);		/* set udt type */
 
 	usertype=GetUDT(type);
-	if(usertype == NULL) SetLastError(INVALID_VARIABLE_TYPE);
+	if(usertype == NULL) {
+		SetLastError(INVALID_VARIABLE_TYPE);
+		return(-1);
+	}
 
 	currentfunction->vars_end->udt=malloc((xsize*ysize)*sizeof(UserDefinedType));	/* allocate user-defined type */
 	if(currentfunction->vars_end->udt == NULL) {
@@ -330,8 +340,6 @@ UserDefinedTypeField *fieldptr;
 UserDefinedTypeField *udtfield;
 
 if(currentfunction == NULL) return(-1);
-
-/* Find variable */
 
 if(currentfunction != NULL) {
 	next=currentfunction->vars;
@@ -455,15 +463,15 @@ while(next != NULL) {
 	if(strcmpi(next->varname,name) == 0) {		/* found variable */
 
 		if(next->type_int == VAR_UDT) {		/* if user-defined type */
-			if(realloc(next->udt,(x*y)*sizeof(UserDefinedType)) == NULL) {
-				SetLastError(NO_MEM);	/* resize buffer */
+			if(realloc(next->udt,(x*y)*sizeof(UserDefinedType)) == NULL) {	/* resize variable */
+				SetLastError(NO_MEM);	
 				return(-1);
 			}
 	  	}
 		else
 		{
 			if(realloc(next->val,(x*y)*sizeof(varval)) == NULL) {
-				SetLastError(NO_MEM);	/* resize buffer */
+				SetLastError(NO_MEM);
 				return(-1);
 			}
 		}
