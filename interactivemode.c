@@ -252,6 +252,11 @@ int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;
 char *filename[MAX_SIZE];
 
+if(GetInteractiveModeFlag() == FALSE) {	/* not in interactive mode */
+	PrintError(NOT_IN_INTERACTIVE_MODE);
+	return(-1);
+}
+
 if(tc < 1) {						/* Not enough parameters */
 	PrintError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
@@ -278,6 +283,11 @@ return(LoadFile(filename));
  */
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *currentfile[MAX_SIZE];
+
+if(GetInteractiveModeFlag() == FALSE) {	/* not in interactive mode */
+	PrintError(NOT_IN_INTERACTIVE_MODE);
+	return(-1);
+}
 
 GetCurrentFile(currentfile);		/* get current file */
 
@@ -338,7 +348,7 @@ return;
 void sbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 if(tc < 2) {						/* Too few parameters */
-	SetLastError(NO_PARAMS);
+	PrintError(SYNTAX_ERROR);
 	return(-1);
 }
 

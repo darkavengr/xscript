@@ -8,6 +8,8 @@ typedef struct {
  void  (*dladdr)(void);			/* function pointer */
  void *dlhandle;
  int flags;
+ char *StartInBuffer;
+ char *EndInBuffer;
  struct MODULES *last;
  struct MODULES *next;
 } MODULES;

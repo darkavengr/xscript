@@ -91,6 +91,7 @@ newfunc.next=NULL;
 
 PushFunctionCallInformation(&newfunc);
 
+
 DeclareBuiltInVariables(progname,args);			/* declare built-in variables */
 }
 
@@ -1020,6 +1021,14 @@ SetLastError(0);
 return(0);
 }
 
+/*
+ *  Find function's end
+ * 
+ *  In: Nothing
+ * 
+ *  Returns: 0 on success or -1 on failure
+ * 
+  */
 int FindEndOfFunction(void) {
 char *linebuf[MAX_SIZE];
 char *tokens[MAX_SIZE][MAX_SIZE];
@@ -1183,15 +1192,11 @@ for(count=0;count<returnvalue;count += 2) {
 
 /* check if number of arguments matches number of parameters */
 
-if(NumberOfArguments < next->funcargcount) {
-	SetLastError(TOO_FEW_ARGUMENTS_IN_FUNCTION_CALL);
+if( (NumberOfArguments < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
+	SetLastError(INVALID_ARGUMENT_COUNT);
 	return(-1);
 }
 
-if((returnvalue/2) > NumberOfArguments) {		/* n tokens = n/2 arguments and n/2 commas */
-	SetLastError(TOO_MANY_ARGUMENTS_IN_FUNCTION_CALL);
-	return(-1);
-}
 
 /* call function */
 

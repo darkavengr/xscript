@@ -20,6 +20,8 @@
 #include "errors.h"
 #include "size.h"
 #include "module.h"
+#include "variablesandfunctions.h"
+#include "dofile.h"
 
 int AddModule(char *modulename);
 int GetModuleHandle(char *module);
@@ -157,4 +159,34 @@ memcpy(modules_end,entry,sizeof(MODULES));
 SetLastError(0);
 return(0);
 }
+
+/*
+ * Get module entry from start address
+ *
+ * In: buf	Module information buffer
+ *	
+ * Returns -1 on error or module handle
+ *
+ */
+
+int GetCurrentModuleInformationFromBufferAddress(MODULES *buf) {
+MODULES *next=modules;
+char *buffer=GetCurrentFileBufferPosition();
+
+/* search through linked list */
+
+while(next != NULL) {
+//	printf("%lX %lX %lX\n",buffer,next->StartInBuffer,next->EndInBuffer);
+
+	if((buffer >= next->StartInBuffer) && (buffer <= next->EndInBuffer)) {		/* found entry */
+		memcpy(buf,next,sizeof(MODULES));
+		return(0);
+	}
+ 
+	next=next->next;
+}
+
+return(-1);
+}
+
 

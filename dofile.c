@@ -64,6 +64,7 @@ int CurrentLine=0;
 int LoadFile(char *filename) {
 FILE *handle; 
 int filesize;
+MODULES ModuleEntry;
 
 sigsetjmp(savestate,1);		/* save current context */
 
@@ -117,6 +118,15 @@ sigsetjmp(savestate,1);		/* save current context */
 
 SetIsFileLoadedFlag();
 ClearIsRunningFlag();
+
+/* add module entry */
+strcpy(ModuleEntry.modulename,filename);	/* module filename */
+ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
+ModuleEntry.StartInBuffer=FileBuffer;		/* start adress of module in buffer */
+
+ModuleEntry.EndInBuffer=FileBuffer;		/* end adress of module in buffer */
+ModuleEntry.EndInBuffer=endptr;
+AddToModulesList(&ModuleEntry);
 
 SetLastError(0);
 return(0);
@@ -710,7 +720,7 @@ while(*CurrentBufferPosition != 0) {
 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 }
 
-SetLastError(ENDIF_NOIF);
+SetLastError(IF_WITHOUT_ENDIF);
 return(-1);
 }
 
@@ -726,7 +736,7 @@ return(-1);
 
 int endif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if((GetFunctionFlags() & IF_STATEMENT) == 0) {
-	SetLastError(ENDIF_NOIF);
+	SetLastError(ENDIF_WITHOUT_IF);
 	return(-1);
 }
 
@@ -2065,9 +2075,12 @@ free(tempbuf);
 fclose(handle);
 
 /* add module entry */
-strcpy(ModuleEntry.modulename,filename);
-ModuleEntry.flags=MODULE_SCRIPT;
+strcpy(ModuleEntry.modulename,filename);	/* module filename */
+ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
+ModuleEntry.StartInBuffer=newptr;		/* start adress of module in buffer */
 
+ModuleEntry.EndInBuffer=newptr;			/* end adress of module in buffer */
+ModuleEntry.EndInBuffer += includestat.st_size;
 AddToModulesList(&ModuleEntry);
 
 SetLastError(0);
