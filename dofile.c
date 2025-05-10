@@ -33,10 +33,10 @@
 #include "size.h"
 #include "evaluate.h"
 #include "modeflags.h"
+#include "module.h"
 #include "variablesandfunctions.h"
 #include "dofile.h"
 #include "debugmacro.h"
-#include "module.h"
 
 extern jmp_buf savestate;
 extern char *vartypenames[];
@@ -119,15 +119,6 @@ sigsetjmp(savestate,1);		/* save current context */
 SetIsFileLoadedFlag();
 ClearIsRunningFlag();
 
-/* add module entry */
-strcpy(ModuleEntry.modulename,filename);	/* module filename */
-ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
-ModuleEntry.StartInBuffer=FileBuffer;		/* start adress of module in buffer */
-
-ModuleEntry.EndInBuffer=FileBuffer;		/* end adress of module in buffer */
-ModuleEntry.EndInBuffer=endptr;
-AddToModulesList(&ModuleEntry);
-
 SetLastError(0);
 return(0);
 }
@@ -140,11 +131,12 @@ return(0);
  * Returns -1 on error or 0 on success
  *
  */
-int ExecuteFile(char *filename) {
+int ExecuteFile(char *filename,char *args) {
 char *linebuf[MAX_SIZE];
 char *saveCurrentBufferPosition;
 int returnvalue;
 varval progname;
+MODULES ModuleEntry;
 
 progname.s=malloc(strlen(filename));
 if(progname.s == NULL) {
@@ -166,10 +158,22 @@ if(filename != NULL) {
 	SetIsFileLoadedFlag();
 }
 
+/* add module entry */
+strcpy(ModuleEntry.modulename,filename);	/* module filename */
+ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
+ModuleEntry.StartInBuffer=FileBuffer;		/* start adress of module in buffer */
+
+ModuleEntry.EndInBuffer=FileBuffer;		/* end adress of module in buffer */
+ModuleEntry.EndInBuffer=endptr;
+AddToModulesList(&ModuleEntry);
+
+InitializeMainFunction(filename,args);
+
 SetIsRunningFlag();
 SwitchToFileBuffer();			/* switch to file buffer */
 
 SetCurrentFunctionLine(1);
+
 
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
 SetFunctionCallPtr(saveCurrentBufferPosition);		/* set start of current function to buffer start */
@@ -215,6 +219,7 @@ strcpy(progname.s,"");				/* update program name */
 UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
 
 free(progname.s);
+
 SetLastError(NO_ERROR);
 return(0);
 }	

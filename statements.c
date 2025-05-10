@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include "size.h"
+#include "module.h"
 #include "variablesandfunctions.h"
 #include "dofile.h"
 #include "statements.h"

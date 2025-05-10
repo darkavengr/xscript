@@ -163,13 +163,13 @@ return(0);
 /*
  * Get module entry from start address
  *
- * In: buf	Module information buffer
+ * In: Nothing
  *	
- * Returns -1 on error or module handle
+ * Returns: Pointer to module information or NULL on error
  *
  */
 
-int GetCurrentModuleInformationFromBufferAddress(MODULES *buf) {
+MODULES *GetCurrentModuleInformationFromBufferAddress(void) {
 MODULES *next=modules;
 char *buffer=GetCurrentFileBufferPosition();
 
@@ -179,14 +179,13 @@ while(next != NULL) {
 //	printf("%lX %lX %lX\n",buffer,next->StartInBuffer,next->EndInBuffer);
 
 	if((buffer >= next->StartInBuffer) && (buffer <= next->EndInBuffer)) {		/* found entry */
-		memcpy(buf,next,sizeof(MODULES));
-		return(0);
+		return(next);
 	}
  
 	next=next->next;
 }
 
-return(-1);
+return(NULL);
 }
 
 

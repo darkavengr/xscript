@@ -25,6 +25,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include "size.h"
+#include "module.h"
 #include "variablesandfunctions.h"
 #include "evaluate.h"
 #include "errors.h"

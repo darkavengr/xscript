@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <setjmp.h>
 #include "size.h"
+#include "module.h"
 #include "variablesandfunctions.h"
 #include "xscript.h"
 #include "modeflags.h"
@@ -94,8 +95,6 @@ for(count=2;count<argc;count++) {
 	if(count < argc-1) strcat(args," ");
 }
 
-InitializeMainFunction(fullpath,args);			/* Initialize main function */
-
 signalaction.sa_sigaction=&signalhandler;
 signalaction.sa_flags=SA_NODEFER;
 
@@ -113,7 +112,7 @@ else
 {
 	ClearInteractiveModeFlag();
 
-	if(ExecuteFile(fullpath) == -1) {	/* execute file */
+	if(ExecuteFile(fullpath,args) == -1) {	/* execute file */
 		PrintError(GetLastError());
 
 		cleanup();		/* deallocate lists */

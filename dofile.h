@@ -1,5 +1,5 @@
 int LoadFile(char *filename);
-int ExecuteFile(char *filename);
+int ExecuteFile(char *filename,char *args);
 int ExecuteLine(char *lbuf);
 int function_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);

@@ -21,9 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "size.h"
+#include "module.h"
 #include "variablesandfunctions.h"
 #include "debugmacro.h"
-#include "module.h"
 
 int last_error=0;
 
@@ -89,13 +89,15 @@ char *errs[] = { "No error",\
 void PrintError(int errornumber) {
 char *filename[MAX_SIZE];
 MODULES module;
+FUNCTIONCALLSTACK *stack;
 
 if(errornumber == 0) return;
 
 GetCurrentModuleInformationFromBufferAddress(&module);		/* get information about current module */
 
 if(GetIsFileLoadedFlag() == TRUE) {
-	printf("Error %d in  %s (line %d): %s\n",errornumber,module.modulename,GetCurrentFunctionLine(),errs[errornumber]);
+	printf("Error %d: %s\n",errornumber,errs[errornumber]);
+	PrintBackTrace();
 }
 else
 {

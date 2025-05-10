@@ -91,7 +91,8 @@ typedef struct func {
 typedef struct FUNCTIONCALLSTACK {
  char *name[MAX_SIZE];
  char *callptr;
- int linenumber;
+ int startlinenumber;
+ int currentlinenumber;
  SAVEINFORMATION *saveinformation;
  SAVEINFORMATION *saveinformation_top;
  vars_t *vars;
@@ -101,6 +102,7 @@ typedef struct FUNCTIONCALLSTACK {
  char *returntype[MAX_SIZE];
  int type_int;
  int lastlooptype;
+ MODULES *moduleptr;
  struct FUNCTIONCALLSTACK *next;
  struct FUNCTIONCALLSTACK *last;
 } FUNCTIONCALLSTACK;
@@ -162,4 +164,5 @@ void FreeFunctionsAndVariables(void);
 void FreeVariablesList(vars_t *vars);
 int IsNumber(char *str);
 functions *GetFunctionPointer(char *name);
+FUNCTIONCALLSTACK *GetFunctionCallStackTop(void);
 

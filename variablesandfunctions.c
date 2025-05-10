@@ -27,6 +27,7 @@
 #include <dlfcn.h>
 
 #include "size.h"
+#include "module.h"
 #include "variablesandfunctions.h"
 #include "errors.h"
 #include "dofile.h"
@@ -65,7 +66,7 @@ int whichreturntype;
 
 strcpy(tokens[0],"main");
 strcpy(tokens[1],"(");
-if(strlen(args) > 0) strcpy(tokens[NextToken++],args);
+if(args != NULL) strcpy(tokens[NextToken++],args);
 strcpy(tokens[NextToken],")");
 
 DeclareFunction(tokens,4);			/* declare main function */
@@ -74,13 +75,15 @@ DeclareFunction(tokens,4);			/* declare main function */
 strcpy(newfunc.name,"main");
 
 newfunc.callptr=NULL;
-newfunc.linenumber=1;
+newfunc.startlinenumber=1;
+newfunc.currentlinenumber=1;
 newfunc.saveinformation=NULL;
 newfunc.saveinformation_top=NULL;
 newfunc.parameters=NULL;
 newfunc.vars=NULL;
 newfunc.vars_end=NULL;
 newfunc.stat=0;
+newfunc.moduleptr=GetCurrentModuleInformationFromBufferAddress();
 
 strcpy(newfunc.returntype,vartypenames[DEFAULT_TYPE_INT]);
 
@@ -90,7 +93,6 @@ newfunc.last=NULL;
 newfunc.next=NULL;
 
 PushFunctionCallInformation(&newfunc);
-
 
 DeclareBuiltInVariables(progname,args);			/* declare built-in variables */
 }
@@ -900,7 +902,7 @@ if(currentfunction == NULL) {
 }
 else
 {
-	funcs_end->linenumber=currentfunction->linenumber;
+	funcs_end->linenumber=currentfunction->currentlinenumber;
 }
 
 /* skip ( and go to end */
@@ -1132,7 +1134,8 @@ newfunc.callptr=next->funcstart;			/* function start */
 
 SetCurrentBufferPosition(next->funcstart);
 
-newfunc.linenumber=next->linenumber;
+newfunc.startlinenumber=next->linenumber;
+newfunc.currentlinenumber=next->linenumber;
 newfunc.stat |= FUNCTION_STATEMENT;
 strcpy(newfunc.returntype,next->returntype);
 
@@ -1698,12 +1701,14 @@ else
 
 strcpy(functioncallstackend->name,func->name);		/* copy information */
 functioncallstackend->callptr=func->callptr;
-functioncallstackend->linenumber=func->linenumber;
+functioncallstackend->startlinenumber=func->startlinenumber;
+functioncallstackend->currentlinenumber=func->startlinenumber;
 functioncallstackend->saveinformation=func->saveinformation;
 functioncallstackend->saveinformation_top=func->saveinformation_top;
 functioncallstackend->vars=func->vars;
 functioncallstackend->stat=func->stat;
 functioncallstackend->parameters=GetFunctionPointer(func->name)->parameters;
+functioncallstackend->moduleptr=GetCurrentModuleInformationFromBufferAddress();
 
 strcpy(functioncallstackend->returntype,func->returntype);
 functioncallstackend->type_int=func->type_int;
@@ -2179,7 +2184,7 @@ strcpy(buf,currentfunction->name);
 int GetCurrentFunctionLine(void) {
 if(currentfunction == NULL) return(-1);
 
-return(currentfunction->linenumber);
+return(currentfunction->currentlinenumber);
 }
 
 /*
@@ -2194,7 +2199,7 @@ return(currentfunction->linenumber);
 void SetCurrentFunctionLine(int linenumber) {
 if(currentfunction == NULL) return(-1);
 
-currentfunction->linenumber=linenumber;
+currentfunction->currentlinenumber=linenumber;
 }
 
 /*
@@ -2387,7 +2392,7 @@ if(currentfunction->saveinformation_top->last != NULL) {
 else
 {
 	SetCurrentBufferPosition(currentfunction->saveinformation_top->bufptr);
-	currentfunction->linenumber=currentfunction->saveinformation_top->linenumber;
+	currentfunction->startlinenumber=currentfunction->saveinformation_top->linenumber;
 }
 
 }

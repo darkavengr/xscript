@@ -13,3 +13,6 @@ typedef struct {
  struct MODULES *last;
  struct MODULES *next;
 } MODULES;
+
+MODULES *GetCurrentModuleInformationFromBufferAddress();
+

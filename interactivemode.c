@@ -24,6 +24,7 @@
 #include "errors.h"
 #include "size.h"
 #include "interactivemode.h"
+#include "module.h"
 #include "variablesandfunctions.h"
 #include "dofile.h"
 #include "statements.h"
@@ -74,6 +75,8 @@ if(InteractiveModeBuffer == NULL) {
 }
 
 InteractiveModeBufferPosition=InteractiveModeBuffer;		/* set buffer position to start */
+
+InitializeMainFunction(NULL,NULL);			/* Initialize main function */
 
 printf("XScript Version %d.%d\n\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 
@@ -296,7 +299,7 @@ if(strlen(currentfile) == 0) {		/* check if there is a file */
 	return(0);
 }
 
-return(ExecuteFile(currentfile));	/* run file */
+return(ExecuteFile(currentfile,NULL));	/* run file */
 }
 
 /*
@@ -401,6 +404,24 @@ SetCurrentBufferPosition(InteractiveModeBuffer);
  *
  */
 int backtrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+PrintBackTrace();
+return(0);
+}
+
+/*
+ * Free interactive mode buffer
+ *
+ * In: Nothing
+ *
+ * Returns: Nothing
+ *
+ */
+void FreeInteractiveModeBuffer(void) {
+if(InteractiveModeBuffer != NULL) free(InteractiveModeBuffer);
+return;
+}
+
+void PrintBackTrace(void) {
 FUNCTIONCALLSTACK *stack;
 int callstackcount=0;
 vars_t *varnext;
@@ -436,25 +457,10 @@ while(stack != NULL) {
 
   	}
 	
-	printf(") : %s\n",stack->returntype);
+	printf(") : %s (%s:%d)\n",stack->returntype,stack->moduleptr->modulename,stack->currentlinenumber);
 
 	stack=stack->last;
 }
 
-
-return(0);
-}
-
-/*
- * Free interactive mode buffer
- *
- * In: Nothing
- *
- * Returns: Nothing
- *
- */
-void FreeInteractiveModeBuffer(void) {
-if(InteractiveModeBuffer != NULL) free(InteractiveModeBuffer);
-return;
 }
 

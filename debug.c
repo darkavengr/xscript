@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include "errors.h"
 #include "size.h"
+#include "module.h"
 #include "variablesandfunctions.h"
 #include "debug.h"
 #include "dofile.h"
