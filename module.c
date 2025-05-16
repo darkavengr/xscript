@@ -54,11 +54,7 @@ MODULES ModuleEntry;
 
 modpath=getenv("XSCRIPT_MODULE_PATH");				/* get module path */
 
-if(modpath == NULL)  {
- SetLastError(NO_MODULE_PATH);	/* no module path warning */
-
- strcpy(modpath,".");		/* use current directory */
-}
+if(modpath == NULL) strcpy(modpath,".");		/* use current directory */
 
 tc=TokenizeLine(modpath,moddirs,":");			/* tokenize line */
 
@@ -119,10 +115,11 @@ void FreeModulesList(void) {
 MODULES *next=modules;
 MODULES *nextptr;
 
-/* search through linked list */
-
 while(next != NULL) {
 	nextptr=next->next;
+
+	if(next->StartInBuffer != NULL) free(next->StartInBuffer);		/* free script module buffer */
+
 	free(next);
 	next=nextptr;
 }
@@ -155,6 +152,7 @@ else
 }
 
 memcpy(modules_end,entry,sizeof(MODULES));
+modules_end->next=NULL;
 
 SetLastError(0);
 return(0);

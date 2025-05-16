@@ -44,7 +44,7 @@ char *errs[] = { "No error",\
 		 "Error calling library function",\
 		 "Invalid statement",\
 		 "Cannot declare a function inside another function",\
-		 "ENDFUNCTION without FUNCTION",\
+		 "FUNCTION without ENDFUNCTION",\
 		 "NEXT without FOR",
 		 "WEND without WHILE",\
 		 "Duplicate function name",\
@@ -75,6 +75,8 @@ char *errs[] = { "No error",\
 		 "User-defined type does not exist",\
 		 "TYPE without ENDTYPE",\
 		 "Command can only be used in interactive mode",\
+		 "IMPORT statement must precede statements",\
+
 };
 
 /*
@@ -137,14 +139,14 @@ UpdateVariable("ERRL","",&errval,0,0);
 
 GetCurrentFunctionName(errfunc);		/* get faulting function */
 
-errval.s=malloc(strlen(errfunc));
-if(errval.s == NULL) return;
+//errval.s=malloc(strlen(errfunc));
+//if(errval.s == NULL) return;
 
-strcpy(errval.s,errfunc);
+//strcpy(errval.s,errfunc);
 
-UpdateVariable("ERRFUNC","",&errval,0,0);
+//UpdateVariable("ERRFUNC","",&errval,0,0);
 
-free(errval.s);
+//free(errval.s);
 }
 
 int GetLastError(void) {

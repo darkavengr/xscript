@@ -174,7 +174,6 @@ SwitchToFileBuffer();			/* switch to file buffer */
 
 SetCurrentFunctionLine(1);
 
-
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
 SetFunctionCallPtr(saveCurrentBufferPosition);		/* set start of current function to buffer start */
 
@@ -241,11 +240,8 @@ int tc;
 varsplit split;
 varsplit assignsplit;
 varval val;
-char c;
 int vartype;
 int count;
-char *b;
-char *d;
 vars_t *varptr;
 vars_t *assignvarptr;
 int returnvalue;
@@ -256,9 +252,8 @@ int IsValid=FALSE;
 
 GetCurrentFile(filename);	/* get name of current file */
 
-c=*lbuf;
-if((c == '\r') || (c == '\n') || (c == 0)) {
-	SetLastError(0);			/* blank line */
+if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n')) { 			/* blank line */
+	SetLastError(0);
 	return(0);
 }
 
@@ -266,10 +261,7 @@ if(GetTraceFlag()) {		/* print statement if trace is enabled */
 	printf("***** Tracing line %d in function %s: %s\n",GetCurrentFunctionLine(),filename,lbuf);
 }
 
-if(strlen(lbuf) > 1) {
-	b=lbuf+strlen(lbuf)-1;
-	if((*b == '\n') || (*b == '\r')) *b=0;
-}
+removenewline(lbuf);		/* remove newline from line */
 
 while(*lbuf == ' ' || *lbuf == '\t') lbuf++;	/* skip white space */
 
@@ -341,14 +333,12 @@ for(count=1;count<tc;count++) {
 			}
 		}
 
-		c=*outtokens[count+1];
-
-		if((c != '"') && (vartype == VAR_STRING)) {
+		if((((char) *outtokens[count+1]) != '"') && (vartype == VAR_STRING)) {
 			SetLastError(TYPE_ERROR);
 			return(-1);
 		}
 
-		if( (c == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
+		if( (((char) *outtokens[count+1]) == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
 			if(vartype == -1) CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
 		  		 
 		  	ConatecateStrings(count+1,tc,outtokens,&val);					/* join all the strings on the line */
@@ -360,7 +350,7 @@ for(count=1;count<tc;count++) {
 
 		/* number otherwise */
 
-		 if( ((c == '"') && (vartype != VAR_STRING))) {
+		 if( ((((char) *outtokens[count+1]) == '"') && (vartype != VAR_STRING))) {
 			SetLastError(TYPE_ERROR);
 			return(-1);
 		}
@@ -575,16 +565,21 @@ int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *filename[MAX_SIZE];
 char *extptr;
 
-extptr=strstr(tokens[1],".");		/* get extension */
+if(IsValidString(tokens[1]) == FALSE) {
+	SetLastError(SYNTAX_ERROR);	/* is valid string */
+	return(-1);
+}
+
+StripQuotesFromString(tokens[1],filename);		/* remove quotes from filename */
+
+extptr=strrchr(filename,'.');		/* get extension */
+
+if(extptr == NULL) {
+	SetLastError(SYNTAX_ERROR);	/* is valid string */
+	return(-1);
+}
 
 if(memcmp(extptr,".xsc",3) == 0) {	/* is source file */
-	if(IsValidString(tokens[1]) == FALSE) {
-		SetLastError(SYNTAX_ERROR);	/* is valid string */
-		return(-1);
-	}
-
-	StripQuotesFromString(tokens[1],filename);		/* remove quotes from filename */
-
 	if(IncludeFile(filename) == -1) return(-1);	/* including source file */
 
 	SetLastError(0);
@@ -1063,13 +1058,6 @@ retval.val.type=GetFunctionReturnType();		/* get return type */
 retval.has_returned_value=TRUE;				/* set has returned value flag */
 
 if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
-
-	printf("tc=%d\n",tc);
-
-	for(int tokencount=1;tokencount<tc;tokencount++) {
-		printf("tokens[%d]=%s\n",tokencount,tokens[tokencount]);
-	}
-
 	if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
 		retval.has_returned_value=FALSE;	/* clear has returned value flag */
 
@@ -1139,20 +1127,20 @@ int get_return_value(varval *val) {
 }
 
 int wend_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	if((GetFunctionFlags() & WHILE_STATEMENT) == 0) {
-		SetLastError(WEND_NOWHILE);
-		return(-1);
-	}
+if((GetFunctionFlags() & WHILE_STATEMENT) == 0) {
+	SetLastError(WEND_NOWHILE);
+	return(-1);
+}
 
-	SetLastError(0);
-	return(0);
+SetLastError(0);
+return(0);
 }
 
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-	if((GetFunctionFlags() & FOR_STATEMENT) == 0) {
-		SetLastError(NEXT_WITHOUT_FOR);
-		return(-1);
-	}
+if((GetFunctionFlags() & FOR_STATEMENT) == 0) {
+	SetLastError(NEXT_WITHOUT_FOR);
+	return(-1);
+}
 
 	SetLastError(0);
 	return(0);
@@ -1446,7 +1434,6 @@ return(0);
  */
 
 int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-
 if(((GetFunctionFlags() & FOR_STATEMENT)) || ((GetFunctionFlags() & WHILE_STATEMENT))) {
 	CurrentBufferPosition=GetSaveInformationBufferPointer();
 
@@ -1570,7 +1557,7 @@ int try_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *buf[MAX_SIZE];
 int returnvalue;
 char *trytokens[MAX_SIZE][MAX_SIZE];
-	
+
 while(*CurrentBufferPosition != 0) {
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
@@ -1877,42 +1864,29 @@ void touppercase(char *token) {
 
 char *ReadLineFromBuffer(char *buf,char *linebuf,int size) {
 int count=0;
-char *lineptr=linebuf;
-char *b;
-char *z;
-char *l;
+char *lineptr;
 
 memset(linebuf,0,size);
 
-l=linebuf;
+lineptr=linebuf;
 
 do {
-	 if(count++ == size) break;
+	if(count++ == size) break;
 
-	 *l++=*buf++;
-	 b=buf;
-	 b--;
+	*lineptr++=*buf;
 
-	 if(*b == 0) break;
-	 if(*b == '\n' || *b == '\r') break;
+	if( ((char) *buf) == '\n' || ((char) *buf) == '\r') break;
 
-} while(*b != 0);		/* until end of line */
+} while(((char) *buf++) != 0);		/* until end of line */
 
-
-b=linebuf;
-b += strlen(linebuf);
-b--;
-
-*b=0;
-
-return(buf);			/* return new position */
+return(++buf);			/* return new position */
 }
 
 /*
  * Compare string case insensitively
  *
- * In: char *source		First string
-		char *dest		Second string
+ * In: source		First string
+       dest		Second string
  *
  * Returns: 0 if matches, positive or negative number otherwise
  *
@@ -2022,74 +1996,93 @@ CurrentBufferPosition=FileBufferPosition;
 
 int IncludeFile(char *filename) {
 struct stat includestat;
-char *tempbuf;
 FILE *handle;
-size_t newptr;
-char *oldtextptr;
 MODULES ModuleEntry;
+char *bufpos;
+int returnvalue;
+char *saveCurrentBufferPosition;
+char *linebuf[MAX_SIZE];
 
 if(stat(filename,&includestat) == -1) {
 	SetLastError(FILE_NOT_FOUND);
 	return(-1);
 }
 
-handle=fopen(filename,"rb");
+handle=fopen(filename,"rb");				/* open module file */
 if(!handle) {
 	SetLastError(FILE_NOT_FOUND);
 	return(-1);
 }
 
-/* replace include statement with file contents */
+/* read module into buffer */
 
-tempbuf=malloc(includestat.st_size);		/* allocate temporary buffer */
-strcpy(tempbuf,CurrentBufferPosition);		/* save from current buffer to end */
+ModuleEntry.StartInBuffer=malloc(includestat.st_size);		/* start adress of module in buffer */
+if(ModuleEntry.StartInBuffer == NULL) {
+	fclose(handle);
 
-/* find relative distance from start of buffer and apply it to new buffer pointer */
-
-newptr=(CurrentBufferPosition-FileBuffer);	/* find distance from start of buffer */
-if(realloc(FileBuffer,(FileBufferSize+includestat.st_size)) == NULL) {
-	SetLastError(NO_MEM);	/* resize file buffer */
+	SetLastError(NO_MEM);
 	return(-1);
 }
 
-CurrentBufferPosition=(FileBuffer+newptr);	/* new file buffer position */
+if(fread(ModuleEntry.StartInBuffer,includestat.st_size,1,handle) != 1) {
+	free(ModuleEntry.StartInBuffer);
+	fclose(handle);
 
-/* find start of include statement so it can be overwritten */
-
-CurrentBufferPosition -= 2;		/* skip newline */
-
-while(CurrentBufferPosition != FileBuffer) {
-	if(*CurrentBufferPosition-- == '\n') break;
-}
-
-if(fread(CurrentBufferPosition,includestat.st_size,1,handle) != 1) {
-	SetLastError(READ_ERROR);		/* read include file to buffer */
+	SetLastError(READ_ERROR);
 	return(-1);
 }
 
-/* copy text after included file */
+/* put null at end of buffer */
 
-oldtextptr=(CurrentBufferPosition+includestat.st_size)-1;
-strcpy(oldtextptr,tempbuf);
-
-oldtextptr += includestat.st_size;		/* point to end */
-
-//CurrentBufferPosition=(oldtextptr-2);
-free(tempbuf);
+bufpos=(ModuleEntry.StartInBuffer+(includestat.st_size-1));
+*bufpos=0;
 
 fclose(handle);
 
 /* add module entry */
 strcpy(ModuleEntry.modulename,filename);	/* module filename */
 ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
-ModuleEntry.StartInBuffer=newptr;		/* start adress of module in buffer */
-
-ModuleEntry.EndInBuffer=newptr;			/* end adress of module in buffer */
+ModuleEntry.EndInBuffer=ModuleEntry.StartInBuffer;			/* end adress of module in buffer */
 ModuleEntry.EndInBuffer += includestat.st_size;
 AddToModulesList(&ModuleEntry);
 
-SetLastError(0);
-return(0);
+/* find start of include statement so it can be overwritten */
+
+bufpos=GetCurrentBufferPosition();
+bufpos--;		/* skip newline */
+
+do {
+	if(*bufpos == '\n') break;		/* at end */
+
+	*bufpos++= '\n';		/* overwrite with newline */
+} while(*bufpos != 0);
+
+returnvalue=0;
+
+saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
+SetCurrentFileBufferPosition(ModuleEntry.StartInBuffer);	/* set start */
+CurrentBufferPosition=ModuleEntry.StartInBuffer;
+
+do {
+	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,linebuf,LINE_SIZE);	/* read line from buffer */
+
+	if(((char) *CurrentBufferPosition) == 0) break;
+
+	if(ExecuteLine(linebuf) == -1) {			/* run statement */
+		returnvalue=-1;
+		break;
+	}
+
+	memset(linebuf,0,MAX_SIZE);
+
+} while(*CurrentBufferPosition != 0); 			/* until end */
+
+CurrentBufferPosition=saveCurrentBufferPosition;	/* restore current pointer */
+SetCurrentFileBufferPosition(CurrentBufferPosition);
+
+SetCurrentFunctionLine(GetCurrentFunctionLine()+1);
+
+return(returnvalue);
 }
 
 int IsValidString(char *str) {
@@ -2122,16 +2115,12 @@ while(*s != '"') *b++=*s++;	/* copy character */
 return;
 }
 
-/*
- * Free file buffer
- *
- * In: Nothing
- *
- * Returns: Nothing
- *
- */
-void FreeFileBuffer(void) {
-if(FileBuffer != NULL) free(FileBuffer);
-}
+void removenewline(char *line) {
+char *b;
 
+if(strlen(line) > 1) {
+	b=(line+strlen(line))-1;
+	if((*b == '\n') || (*b == '\r')) *b=0;
+}
+}
 

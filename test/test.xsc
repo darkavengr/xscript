@@ -1,3 +1,5 @@
-print (2+2)+3,22
-xxx
+import "test/testfunc.xsc"
+print 6*6
+print testfunction(1,2,3)
+
 

@@ -447,7 +447,7 @@ while(stack != NULL) {
 				printf("%s=%d",varnext->varname,varnext->val->i);
        			}
 			else if(varnext->type_int == VAR_SINGLE) {				/* single */	     
-				printf("%f",varnext->varname,varnext->val->f);
+				printf("%s=%f",varnext->varname,varnext->val->f);
 			}
 
 			if((varnext != NULL) && (varnext->next != NULL)) printf(", ");

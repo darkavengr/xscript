@@ -1,13 +1,5 @@
-function testfunction2(a,b,c)
-print "Test function 2"
-
+function testfunction(a,b,c)
+print "Test function"
 return a*b*c
 endfunction
-
-function testfunction1(a,b,c)
-return a+b+c
-endfunction
-
-print testfunction1(1,2,3)
-
 

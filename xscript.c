@@ -171,6 +171,5 @@ FreeFunctionsAndVariables();			/* free functions and variables */
 FreeModulesList();				/* free modules */
 
 FreeInteractiveModeBuffer();	/* free interactive mode buffer */
-FreeFileBuffer();		/* free file buffer */
 }
 

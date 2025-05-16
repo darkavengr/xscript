@@ -569,8 +569,6 @@ if(start == end) {	/* kludge */
 }
 
 for(count=start;count<end;count++) {
-	printf("validate[%d]=%s (%d)\n",count,tokens[count],IsOperator);
-
 	if(strcmp(tokens[count],"(") == 0) {		/* sub-expression */
 		/* find end of sub-expression */
 

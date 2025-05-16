@@ -1,8 +1,4 @@
-#
-# The standard Hello World program
-#
-print "Hello World" # This is a comment on the same line as a statement
-
+print "Hello World"
 
 
 

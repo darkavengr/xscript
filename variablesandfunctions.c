@@ -1024,7 +1024,7 @@ return(0);
 }
 
 /*
- *  Find function's end
+ *  Find end of function
  * 
  *  In: Nothing
  * 
@@ -1038,19 +1038,21 @@ int lc;
 
 /* find end of function */
 
-do {
-	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */
-
-	TokenizeLine(linebuf,tokens,TokenCharacters);			/* tokenize line */
-
+do {	
 	lc=GetCurrentFunctionLine();
 	SetCurrentFunctionLine(++lc);			/* update line number */
 
-	if(strcmpi(tokens[0],"ENDFUNCTION") == 0) {
+	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */	
+
+	removenewline(linebuf);		/* remove newline */
+
+	TokenizeLine(linebuf,tokens,TokenCharacters);			/* tokenize line */
+
+	if(strcmpi(tokens[0],"ENDFUNCTION") == 0) {		/* found end of function */
 		SetLastError(0);  
 		return(0);
 	}
-	
+
 }  while(*GetCurrentBufferPosition() != 0); 			/* until end */
 
 SetLastError(FUNCTION_NO_ENDFUNCTION);
