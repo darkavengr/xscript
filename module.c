@@ -167,18 +167,14 @@ return(0);
  *
  */
 
-MODULES *GetCurrentModuleInformationFromBufferAddress(void) {
+MODULES *GetCurrentModuleInformationFromBufferAddress(char *address) {
 MODULES *next=modules;
 char *buffer=GetCurrentFileBufferPosition();
 
-/* search through linked list */
+/* search through module list for buffer address */
 
 while(next != NULL) {
-//	printf("%lX %lX %lX\n",buffer,next->StartInBuffer,next->EndInBuffer);
-
-	if((buffer >= next->StartInBuffer) && (buffer <= next->EndInBuffer)) {		/* found entry */
-		return(next);
-	}
+	if((address >= next->StartInBuffer) && (address <= next->EndInBuffer)) return(next);	/* found entry */
  
 	next=next->next;
 }

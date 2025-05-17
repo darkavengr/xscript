@@ -83,7 +83,7 @@ newfunc.parameters=NULL;
 newfunc.vars=NULL;
 newfunc.vars_end=NULL;
 newfunc.stat=0;
-newfunc.moduleptr=GetCurrentModuleInformationFromBufferAddress();
+newfunc.moduleptr=GetCurrentModuleInformationFromBufferAddress(GetCurrentBufferAddress());
 
 strcpy(newfunc.returntype,vartypenames[DEFAULT_TYPE_INT]);
 
@@ -854,7 +854,6 @@ functions *next;
 functions *previous;
 char *linebuf[MAX_SIZE];
 int count;
-int lc;
 vars_t *varptr;
 vars_t *paramsptr;
 vars_t *paramslast;
@@ -1039,9 +1038,6 @@ int lc;
 /* find end of function */
 
 do {	
-	lc=GetCurrentFunctionLine();
-	SetCurrentFunctionLine(++lc);			/* update line number */
-
 	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */	
 
 	removenewline(linebuf);		/* remove newline */
@@ -1132,6 +1128,7 @@ currentfunction->callptr=GetCurrentBufferPosition();
 /* save information about the called function */
 
 strcpy(newfunc.name,next->name);			/* function name */
+
 newfunc.callptr=next->funcstart;			/* function start */
 
 SetCurrentBufferPosition(next->funcstart);
@@ -1139,6 +1136,8 @@ SetCurrentBufferPosition(next->funcstart);
 newfunc.startlinenumber=next->linenumber;
 newfunc.currentlinenumber=next->linenumber;
 newfunc.stat |= FUNCTION_STATEMENT;
+newfunc.moduleptr=GetCurrentModuleInformationFromBufferAddress(next->funcstart);		/* get module information for this function */
+
 strcpy(newfunc.returntype,next->returntype);
 
 PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
@@ -1224,7 +1223,6 @@ while(*GetCurrentBufferPosition() != 0) {
 
 currentfunction->stat &= FUNCTION_STATEMENT;
 
-PopFunctionCallInformation();
 ReturnFromFunction();			/* set script's function return value */
 
 if(returnvalue != -1) SetLastError(0);
@@ -1526,8 +1524,6 @@ for(count=start;count<end;count++) {
 memset(out,0,MAX_SIZE*MAX_SIZE);
 
 for(count=0;count<outcount;count++) {
-///	printf("temp[%d]=%s\n",count,temp[count]);
-
 	strcpy(out[count],temp[count]);
 }
 
@@ -1710,8 +1706,7 @@ functioncallstackend->saveinformation_top=func->saveinformation_top;
 functioncallstackend->vars=func->vars;
 functioncallstackend->stat=func->stat;
 functioncallstackend->parameters=GetFunctionPointer(func->name)->parameters;
-functioncallstackend->moduleptr=GetCurrentModuleInformationFromBufferAddress();
-
+functioncallstackend->moduleptr=func->moduleptr;
 strcpy(functioncallstackend->returntype,func->returntype);
 functioncallstackend->type_int=func->type_int;
 functioncallstackend->lastlooptype=func->lastlooptype;
@@ -1750,7 +1745,7 @@ while(vars != NULL) {
 if(currentfunction->last != NULL) {
 	currentfunction=currentfunction->last;
 
-	free(currentfunction->next);
+//	free(currentfunction->next);
 
 	currentfunction->next=NULL;
 
@@ -2513,7 +2508,6 @@ int count;
 
 while(varnext != NULL) {
 	/* If it's a string variable, free it */
-
 	if(varnext->type_int == VAR_STRING) {
 		for(count=0;count<(varnext->xsize*varnext->ysize);count++) {
 			free(varnext->val[count].s);

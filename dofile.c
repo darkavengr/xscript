@@ -119,6 +119,15 @@ sigsetjmp(savestate,1);		/* save current context */
 SetIsFileLoadedFlag();
 ClearIsRunningFlag();
 
+/* add module entry */
+strcpy(ModuleEntry.modulename,filename);	/* module filename */
+ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
+ModuleEntry.StartInBuffer=FileBuffer;		/* start adress of module in buffer */
+
+ModuleEntry.EndInBuffer=FileBuffer;		/* end adress of module in buffer */
+ModuleEntry.EndInBuffer += filesize;
+AddToModulesList(&ModuleEntry);
+
 SetLastError(0);
 return(0);
 }
@@ -158,15 +167,6 @@ if(filename != NULL) {
 	SetIsFileLoadedFlag();
 }
 
-/* add module entry */
-strcpy(ModuleEntry.modulename,filename);	/* module filename */
-ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
-ModuleEntry.StartInBuffer=FileBuffer;		/* start adress of module in buffer */
-
-ModuleEntry.EndInBuffer=FileBuffer;		/* end adress of module in buffer */
-ModuleEntry.EndInBuffer=endptr;
-AddToModulesList(&ModuleEntry);
-
 InitializeMainFunction(filename,args);
 
 SetIsRunningFlag();
@@ -175,6 +175,7 @@ SwitchToFileBuffer();			/* switch to file buffer */
 SetCurrentFunctionLine(1);
 
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
+
 SetFunctionCallPtr(saveCurrentBufferPosition);		/* set start of current function to buffer start */
 
 SetCurrentFile(filename);			/* set current executing file */
@@ -246,7 +247,6 @@ vars_t *varptr;
 vars_t *assignvarptr;
 int returnvalue;
 char *filename[MAX_SIZE];
-int lc=GetCurrentFunctionLine();
 int end;
 int IsValid=FALSE;
 
@@ -2046,17 +2046,6 @@ ModuleEntry.EndInBuffer=ModuleEntry.StartInBuffer;			/* end adress of module in 
 ModuleEntry.EndInBuffer += includestat.st_size;
 AddToModulesList(&ModuleEntry);
 
-/* find start of include statement so it can be overwritten */
-
-bufpos=GetCurrentBufferPosition();
-bufpos--;		/* skip newline */
-
-do {
-	if(*bufpos == '\n') break;		/* at end */
-
-	*bufpos++= '\n';		/* overwrite with newline */
-} while(*bufpos != 0);
-
 returnvalue=0;
 
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
@@ -2064,14 +2053,12 @@ SetCurrentFileBufferPosition(ModuleEntry.StartInBuffer);	/* set start */
 CurrentBufferPosition=ModuleEntry.StartInBuffer;
 
 do {
+
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,linebuf,LINE_SIZE);	/* read line from buffer */
 
 	if(((char) *CurrentBufferPosition) == 0) break;
 
-	if(ExecuteLine(linebuf) == -1) {			/* run statement */
-		returnvalue=-1;
-		break;
-	}
+	if(ExecuteLine(linebuf) == -1) return(-1);		/* run statement */
 
 	memset(linebuf,0,MAX_SIZE);
 
@@ -2080,9 +2067,7 @@ do {
 CurrentBufferPosition=saveCurrentBufferPosition;	/* restore current pointer */
 SetCurrentFileBufferPosition(CurrentBufferPosition);
 
-SetCurrentFunctionLine(GetCurrentFunctionLine()+1);
-
-return(returnvalue);
+return(0);
 }
 
 int IsValidString(char *str) {

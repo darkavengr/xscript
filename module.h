@@ -14,5 +14,5 @@ typedef struct {
  struct MODULES *next;
 } MODULES;
 
-MODULES *GetCurrentModuleInformationFromBufferAddress();
+MODULES *GetCurrentModuleInformationFromBufferAddress(char *address);
 

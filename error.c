@@ -90,12 +90,9 @@ char *errs[] = { "No error",\
 
 void PrintError(int errornumber) {
 char *filename[MAX_SIZE];
-MODULES module;
 FUNCTIONCALLSTACK *stack;
 
 if(errornumber == 0) return;
-
-GetCurrentModuleInformationFromBufferAddress(&module);		/* get information about current module */
 
 if(GetIsFileLoadedFlag() == TRUE) {
 	printf("Error %d: %s\n",errornumber,errs[errornumber]);
@@ -139,14 +136,14 @@ UpdateVariable("ERRL","",&errval,0,0);
 
 GetCurrentFunctionName(errfunc);		/* get faulting function */
 
-//errval.s=malloc(strlen(errfunc));
-//if(errval.s == NULL) return;
+errval.s=malloc(strlen(errfunc));
+if(errval.s == NULL) return;
 
-//strcpy(errval.s,errfunc);
+strcpy(errval.s,errfunc);
 
-//UpdateVariable("ERRFUNC","",&errval,0,0);
+UpdateVariable("ERRFUNC","",&errval,0,0);
 
-//free(errval.s);
+free(errval.s);
 }
 
 int GetLastError(void) {

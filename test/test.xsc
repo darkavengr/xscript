@@ -1,5 +1,5 @@
 import "test/testfunc.xsc"
-print 6*6
+print 2+2
 print testfunction(1,2,3)
 
 
