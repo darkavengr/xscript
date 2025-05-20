@@ -36,10 +36,33 @@ int dlhandle;
 dlhandle=LoadLibrary(filename);			/* open library */
 if(dlhandle == NULL) {
 	SetLastError(MISSING_LIBSYM);
-	return(-1);		/* can't open */
+	return(-1);
 }
 
 SetLastError(0);
 return(dlhandle);
+}
+
+/*
+ * Get function address
+ *
+ * In: handle	Module handle
+ *	name	Function name
+ *
+ * Returns -1 on error or module handle
+ */
+void *GetLibraryFunctionAddress(int handle,char *name) {
+return(GetProcAddress(handle,name));
+}
+/*
+ * Get module filename extension
+ *
+ * In: buf	Buffer
+ *
+ * Returns: Nothing
+ */
+
+void GetModuleFileExtension(char *buf) {
+strcpy(buf,".dll");
 }
 

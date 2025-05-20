@@ -53,7 +53,19 @@ return(dlhandle);
  *
  * Returns -1 on error or module handle
  */
-void *GetFunctionAddress(int handle,char *name) {
+void *GetLibraryFunctionAddress(int handle,char *name) {
 return(dlsym(handle,name));
+}
+
+/*
+ * Get module filename extension
+ *
+ * In: buf	Buffer
+ *
+ * Returns: Nothing
+ */
+
+void GetModuleFileExtension(char *buf) {
+strcpy(buf,".o");
 }
 

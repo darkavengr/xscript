@@ -2035,7 +2035,7 @@ return(NULL);
  *  fieldx	field x subscript
  *  fieldy	field y subscript
  * 
- *  Returns: 0 in success or non-zero error code on failure
+ *  Returns: 0 in success or -1 on failure
  * 
   */
 

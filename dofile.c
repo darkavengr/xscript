@@ -103,7 +103,7 @@ sigsetjmp(savestate,1);		/* save current context */
 FileBufferPosition=FileBuffer;
 
 if(fread(FileBuffer,filesize,1,handle) != 1) {
-	SetLastError(READ_ERROR);		/* read to buffer */
+	SetLastError(IO_ERROR);		/* read to buffer */
 	return(-1);
 }
 		
@@ -564,32 +564,69 @@ return(0);
 int import_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *filename[MAX_SIZE];
 char *extptr;
+char *modpath;
+char *module_directories[MAX_SIZE][MAX_SIZE];
+int pathtc;
+int count;
+char *fileext[10];
 
-if(IsValidString(tokens[1]) == FALSE) {
-	SetLastError(SYNTAX_ERROR);	/* is valid string */
+if((char) *tokens[1] == '"') {			/* importing using filename */
+	if(IsValidString(tokens[1]) == FALSE) {
+		SetLastError(SYNTAX_ERROR);
+		return(-1);
+	}
+
+	StripQuotesFromString(tokens[1],filename);		/* remove quotes from filename */
+
+	extptr=strrchr(filename,'.');		/* get extension */
+	if(extptr == NULL) {
+		SetLastError(SYNTAX_ERROR);	/* is valid string */
+		return(-1);
+	}
+
+	if(memcmp(extptr,".xsc",3) == 0) {	/* is source file */
+		if(IncludeFile(filename) == -1) return(-1);	/* including source file */
+
+		SetLastError(0);
+		return(0);
+	}
+}
+
+/* is including from XSCRIPT_MODULE_PATH otherwise */
+
+modpath=getenv("XSCRIPT_MODULE_PATH");				/* get module path */
+if(modpath == NULL) {				/* no module path */
+	SetLastError(NO_MODULE_PATH);
 	return(-1);
 }
 
-StripQuotesFromString(tokens[1],filename);		/* remove quotes from filename */
+pathtc=TokenizeLine(modpath,module_directories,":");			/* tokenize line */
 
-extptr=strrchr(filename,'.');		/* get extension */
+for(count=0;count<pathtc;count++) {			/* loop through path array */
 
-if(extptr == NULL) {
-	SetLastError(SYNTAX_ERROR);	/* is valid string */
-	return(-1);
+	/* try source file first, then binary module */
+
+	sprintf(filename,"%s/%s.xsc",module_directories[count],tokens[1]);	/* get path to source file */
+
+	if(IncludeFile(filename) == 0) {	/* including source file */
+		SetLastError(0);
+		return(0);
+	}
+
+	/* loading binary module */
+
+	GetModuleFileExtension(fileext);	/* get module file extension */
+
+	sprintf(filename,"%s/%s.%s",module_directories[count],filename,fileext);	/* get path to module */	
+
+	if(AddModule(filename) == 0) {		/* add module */
+		SetLastError(0);
+		return(0);
+	}
 }
 
-if(memcmp(extptr,".xsc",3) == 0) {	/* is source file */
-	if(IncludeFile(filename) == -1) return(-1);	/* including source file */
-
-	SetLastError(0);
-	return(0);
-}
-
-if(AddModule(tokens[1]) == -1) return(-1);		/* load module */
-
-SetLastError(0);
-return(0);
+SetLastError(MODULE_NOT_FOUND);
+return(-1);
 }
 
 /*
@@ -2028,7 +2065,7 @@ if(fread(ModuleEntry.StartInBuffer,includestat.st_size,1,handle) != 1) {
 	free(ModuleEntry.StartInBuffer);
 	fclose(handle);
 
-	SetLastError(READ_ERROR);
+	SetLastError(IO_ERROR);
 	return(-1);
 }
 

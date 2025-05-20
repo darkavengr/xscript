@@ -1,0 +1,32 @@
+int ParseVariableName(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end,varsplit *split) {
+int count;
+int varend;
+int subscriptstart;
+
+a.b.c.d
+
+strcpy(split->name,tokens[start]);		/* copy name */
+
+for(count=start;count<end;count++) {
+	if(strcmp(tokens[count],".") == 0) {		/* at end of field */
+
+		split->next=malloc(sizeof(varsplit));	/* allocate next link in list */
+		if(split->next == NULL) {	/* can't allocate */
+			SetLastError(NO_MEM);
+			return(-1);
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+}

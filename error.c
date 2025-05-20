@@ -39,7 +39,7 @@ char *errs[] = { "No error",\
 		 "Invalid variable name",\
 		 "Out of memory",\
 		 "EXIT outside of FOR or WHILE loop",\
-		 "Read error",
+		 "Missing XSCRIPT_MODULE_PATH enviroment variable",
 		 "Syntax error",\
 		 "Error calling library function",\
 		 "Invalid statement",\
@@ -52,8 +52,7 @@ char *errs[] = { "No error",\
 		 "Invalid array subscript",\
 		 "Type mismatch",\
 		 "Invalid variable type",\
-		 "EXIT FOR without FOR",\
-		 "Missing XSCRIPT_MODULE_PATH path",\
+		 "ITERATE without FOR or WHILE",\
 		 "Variable already exists",\
 		 "Variable or function not defined",\
 		 "EXIT WHILE without WHILE",\
@@ -75,8 +74,8 @@ char *errs[] = { "No error",\
 		 "User-defined type does not exist",\
 		 "TYPE without ENDTYPE",\
 		 "Command can only be used in interactive mode",\
-		 "IMPORT statement must precede statements",\
-
+		 "Module not found",\
+		 "I/O error",\
 };
 
 /*

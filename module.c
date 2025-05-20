@@ -43,39 +43,18 @@ MODULES *modules_end=NULL;
  * Returns -1 on error or 0 on success
  */
 
-int AddModule(char *modulename) {
-int handle;
-char *filename[MAX_SIZE];
-char *modpath;
-char *moddirs[MAX_SIZE][MAX_SIZE];
-int tc=0;
-int count;
+int AddModule(char *filename) {
 MODULES ModuleEntry;
 
-modpath=getenv("XSCRIPT_MODULE_PATH");				/* get module path */
+ModuleEntry.dlhandle=LoadModule(filename);	/* load module */
+if(ModuleEntry.dlhandle == -1) return(-1);
 
-if(modpath == NULL) strcpy(modpath,".");		/* use current directory */
+/* add module entry */
+strcpy(ModuleEntry.modulename,filename);
+ModuleEntry.flags=MODULE_BINARY;
+AddToModulesList(&ModuleEntry);		/* add to modules list */
 
-tc=TokenizeLine(modpath,moddirs,":");			/* tokenize line */
-
-for(count=0;count<tc;count++) {			/* loop through path array */
-
-/* get module filename without extension
-   LoadModule adds the extension for portability reasons */
-
-	sprintf(modulename,"%s\\%s",moddirs[count],filename);	
-
-	handle=LoadModule(filename);
-	if(handle == -1) continue;			/* can't open module */
-
-	/* add module entry */
-	strcpy(ModuleEntry.modulename,filename);
-	ModuleEntry.dlhandle=handle;
-	ModuleEntry.flags=MODULE_BINARY;
-
-	AddToModulesList(&ModuleEntry);
-}
-
+SetLastError(NO_ERROR);
 return(0);
 }
 
