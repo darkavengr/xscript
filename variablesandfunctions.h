@@ -28,7 +28,7 @@ typedef struct {
  char *s;
  int i;
  float f;
- long long l;
+ long int l;
  int type;
 } varval;
 
@@ -115,7 +115,7 @@ typedef struct {
 
 void FreeFunctions(void);
 int CreateVariable(char *name,char *type,int xsize,int ysize);
-int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y);
+int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y,int fieldx,int fieldy);
 int ResizeArray(char *name,int x,int y);
 int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy);
 int GetVariableType(char *name);

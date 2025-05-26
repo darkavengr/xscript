@@ -128,10 +128,10 @@ char *errfunc[MAX_SIZE];
 last_error=errornumber;
 
 errval.i=errornumber;				/* update error number */
-UpdateVariable("ERR","",&errval,0,0);
+UpdateVariable("ERR","",&errval,0,0,0,0);
 
 errval.i=GetCurrentFunctionLine();		/* update error line */
-UpdateVariable("ERRL","",&errval,0,0);
+UpdateVariable("ERRL","",&errval,0,0,0,0);
 
 GetCurrentFunctionName(errfunc);		/* get faulting function */
 
@@ -140,7 +140,7 @@ if(errval.s == NULL) return;
 
 strcpy(errval.s,errfunc);
 
-UpdateVariable("ERRFUNC","",&errval,0,0);
+UpdateVariable("ERRFUNC","",&errval,0,0,0,0);
 
 free(errval.s);
 }

@@ -24,6 +24,7 @@ int try_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int catch_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int endtry_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int resize_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int libcall_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);

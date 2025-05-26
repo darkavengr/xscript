@@ -18,30 +18,33 @@
 */
 
 #include <dlfcn.h>
+#include <stdio.h>
 #include "size.h"
 #include "module.h"
 #include "errors.h"
-
-void *LoadModule(char *filename);
-void *GetModuleAddress(int handle,char *name);
 
 /*
  * Open Linux module
  *
  * In: char *filename	Filename to open
  *
- * Returns -1 on error or module handle
+ * Returns NULL on error or module handle
  */
 
 void *LoadModule(char *filename) {
 void *dlhandle;
 
+printf("LoadModule() filename=%s\n",filename);
+
 dlhandle=dlopen(filename,RTLD_LAZY);			/* open library */
-if(dlhandle == -1) {
+
+printf("LoadModule() dlhandle=%lX\n",dlhandle);
+if(dlhandle == NULL) {
 	SetLastError(MISSING_LIBSYM);
-	return(-1);
+	return(NULL);
 }
 
+SetLastError(NO_ERROR);
 return(dlhandle);
 }
 
@@ -51,21 +54,12 @@ return(dlhandle);
  * In: handle	Module handle
  *	name	Function name
  *
- * Returns -1 on error or module handle
+ * Returns: module handle or NULL on error
  */
-void *GetLibraryFunctionAddress(int handle,char *name) {
+void *GetLibraryFunctionAddress(void *handle,char *name) {
+printf("libfunc=%lX %s\n",handle,name);
+
 return(dlsym(handle,name));
 }
 
-/*
- * Get module filename extension
- *
- * In: buf	Buffer
- *
- * Returns: Nothing
- */
-
-void GetModuleFileExtension(char *buf) {
-strcpy(buf,".o");
-}
 

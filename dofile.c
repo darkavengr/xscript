@@ -40,6 +40,7 @@
 
 extern jmp_buf savestate;
 extern char *vartypenames[];
+
 int saveexprtrue=0;
 functionreturnvalue retval;
 char *CurrentBufferPosition=NULL;	/* current pointer in buffer - points to either FileBufferPosition or interactive mode buffer */
@@ -160,7 +161,7 @@ if(filename != NULL) {
 	}
 
 	strcpy(progname.s,filename);				/* update program name */
-	UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
+	UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
 
 	SetCurrentFileBufferPosition(FileBuffer);
 	SetCurrentBufferPosition(FileBuffer);
@@ -187,7 +188,7 @@ do {
 	if(ExecuteLine(linebuf) == -1) {			/* run statement */
 
 		strcpy(progname.s,"");				/* update program name */
-		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
+		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
 
 		ClearIsRunningFlag();
 
@@ -197,7 +198,7 @@ do {
 
 	if(GetIsRunningFlag() == FALSE) {
 		strcpy(progname.s,"");				/* update program name */
-		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
+		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
 
 		CurrentBufferPosition=saveCurrentBufferPosition;
 
@@ -216,7 +217,7 @@ do {
 CurrentBufferPosition=saveCurrentBufferPosition;
 
 strcpy(progname.s,"");				/* update program name */
-UpdateVariable("PROGRAMNAME",NULL,&progname,0,0);
+UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
 
 free(progname.s);
 
@@ -252,7 +253,7 @@ int IsValid=FALSE;
 
 GetCurrentFile(filename);	/* get name of current file */
 
-if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n')) { 			/* blank line */
+if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n') || (((char) *lbuf) == 0)) { 			/* blank line */
 	SetLastError(0);
 	return(0);
 }
@@ -313,7 +314,7 @@ for(count=1;count<tc;count++) {
 			return(-1);
 		}
 
-		if((strlen(split.fieldname) > 0) && (IsValidVariableOrKeyword(split.name) == FALSE)) {	/* if there is a field name, check its validity */
+		if((strlen(split.fieldname) > 0) && (IsValidVariableOrKeyword(split.fieldname) == FALSE)) {	/* if there is a field name, check its validity */
 			SetLastError(SYNTAX_ERROR);
 			return(-1);
 		}
@@ -338,14 +339,14 @@ for(count=1;count<tc;count++) {
 			return(-1);
 		}
 
-		if( (((char) *outtokens[count+1]) == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
+		if( (((char) *tokens[count+1]) == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
 			if(vartype == -1) CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
 		  		 
-		  	ConatecateStrings(count+1,tc,outtokens,&val);					/* join all the strings on the line */
+		  	ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
+		  	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy);	/* set variable */
 
-		  	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);		/* set variable */
 		  	SetLastError(0);
-			return(-1);
+			return(0	);
 		}
 
 		/* number otherwise */
@@ -365,12 +366,6 @@ for(count=1;count<tc;count++) {
 		 if(vartype == VAR_NUMBER) {
 	 		val.d=exprone;
 	 	 }
-		 else if(vartype == VAR_STRING) {
-			returnvalue=SubstituteVariables(count+1,count+1,tokens,outtokens);
- 			if(returnvalue == -1) return(-1);
-
-		 	strcpy(val.s,outtokens[0]);  
-		}
 		else if(vartype == VAR_INTEGER) {
 	 		val.i=exprone;
 	 	}
@@ -401,13 +396,13 @@ for(count=1;count<tc;count++) {
 		 	val.d=exprone;
 
 		 	CreateVariable(split.name,"DOUBLE",split.x,split.y);			/* create variable */
-		 	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
+		 	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy);
 	
 		 	SetLastError(0);
 			return(0);
 		 }
 
-		 UpdateVariable(split.name,split.fieldname,&val,split.x,split.y);
+		 UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy);
 
 		 SetLastError(0);
 		 return(0);		 
@@ -472,6 +467,7 @@ char *printtokens[MAX_SIZE][MAX_SIZE];
 int endtoken;
 bool IsInBracket;
 vars_t *tokenvar;
+char *tempstring[MAX_SIZE];
 
 sigsetjmp(savestate,1);		/* save current context */
 
@@ -503,7 +499,8 @@ for(count=1;count<tc;count++) {
 
 		count += ConatecateStrings(0,returnvalue,printtokens,&val);		/* join all the strings in the token */
 
-		printf("%s",val.s);
+		StripQuotesFromString(val.s,tempstring);	/* remove quotes from string */
+		printf("%s",tempstring);
 	}
 	else
 	{
@@ -543,9 +540,9 @@ for(count=1;count<tc;count++) {
 	}
 
 	sigsetjmp(savestate,1);		/* save current context */
-
-	printf("\n");
 }
+
+printf("\n");
 
 SetLastError(0);
 return(0);
@@ -612,21 +609,64 @@ for(count=0;count<pathtc;count++) {			/* loop through path array */
 		SetLastError(0);
 		return(0);
 	}
-
-	/* loading binary module */
-
-	GetModuleFileExtension(fileext);	/* get module file extension */
-
-	sprintf(filename,"%s/%s.%s",module_directories[count],filename,fileext);	/* get path to module */	
-
-	if(AddModule(filename) == 0) {		/* add module */
-		SetLastError(0);
-		return(0);
-	}
 }
 
 SetLastError(MODULE_NOT_FOUND);
 return(-1);
+}
+/*
+ * Libcall statement
+ *
+ * In: tc Token count
+ * tokens Token array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+//LIBCALL function name(arguments) IN module name TO result_variable
+
+int libcall_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int paramendpos;
+char *parameters[MAX_SIZE][MAX_SIZE];
+int paramcount=0;
+int vartype;
+int returntype;
+UserDefinedType *udtptr;
+char *modname[MAX_SIZE];
+varsplit split;
+
+if(strcmp(tokens[2],"(") != 0) {
+	SetLastError(SYNTAX_ERROR);
+	return(-1);
+}
+
+/* get parameters*/
+
+for(paramendpos=3;paramendpos<tc;paramendpos++) {		/* find ) */
+	if(strcmpi(tokens[paramendpos],")") == 0) break;
+
+	if(strcmpi(tokens[paramendpos],",") == 0) continue; /* skip , */
+
+	strcpy(parameters[paramcount++],tokens[paramendpos]);	/* get parameter */
+}
+
+//LIBCALL function name(arguments) IN module name TO result_variable
+
+if((strcmpi(tokens[paramendpos+1],"IN") != 0) || (strcmpi(tokens[paramendpos+3],"TO") != 0)) { 	/* missing IN or TO */
+	SetLastError(SYNTAX_ERROR);
+	return(-1);
+}
+
+StripQuotesFromString(tokens[paramendpos+2],modname);	/* remove quotes from module name */
+
+/* call binary module function */
+
+//int CallModule(char *functionname,char *modulename,int paramcount,varsplit *result,char *parameters[MAX_SIZE][MAX_SIZE]) {
+
+ParseVariableName(tokens,paramendpos+4,tc,&split);		/* split variable name */
+
+return(CallModule(tokens[1],modname,paramcount,&split,parameters));
 }
 
 /*
@@ -947,7 +987,7 @@ switch(vartype) {
 		break;
 }
 
-UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
+UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);			/* set loop variable to next */	
 
 if(exprone >= exprtwo) {
 	ifexpr=1;
@@ -1006,7 +1046,7 @@ while(1) {
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=steppos;
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += steppos;      
 
-	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y);			/* set loop variable to next */	
+	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);			/* set loop variable to next */	
 
 		sigsetjmp(savestate,1);		/* save current context */
 
@@ -1437,12 +1477,6 @@ for(count=1;count<tc;count++) {
 if(count < tc) {		/* found type */
 	if(ParseVariableName(tokens,1,count-1,&split) == -1) return(-1);	/* parse variable name */
 
-	vartype=CheckVariableType(tokens[count+1]);	/* get variable type */
-	if(vartype == -1) {
-		SetLastError(INVALID_VARIABLE_TYPE);
-		return(-1);
-	}
-
 	retval.val.type=vartype;
 	retval.val.i=CreateVariable(split.name,tokens[count+1],split.x,split.y);
 }
@@ -1505,11 +1539,6 @@ if(tc < 1) {
 	return(-1);
 }
 
-if((GetUDT(tokens[1]) != NULL) || (IsValidVariableType(tokens[1]) != -1)) { 		/* If type exists */
-	SetLastError(TYPE_EXISTS);
-	return(-1);
-}
-
 /* create user-defined type entry */
 
 strcpy(addudt.name,tokens[1]);
@@ -1554,6 +1583,7 @@ do {
 	
 	fieldptr->xsize=split.x;				/* get x size of field variable */
 	fieldptr->ysize=split.y;				/* get y size of field variable */
+
 	fieldptr->type=IsValidVariableType(typetokens[2]);
 
 /* get type of field variable */
@@ -1912,7 +1942,11 @@ do {
 
 	*lineptr++=*buf;
 
-	if( ((char) *buf) == '\n' || ((char) *buf) == '\r') break;
+	if( ((char) *buf) == '\n' || ((char) *buf) == '\r') {
+		lineptr--;
+		*lineptr=0;
+		break;
+	}
 
 } while(((char) *buf++) != 0);		/* until end of line */
 

@@ -1,7 +1,7 @@
-type Pay
-	PayGrade as integer
-	Salary as double
-endtype
+#type Pay
+#	PayGrade as integer
+#	Salary as double
+#endtype
 
 type Employee
 	id as integer
@@ -18,8 +18,8 @@ endtype
 declare someone(3) as Employee
 
 someone(2).id=666
-
 print someone(2).id
+
 
 
 

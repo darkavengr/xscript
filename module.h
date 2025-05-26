@@ -5,7 +5,6 @@ int AddModule(char *modulename);
 
 typedef struct {
  char *modulename[MAX_SIZE];
- void  (*dladdr)(void);			/* function pointer */
  void *dlhandle;
  int flags;
  char *StartInBuffer;
@@ -14,5 +13,14 @@ typedef struct {
  struct MODULES *next;
 } MODULES;
 
+int AddModule(char *filename);
+void *GetModuleHandle(char *module);
+MODULES *GetModuleEntry(char *module);
+void FreeModulesList(void);
+int AddToModulesList(MODULES *entry);
 MODULES *GetCurrentModuleInformationFromBufferAddress(char *address);
+void *LoadModule(char *filename);
+void *GetLibraryFunctionAddress(void *handle,char *name);
+void *GetModuleAddress(int handle,char *name);
+void GetModuleFileExtension(char *buf);
 

@@ -1,2 +1,17 @@
-module_test.myfunc(123)
+type Person
+	id as integer
+	firstname as string
+	lastname as string
+	address as string
+	city as string
+	postcode as string
+	country as string
+	phonenumber as string
+	dob as string
+endtype
+
+declare result as Person
+declare testrecord as Person
+
+libcall udt_test(testrecord) in "./modtest.so" to result
 

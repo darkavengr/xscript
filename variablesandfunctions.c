@@ -117,14 +117,14 @@ CreateVariable("COMMAND","STRING",1,1);
 
 if(progname != NULL) {
 	strcpy(cmdargs.s,progname);
-	UpdateVariable("PROGRAMNAME","",&cmdargs,1,1);
+	UpdateVariable("PROGRAMNAME","",&cmdargs,1,1,0,0);
 }
 
 /* get command-line arguments, if any */
 
 if(args != NULL) {
 	strcpy(cmdargs.s,args);
-	UpdateVariable("COMMAND","",&cmdargs,1,1);
+	UpdateVariable("COMMAND","",&cmdargs,1,1,0,0);
 }
 
 /* add built-in variables */
@@ -132,15 +132,19 @@ if(args != NULL) {
 cmdargs.i=0;
 
 CreateVariable("ERR","INTEGER",1,1);			/* error number */
-UpdateVariable("ERR","",&cmdargs,1,1);
+UpdateVariable("ERR","",&cmdargs,1,1,0,0);
 
 CreateVariable("ERRL","INTEGER",1,1);			/* error line */
-UpdateVariable("ERRL","",&cmdargs,1,1);
+UpdateVariable("ERRL","",&cmdargs,1,1,0,0);
 
 CreateVariable("ERRFUNC","STRING",1,1);			/* error function */
-UpdateVariable("ERRFUNC","",&cmdargs,1,1);
+UpdateVariable("ERRFUNC","",&cmdargs,1,1,0,0);
 
 free(cmdargs.s);
+
+udt=NULL;		/* set pointers to null */
+funcs=NULL;
+funcs_end=NULL;
 }
 
 /*
@@ -246,7 +250,7 @@ else if(strcmpi(type,"SINGLE") == 0) {	/* single */
 	currentfunction->vars_end->type_int=VAR_SINGLE;
 }
 else if(strcmpi(type,"LONG") == 0) {	/* long */
-	currentfunction->vars_end->val=malloc((xsize*sizeof(long long))*(ysize*sizeof(long long)));
+	currentfunction->vars_end->val=malloc((xsize*sizeof(long int))*(ysize*sizeof(long)));
 	if(currentfunction->vars_end->val == NULL) {
 		SetLastError(NO_MEM);
 		return(-1);
@@ -255,7 +259,6 @@ else if(strcmpi(type,"LONG") == 0) {	/* long */
 	currentfunction->vars_end->type_int=VAR_LONG;
 }
 else {					/* user-defined type */	 
-
 	currentfunction->vars_end->type_int=VAR_UDT;
 
 	strcpy(currentfunction->vars_end->udt_type,type);		/* set udt type */
@@ -272,6 +275,8 @@ else {					/* user-defined type */
 		return(-1);
 	}
 
+	strcpy(currentfunction->vars_end->udt,type);		/* Copy type */
+
 	currentfunction->vars_end->udt->field=malloc(sizeof(UserDefinedTypeField));
 	if(currentfunction->vars_end->udt->field == NULL) {
 		SetLastError(NO_MEM);
@@ -283,16 +288,15 @@ else {					/* user-defined type */
 	
 	/* copy udt from type definition to variable */
 
-	for(count=0;count<(xsize*ysize);count++) {
+	for(count=0;count<((xsize+1)*(ysize+1));count++) {
 		while(udtfieldptr != NULL) {
 			/* copy field entries */
 		
-			strcpy(fieldptr->fieldname,udtfieldptr->fieldname);
-			
-			fieldptr->type=udtfieldptr->type;
-		
 			memcpy(fieldptr,udtfieldptr,sizeof(UserDefinedTypeField));	/* copy udt */
 
+			strcpy(fieldptr->fieldname,udtfieldptr->fieldname);
+			fieldptr->type=udtfieldptr->type;
+		
 			fieldptr->fieldval=malloc(sizeof(vars_t));
 			if(fieldptr->fieldval == NULL) {
 				SetLastError(NO_MEM);
@@ -332,7 +336,7 @@ return(0);
  *  Returns -1 on failure or 0 on success
  * 
  */
-int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y) {
+int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y,int fieldx,int fieldy) {
 vars_t *next;
 char *o;
 varval *varv;
@@ -389,7 +393,7 @@ else if(next->type_int == VAR_SINGLE) {	/* single */
 	return(0);
 }
 else if(next->type_int == VAR_LONG) {	/* long */
-	next->val[x*sizeof(long long)+(y*sizeof(long long))].l=val->l;
+	next->val[x*sizeof(long int)+(y*sizeof(long int))].l=val->l;
 
 	return(0);
 }
@@ -404,28 +408,28 @@ else {					/* user-defined type */
 			val->type=udtfield->type;
 
 			if(udtfield->type == VAR_NUMBER) {
-			        udtfield->fieldval[(next->ysize*y)+x].d=val->d;
+			        udtfield->fieldval[(udtfield->ysize*y)+fieldx].d=val->d;
 
 				return(0);
 			 }
 			 else if(udtfield->type == VAR_STRING) {
-			 	if(udtfield->fieldval[( (y*next->ysize)+x)].s == NULL) {		/* if string element not allocated */
-	 				udtfield->fieldval[((y*next->ysize)+x)].s=malloc(strlen(val->s));	/* allocate memory */
+			 	if(udtfield->fieldval[( (y*udtfield->ysize)+x)].s == NULL) {		/* if string element not allocated */
+	 				udtfield->fieldval[((y*udtfield->ysize)+fieldx)].s=malloc(strlen(val->s));	/* allocate memory */
 	      			} 
 
-	      			if( strlen(val->s) > (strlen(udtfield->fieldval[(y*next->ysize)+x].s)+x)) {	/* if string element larger */
-	 				realloc(udtfield->fieldval[((y*next->ysize)+x)].s,strlen(val->s));	/* resize memory */
+	      			if( strlen(val->s) > (strlen(udtfield->fieldval[(y*udtfield->ysize)+fieldx].s)+x)) {	/* if string element larger */
+	 				realloc(udtfield->fieldval[((fieldy*udtfield->ysize)+fieldx)].s,strlen(val->s));	/* resize memory */
 	      			}
 		
-			        strcpy(udtfield->fieldval[(next->ysize*y)+x].s,val->s);		/* assign value */
+			        strcpy(udtfield->fieldval[(udtfield->ysize*fieldy)+fieldx].s,val->s);		/* assign value */
 				return(0);
 			 }
 			 else if(udtfield->type == VAR_INTEGER) {
-			        udtfield->fieldval[(y*next->ysize)+x].i=val->i;
+			        udtfield->fieldval[(fieldy*udtfield->ysize)+fieldx].i=val->i;
 				return(0);
 			 }
 			 else if(udtfield->type == VAR_SINGLE) {
-			        udtfield->fieldval[(next->ysize*y)+x].f=val->f;
+			        udtfield->fieldval[(udtfield->ysize*fieldy)+fieldx].f=val->f;
 				return(0);
 			 }
 			 else {
@@ -605,7 +609,7 @@ else if(next->type_int == VAR_LONG) {
 	return(0);
 }
 else {					/* User-defined type */
-	if(GetFieldValueFromUserDefinedType(next->varname,fieldname,val,x,y) == -1) SetLastError(-1);
+	if(GetFieldValueFromUserDefinedType(next->varname,fieldname,val,fieldx,fieldy) == -1) SetLastError(-1);
 
 	SetLastError(0);
 	return(0);
@@ -636,7 +640,7 @@ if(name == NULL) {
 
 if(((char) *name >= '0') && ((char) *name <= '9')) return(VAR_NUMBER);	/* Literal number */
 
-if((char) *name == '"') SetLastError(VAR_STRING);			/* Literal string */
+if((char) *name == '"') return(VAR_STRING);			/* Literal string */
 	
 /* Find variable name */
 
@@ -1185,7 +1189,7 @@ for(count=0;count<returnvalue;count += 2) {
 	  	
 	}
 
-	UpdateVariable(parameters->varname,NULL,parameters->val,split.x,split.y);
+	UpdateVariable(parameters->varname,NULL,parameters->val,split.x,split.y,split.fieldx,split.fieldy);
 
 	NumberOfArguments++;
 
@@ -1375,7 +1379,7 @@ for(count=start;count<end;count++) {
 
 }
 
-for(count=start;count<end;count++) { 
+for(count=start;count<end;count++) {
 	tokentype=0;
 
 	if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
@@ -1438,7 +1442,6 @@ for(count=start;count<end;count++) {
 	    }
 
 	    type=GetVariableType(split.name); 	/* Get variable type */
-	    
 	    if(type == VAR_UDT) {
 		type=GetFieldTypeFromUserDefinedType(split.name,split.fieldname);		/* get field type id udt */
 		if(type == -1) {
@@ -1515,6 +1518,7 @@ for(count=start;count<end;count++) {
 		return(-1);
 	}
 
+	count += skiptokens;
 
 	if(count >= end) break;
 }
@@ -1533,59 +1537,51 @@ return(outcount);
 /*
  *  Conatecate strings
  * 
- *  In: int start		Start of variables in tokens array
-	      int end			End of variables in tokens array
-	      char *tokens[][MAX_SIZE] Tokens array
-	      varval *val 		Variable value to return conatecated strings
+ *  In: start	Start of variables in tokens array
+	end	End of variables in tokens array
+	tokens 	Tokens array
+	val 	Variable value to return conatecated strings
  * 
  *  Returns -1 on failure or 0 on success
  * 
   */
 int ConatecateStrings(int start,int end,char *tokens[][MAX_SIZE],varval *val) {
 int count;
-char *b;
-char *d;
+char *sourceptr;
+char *destptr;
+char *temp[MAX_SIZE];
+int size=0;
+
+/* get size of output buffer */
+
+for(count=start;count<end;count++) {
+	size += strlen(tokens[count]);
+}
 
 val->type=VAR_STRING;
-val->s=malloc(MAX_SIZE);		/* initial size */
-d=val->s;				/* copy token */
+val->s=malloc(size);			/* allocate output buffer */
 
-b=tokens[start];			/* point to first token */
-if(*b == '"') {
-// *d++='"';
-	b++;			/* skip over quote */
-}
+destptr=val->s;				/* point to output buffer */
 
-while(*b != 0) {
-	if(*b == '"') break;
-	if(*b == 0) break;
+*destptr++='"';		/* put " at start */
 
- 	*d++=*b++;
-}
-
-for(count=start+1;count<end;count++) {
+for(count=start;count<end;count++) {
 	if(strcmpi(tokens[count],"+") == 0) { 
-	   if(GetVariableType(tokens[count+1]) != VAR_STRING) {	/* not a string literal or string variable */
-	   	SetLastError(TYPE_ERROR);
-		return(-1);
-	   }
 
-	   b=tokens[count+1];
-	   if(*b == '"') b++;			/* skip over quote */
+		/* not a string literal or string variable */
+		if(GetVariableType(tokens[count+1]) != VAR_STRING) {
+		   	SetLastError(TYPE_ERROR);
+			return(-1);
+		}
+	}
+	else
+	{
+		StripQuotesFromString(tokens[count],temp);	/* remove quotes from string */
+		strcat(val->s,temp);
+	}
+}
 
-	   while(*b != 0) {			/* copy token */
-
-	    if(*b == '"') break;
-	    if(*b == 0) break;
-
-	    *d++=*b++;
-	   }
-
-	   count++;
-	  }
-	 }
-
-*d++=0;
+strcat(val->s,"\"");		/* put " at end */
 
 SetLastError(0);
 return(0);
@@ -1705,7 +1701,9 @@ functioncallstackend->saveinformation=func->saveinformation;
 functioncallstackend->saveinformation_top=func->saveinformation_top;
 functioncallstackend->vars=func->vars;
 functioncallstackend->stat=func->stat;
-functioncallstackend->parameters=GetFunctionPointer(func->name)->parameters;
+
+if(GetFunctionPointer(func->name) != NULL) functioncallstackend->parameters=GetFunctionPointer(func->name)->parameters;
+
 functioncallstackend->moduleptr=func->moduleptr;
 strcpy(functioncallstackend->returntype,func->returntype);
 functioncallstackend->type_int=func->type_int;
@@ -1857,45 +1855,51 @@ UserDefinedType *GetUDT(char *name) {
  * 
  */
 int AddUserDefinedType(UserDefinedType *newudt) {
-	UserDefinedType *next;
-	UserDefinedType *last;
+UserDefinedType *next;
+UserDefinedType *last;
+UserDefinedTypeField *fieldptr;
 
-	if(udt == NULL) {			/* first entry */
-		udt=malloc(sizeof(UserDefinedType));		/* add link to the end */
-		if(udt == NULL) {
-			SetLastError(NO_MEM); 
-			return(-1);
-		}
+if(udt == NULL) {			/* first entry */
+	udt=malloc(sizeof(UserDefinedType));		/* add link to the end */
+	if(udt == NULL) {
+		SetLastError(NO_MEM); 
+		return(-1);
+	}
 
 	last=udt;
-	}
-	else
-	{
-	/* find end and check if UDT exists */
+}
+else
+{
+/* find end and check if UDT exists */
 
 	next=udt;
 
-		while(next != NULL) {
-	 		last=next;
+	while(next != NULL) {
+ 		last=next;
 
-	 		if(strcmpi(next->name,newudt->name) == 0) {	/* udt exists */
-				/* add link to the end */	
-
-				last->next=malloc(sizeof(UserDefinedType));
-				if(last->next == NULL) {
-					SetLastError(NO_MEM); 
-					return(-1);
-				}
-
-				last=last->next;
-
-				memcpy(last,newudt,sizeof(UserDefinedType));
-
-				SetLastError(0);
-				return(0);
-			}
+ 		if(strcmpi(next->name,newudt->name) == 0) {	/* udt exists */
+			SetLastError(TYPE_EXISTS); 
+			return(-1);
 		}
+
+		next=next->next;
 	}
+
+	/* add link to the end */	
+
+	last->next=malloc(sizeof(UserDefinedType));
+	if(last->next == NULL) {
+		SetLastError(NO_MEM); 
+		return(-1);
+	}
+
+	last=last->next;
+}
+
+memcpy(last,newudt,sizeof(UserDefinedType));
+
+SetLastError(0);
+return(0);
 }
 
 /*
@@ -2108,7 +2112,11 @@ int IsValidVariableType(char *type) {
 int count=0;
 
 while(vartypenames[count] != NULL) {
-	if(strcmpi(vartypenames[count],type) == 0) return(count);
+
+	if(strcmpi(vartypenames[count],type) == 0) {
+		SetLastError(NO_ERROR);
+		return(count);
+	}
 
 	count++;
 }
@@ -2395,7 +2403,7 @@ else
 }
 
 /*
- *  Get pointe to top of save information stack
+ *  Get pointer to top of save information stack
  * 
  *  In: Nothing
  * 
@@ -2501,22 +2509,21 @@ return(TRUE);
 */
 
 void FreeVariablesList(vars_t *vars) {
-vars_t *varnext=vars;
-vars_t *varptr;
-
+vars_t *next=vars;
 int count;
 
-while(varnext != NULL) {
+while(next != NULL) {
 	/* If it's a string variable, free it */
-	if(varnext->type_int == VAR_STRING) {
-		for(count=0;count<(varnext->xsize*varnext->ysize);count++) {
-			free(varnext->val[count].s);
+	if(next->type_int == VAR_STRING) {
+		for(count=0;count<(next->xsize*next->ysize);count++) {
+			free(next->val[count].s);
 		}
 	}
 
-	varptr=varnext->next;
-	free(varnext);
-	varnext=varptr;
+
+//	free(next);
+
+	next=next->next;
 }
 
 return;

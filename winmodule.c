@@ -54,15 +54,5 @@ return(dlhandle);
 void *GetLibraryFunctionAddress(int handle,char *name) {
 return(GetProcAddress(handle,name));
 }
-/*
- * Get module filename extension
- *
- * In: buf	Buffer
- *
- * Returns: Nothing
- */
 
-void GetModuleFileExtension(char *buf) {
-strcpy(buf,".dll");
-}
 

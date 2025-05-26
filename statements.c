@@ -53,11 +53,11 @@ statement statements[] = {
 	     { "ENDTRY",NULL,&endtry_statement,FALSE},\
 	     { "CATCH",NULL,&catch_statement,FALSE},\
 	     { "RESIZE",NULL,&resize_statement,FALSE},\
+	     { "LIBCALL",NULL,&libcall_statement,FALSE},\
 	     { "AS",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "TO",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "STEP",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "THEN",NULL,&bad_keyword_as_statement,FALSE},\
-	     { "AS",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "DOUBLE",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "STRING",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "INTEGER",NULL,&bad_keyword_as_statement,FALSE},\
@@ -69,6 +69,7 @@ statement statements[] = {
 	     { "ENDTYPE",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "TRUE",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "FALSE",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "IN",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "QUIT",NULL,&quit_command,FALSE},\
 	     { "VARIABLES",NULL,&variables_command,FALSE},\
 	     { "CONTINUE",NULL,&continue_command,FALSE},\

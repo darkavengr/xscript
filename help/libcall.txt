@@ -1,0 +1,4 @@
+LIBCALL function(args) IN module RETURNTYPE [ SINGLE | DOUBLE | INTEGER | LONG | STRING | UDT ]
+
+Call function in binary module.
+
