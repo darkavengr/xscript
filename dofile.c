@@ -461,7 +461,7 @@ return(0);
 int print_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 varval val;
 int count;
-int countx;
+int exprpos;
 int returnvalue;
 char *printtokens[MAX_SIZE][MAX_SIZE];
 int endtoken;
@@ -518,12 +518,12 @@ for(count=1;count<tc;count++) {
 
 			/* if it's a condition print True or False */
 	
-			for(countx=count;countx<tc;countx++) {
-				if((strcmp(tokens[countx],">") == 0) ||
-				   (strcmp(tokens[countx],"<") == 0) ||
-				   (strcmp(tokens[countx],"=") == 0) ||
-				   (strcmp(tokens[countx],">=") == 0) ||
-				   (strcmp(tokens[countx],"<=") == 0)) {
+			/*for(exprpos=count;exprpos<tc;exprpos++) {
+				if( ((strcmp(tokens[exprpos],"=") == 0) && (strcmp(tokens[exprpos+1],"!") == 0)) ||
+				   ((strcmp(tokens[exprpos],">") == 0) && (strcmp(tokens[exprpos+1],">") != 0)) ||
+				   ((strcmp(tokens[exprpos],"<") == 0) && (strcmp(tokens[exprpos+1],"<") != 0)) ||
+				   ((strcmp(tokens[exprpos],">") == 0) && (strcmp(tokens[exprpos+1],"=") == 0)) ||
+				   ((strcmp(tokens[exprpos],"<") == 0) && (strcmp(tokens[exprpos+1],"=") == 0))) {
 
 					retval.val.type=0;
 		     			retval.val.d=EvaluateCondition(tokens,count,endtoken);
@@ -531,7 +531,7 @@ for(count=1;count<tc;count++) {
 		     			retval.val.d == 1 ? printf("True ") : printf("False ");
 		     			break;
 		 		} 
-			}
+			}*/
 
 			if(endtoken <= tc) printf("%.6g ",retval.val.d);	/* Not conditional */
 		}

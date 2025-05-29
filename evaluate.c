@@ -98,7 +98,7 @@ for(count=start;count<end;count++) {
 		}
 	}
 	else
-	{		
+	{	
 		strcpy(temp[exprcount++],tokens[count]);
 	}
 }
@@ -113,12 +113,28 @@ for(count=0;count<exprcount;count++) {
 val.d=atof(temp[0]);
 
 for(count=0;count<exprcount;count++)  {
+	if((strcmp(tokens[count],">") == 0) && (strcmp(tokens[count+1],">") == 0)) {
+		count += 3;
+	}
+	else if((strcmp(tokens[count],"<") == 0) && (strcmp(tokens[count+1],"<") == 0)) {
+		count += 3;
+	}
 
-	if((strcmp(temp[count],"<") == 0) || (strcmp(temp[count],">") == 0) || (strcmp(temp[count],"=") == 0) || (strcmp(temp[count],"!=") == 0)) {
-	 val.d=EvaluateCondition(temp,count-1,count+2);
-	 break;  
-	} 
-
+	if( (strcmp(tokens[count],"=") == 0) && (strcmp(tokens[count+1],"!") == 0)) {
+		val.d=EvaluateCondition(temp,count-1,count+3);
+	}
+	else if((strcmp(tokens[count],">") == 0) && (strcmp(tokens[count+1],">") != 0)) {
+		val.d=EvaluateCondition(temp,count-1,count+2);
+	}
+	else if((strcmp(tokens[count],"<") == 0) && (strcmp(tokens[count+1],"<") != 0)) {
+		val.d=EvaluateCondition(tokens,count-1,count+2);
+	}
+	else if((strcmp(tokens[count],">") == 0) && (strcmp(tokens[count+1],"=") == 0)) {
+		val.d=EvaluateCondition(temp,count-1,count+2);
+	}
+	else if((strcmp(tokens[count],"<") == 0) && (strcmp(tokens[count+1],"=") == 0)) {
+		val.d=EvaluateCondition(temp,count-1,count+2);
+	}
 }
 
 // BIDMAS
@@ -161,7 +177,23 @@ for(count=0;count<exprcount;count++)  {
 	 } 
 }
 
+for(count=0;count<exprcount;count++)  {
+	if((strcmp(temp[count],"<") == 0) && (strcmp(temp[count+1],"<") == 0)) {
+		ti=val.d;
+		ti=ti << atoi(temp[count+2]);
 
+		val.d=(double) ti;
+	} 
+}
+
+for(count=0;count<exprcount;count++)  {
+	if((strcmp(temp[count],">") == 0) && (strcmp(temp[count+1],">") == 0)) {
+		ti=val.d;
+		ti=ti >> atoi(temp[count+2]);
+
+		val.d=(double) ti;
+	} 
+}
 /* power */
 
 for(count=0;count<exprcount;count++)  {
@@ -287,7 +319,6 @@ exprone=0;
 exprtwo=0;
 
 for(exprpos=start;exprpos<end;exprpos++) {
-
 	if(strcmp(tokens[exprpos],"=") == 0) {
 		ifexpr=EQUAL;
 		break;
@@ -296,19 +327,19 @@ for(exprpos=start;exprpos<end;exprpos++) {
 		ifexpr=NOTEQUAL;
 		break;
 	}
-	else if(strcmp(tokens[exprpos],">") == 0) {
+	else if((strcmp(tokens[exprpos],">") == 0) && (strcmp(tokens[exprpos+1],">") != 0)) {
 		ifexpr=GTHAN;
 		break;	
 	}
-	else if(strcmp(tokens[exprpos],"<") == 0) {  
+	else if((strcmp(tokens[exprpos],"<") == 0) && (strcmp(tokens[exprpos+1],"<") != 0)) {
 		ifexpr=LTHAN;
 		break;
 	}
-	else if(strcmp(tokens[exprpos],"=<") == 0) {
+	else if((strcmp(tokens[exprpos],"<") == 0) && (strcmp(tokens[exprpos],"=") == 0)) {
 		ifexpr=EQLTHAN;
 		break;
 	}
-	else if(strcmp(tokens[exprpos],">=") == 0) {
+	else if((strcmp(tokens[exprpos],">") == 0) && (strcmp(tokens[exprpos],"=") == 0)) {
 		ifexpr=EQGTHAN;
 		break;
 	}
@@ -331,7 +362,7 @@ if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
 }
 
 exprone=EvaluateExpression(tokens,start,exprpos);				/* evaluate expressions */
-exprtwo=EvaluateExpression(tokens,exprpos+1,end);
+exprtwo=EvaluateExpression(tokens,exprpos+1,end-1);
 
 exprtrue=0;
 
@@ -383,6 +414,7 @@ char *temp[MAX_SIZE][MAX_SIZE];
 int subcount=0;
 int outcount=0;
 int evaltc;
+int resultloopcount=0;
 
 struct {
 	int result;
@@ -399,37 +431,34 @@ count=0;
 
 /* Do conditions in brackets first */
 
-while(count < evaltc) {
-	 if(strcmp(evaltokens[count],"(") == 0) {		/* if sub-expression */
+for(count=0;count<evaltc+1;count++) {
+	if(strcmp(evaltokens[count],"(") == 0) {		/* if sub-expression */
+	 	subcount++;
+	 	startcount=count;
 
-	  subcount++;
-	  startcount=count;
+	 	while(count < exprend) {
+	 		if(strcmp(evaltokens[count],")") == 0) {		/* end of sub-expression */
+	 			results[resultcount].result=EvaluateSingleCondition(evaltokens,0,count+1);
 
-	  while(count < exprend) {
-	    if(strcmp(evaltokens[count],")") == 0) {		/* end of sub-expression */
-	      results[resultcount].result=EvaluateSingleCondition(evaltokens,0,count+1);
+	 			resultcount++;
 
-	      resultcount++;
+	 			if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
+	 			if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
 
-	      if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
-	      if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
+	 			count += subcount;		/* Add length of expression */
+	    		}
 
-	      count += subcount;		/* Add length of expression */
-	    }
-
-	    count++;
-	  }
-
+			count++;
+	  	}
 	}
 	else
 	{		
 		strcpy(temp[outcount++],evaltokens[count]);
 	}
 
-	count++;
 }
 
-	/* Do conditions outside brackets */
+/* Do conditions outside brackets */
 
 	startcount=0;
 
@@ -460,28 +489,28 @@ while(count < evaltc) {
 
 	overallresult=0;
 
-	count=0;
+	resultloopcount=0;
 
-	while(count < resultcount) {
-		if(results[count].and_or == CONDITION_AND) {		// and
-			overallresult=results[count].result;
-			overallresult=results[count+1].result;
+	while(resultloopcount < resultcount) {
+		if(results[resultloopcount].and_or == CONDITION_AND) {		// and
+			overallresult=results[resultloopcount].result;
+			overallresult=results[resultloopcount+1].result;
 
+			resultloopcount += 2;
+		}
+		else if(results[resultloopcount].and_or == CONDITION_OR) {		// or
+			overallresult=(results[resultloopcount].result || results[resultloopcount+1].result);
 			count += 2;
 		}
-		else if(results[count].and_or == CONDITION_OR) {		// or
-			overallresult=(results[count].result || results[count+1].result);
-			count += 2;
-		}
-		else if(results[count].and_or == CONDITION_END) {		// end
-			if(results[count-1].and_or == CONDITION_AND) {
-				overallresult = (results[count].result == results[count+1].result);
-				count += 2;
+		else if(results[resultloopcount].and_or == CONDITION_END) {		// end
+			if(results[resultloopcount-1].and_or == CONDITION_AND) {
+				overallresult = (results[resultloopcount].result == results[resultloopcount+1].result);
+				resultloopcount += 2;
 		}
 		else
 		{
-			overallresult = (results[count].result || results[count+1].result);
-		 	count += 2;
+			overallresult = (results[resultloopcount].result || results[resultloopcount+1].result);
+		 	resultloopcount += 2;
 		}
 
 	}

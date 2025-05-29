@@ -675,6 +675,7 @@ char ParseEndChar;
 char *evaltokens[MAX_SIZE][MAX_SIZE];
 int evaltc;
 int varend;
+int tokencount=0;
 
 memset(split,0,sizeof(varsplit));
 
@@ -688,6 +689,7 @@ split->fieldy=0;
 for(fieldstart=end;fieldstart > start;fieldstart--) {		/* find field start, if any */
 	if(strcmp(tokens[fieldstart],".") == 0) {
 		fieldstart++;
+		tokencount++;
 		break;
 	}
 }
@@ -699,6 +701,8 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	if(strcmp(tokens[start+1],"[") == 0) split->arraytype=ARRAY_SLICE;
 	
 	for(subscriptend=end;subscriptend>start+1;subscriptend--) {
+		tokencount++;
+
 		if(strcmp(tokens[subscriptend],")") == 0) break;
 	}
 
@@ -756,10 +760,12 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 
 if(fieldstart != start) {					/* if there is a field name and possible subscripts */
 	strcpy(split->fieldname,tokens[fieldstart]);	/* copy field name */
+	tokencount++;
 
 	if((strcmp(tokens[fieldstart+1],"(") == 0) || (strcmp(tokens[fieldstart+1],"[") == 0)) {
 
 		for(fieldend=start+2;count<end;count++) {
+			tokencount++;			
 			if(strcmp(tokens[fieldend],")") == 0) break;
 
 		}
@@ -796,7 +802,7 @@ if(fieldstart != start) {					/* if there is a field name and possible subscript
    }
 }
 
-return(end-start);
+return(tokencount);
 }
 
 /*
@@ -1345,8 +1351,8 @@ memset(temp,0,(MAX_SIZE*MAX_SIZE));		/* clear temporary array */
 
 /* replace non-decimal numbers with decimal equivalents */
 
-for(count=start;count<end;count++) {
-	if(memcmp(tokens[count],"0x",2) == 0 ) {	/* hex number */  
+for(count=start;count<end;count++) { 
+	if(memcmp(tokens[count],"0x",2) == 0) {	/* hex number */  
 	    valptr=tokens[count];
 	    valptr=valptr+2;
 
@@ -1354,7 +1360,7 @@ for(count=start;count<end;count++) {
 	    strcpy(tokens[count],buf);
 	}
 
-	if(memcmp(tokens[count],"&",1) == 0) {				/* octal number */
+	if(memcmp(tokens[count],"0",1) == 0) {				/* octal number */
 	   valptr=tokens[count];
 	   valptr=valptr+2;
 
@@ -1421,7 +1427,7 @@ for(count=start;count<end;count++) {
 	 else if(IsVariable(tokens[count]) == TRUE) {
 	    skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 	    if(skiptokens == -1) return(-1);
-	
+
 	    tokentype=SUBST_VAR;
 
 	    arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
@@ -1452,7 +1458,7 @@ for(count=start;count<end;count++) {
 
 	    if(type == VAR_STRING) {
 		   if(split.arraytype == ARRAY_SLICE) {		/* part of string */
-			if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy) == -1) return(-1);
+			if(GetVariableValue(split.name,NULL,0,0,&val,0,0) == -1) return(-1);
 
 			b=val.s;			/* get start */
 			b += split.x;
@@ -1465,7 +1471,7 @@ for(count=start;count<end;count++) {
 			if(split.y == 0) split.y=1;
 
 			for(count=0;count < split.y;count++) {
-			 *d++=*b++;
+				*d++=*b++;
 			}
 
 			break;
@@ -1520,7 +1526,7 @@ for(count=start;count<end;count++) {
 
 	count += skiptokens;
 
-	if(count >= end) break;
+//	if(count >= end) break;
 }
 
 /* copy tokens */
