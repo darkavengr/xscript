@@ -47,4 +47,5 @@
 #define NOT_IN_INTERACTIVE_MODE			46
 #define MODULE_NOT_FOUND			47
 #define IO_ERROR				48
+#define HELP_TOPIC_DOES_NOT_EXIST		49
 

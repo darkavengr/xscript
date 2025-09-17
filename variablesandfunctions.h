@@ -1,9 +1,10 @@
 #include <stdbool.h>
 
-#define FOR_STATEMENT 1
-#define IF_STATEMENT 2
-#define WHILE_STATEMENT 4
-#define FUNCTION_STATEMENT 8
+#define FOR_STATEMENT			1
+#define IF_STATEMENT			2
+#define WHILE_STATEMENT			4
+#define FUNCTION_STATEMENT		8
+#define FUNCTION_INTERACTIVE_MODE	16
 
 #define VAR_NUMBER  0
 #define VAR_STRING  1
@@ -84,6 +85,7 @@ typedef struct func {
  int type_int;
  vars_t *parameters;
  int linenumber;
+ bool WasDeclaredInInteractiveMode;
  struct func *last;
  struct func *next;
 } functions;

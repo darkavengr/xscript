@@ -21,8 +21,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "size.h"
+#include "errors.h"
 #include "help.h"
-
 /* display help */
 
 int DisplayHelp(char *helpdir,char *topic) {
@@ -44,7 +44,7 @@ else
 
 handle=fopen(HelpFilename,"r");
 if(handle == NULL) {                 /* can't open file */
-	printf("Unable to open help for %s\n",topic);
+	SetLastError(HELP_TOPIC_DOES_NOT_EXIST);
 	return(-1);
 }
 
@@ -64,6 +64,7 @@ do {
 } while(!feof(handle));               /* display text until end of file */
 
 fclose(handle);
+
 return(0);
 }
 

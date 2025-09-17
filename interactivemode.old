@@ -66,7 +66,6 @@ char *FunctionBufferAddress=NULL;
 char *FunctionBufferPtr=NULL;
 int FunctionBufferSize=0;
 bool IsDeclaringFunction=FALSE;
-int OldFunctionBufferSize=0;
 
 SetInteractiveModeFlag();
 ClearIsRunningFlag();
@@ -80,15 +79,13 @@ if(InteractiveModeBuffer == NULL) {
 }
 
 InteractiveModeBufferPosition=InteractiveModeBuffer;		/* set buffer position to start */
-SwitchToInteractiveModeBuffer();		/* switch to interactive mode buffer */
 
 InitializeMainFunction(NULL,NULL);			/* Initialize main function */
 
-printf("XScript Version %d.%d.%d (C) Matthew Boote.\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR,XSCRIPT_VERSION_REVISION);
+printf("XScript Version %d.%d (C) Matthew Boote.\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR);
 printf("This program comes with ABSOLUTELY NO WARRANTY; for details type `help warranty'.\n");
 printf("This is free software, and you are welcome to redistribute it under certain conditions;\n");
 printf("type `help copying' for details.\n");
-printf("Type help for general help.\n");
 
 while(1) {	
 	SwitchToInteractiveModeBuffer();		/* switch to interactive mode buffer */
@@ -107,6 +104,8 @@ while(1) {
 
 	removenewline(linebuf);		/* remove newline characters */
 
+	printf("linebuf=%s\n",linebuf);
+
 	GetTokenCharacters(tokenchars);			/* get token characters */
 	tc=TokenizeLine(linebuf,tokens,tokenchars);	/* tokenize line */
 
@@ -116,69 +115,89 @@ while(1) {
 
 	if(strcmpi(tokens[0],"FUNCTION") == 0) {
 		block_statement_nest_count++;
+
+		//printf("Declaring function\n");
+
 		IsDeclaringFunction=TRUE;
+		
+		//printf("post tokens[0]=%s\n",tokens[0]);
 	}
 	else if(strcmpi(tokens[0],"ENDFUNCTION") == 0) {		/* end of function */
+		printf("end of function\n");
+
 		sprintf(FunctionBufferPtr,"%s\n",linebuf);		/* add to buffer with newline */
-		FunctionBufferPtr += (strlen(linebuf)+2);
+		FunctionBufferPtr += (strlen(linebuf)+1);
+
+		printf("%lX %s\n",FunctionBufferPtr,linebuf);
 
 		IsDeclaringFunction=FALSE;
 		block_statement_nest_count--;
 
 		tc=TokenizeLine(FunctionBufferAddress,tokens,tokenchars);	/* tokenize line */
 		
-		SetCurrentBufferPosition(FunctionBufferPtr);	/* Skip over function declaration */
+		SetCurrentBufferPosition(FunctionBufferPtr);
 
-		if(DeclareFunction(&tokens[1],tc-1) == -1) {		/* declare function */
-			IsDeclaringFunction=FALSE;
-			continue;
+		for(int count=1;count<tc;count++) {
+			printf("DeclareFunction() tokens[%d]=%s\n",count,tokens[count]);
 		}
 
+		if(DeclareFunction(&tokens[1],tc-1) == -1) return(-1);		/* declare function */
+		
 		SwitchToInteractiveModeBuffer();		/* Point to start of buffer */
+		printf("done end of function\n");
+
 		continue;
 	}
 	
 	if(IsDeclaringFunction == TRUE) {
-		/* Copy input line to function buffer and resize the buffer */
+		printf("adding line=%s\n",linebuf);
+
+/* Copy input line to function buffer and resize the buffer */
 
 		if(FunctionBufferAddress == NULL) {		/* first allocation */
-			FunctionBufferAddress=malloc(strlen(linebuf));
+			//FunctionBufferAddress=malloc(strlen(linebuf));
+			FunctionBufferAddress=malloc(65536);
 			if(FunctionBufferAddress == NULL) {
-				IsDeclaringFunction=FALSE;
-
 				PrintError(NO_MEM);
 				continue;
 			}
 
+			FunctionBufferSize=(strlen(linebuf)+1);
 			FunctionBufferPtr=FunctionBufferAddress;
 
-			FunctionBufferSize=strlen(linebuf);
-			OldFunctionBufferSize=FunctionBufferSize;
-
+			printf("start FunctionBufferPtr=%lX\n",FunctionBufferPtr);
+			printf("start FunctionBufferSize=%d\n",FunctionBufferSize);
 		}
 		else					/* subsequent allocation */
 		{
-			OldFunctionBufferSize=FunctionBufferSize;
+			FunctionBufferSize += (strlen(linebuf)+1);
 
-			FunctionBufferSize += strlen(linebuf);
-			FunctionBufferAddress=realloc(FunctionBufferAddress,FunctionBufferSize);	/* resize buffer */
+			printf("FunctionBufferSize=%d\n",FunctionBufferSize);
 
-			if(FunctionBufferAddress == NULL) {
-				IsDeclaringFunction=FALSE;
+			//FunctionBufferAddress=realloc(FunctionBufferAddress,FunctionBufferSize);	/* resize buffer */
 
-				PrintError(NO_MEM);
-				continue;
-			}
-
-			FunctionBufferPtr=FunctionBufferAddress+OldFunctionBufferSize;
+			//if(FunctionBufferAddress == NULL) {
+			//	PrintError(NO_MEM);
+			//	continue;
+			//}
 		}
 
+	//	printf("Is OK\n");
+
 		sprintf(FunctionBufferPtr,"%s\n",linebuf);		/* add to buffer with newline */
+		FunctionBufferPtr += (strlen(linebuf)+1);
+
+		printf("%lX %s\n",FunctionBufferPtr,linebuf);
+		//asm("int $3");
+		printf("FunctionBufferAddress=%lX\n",FunctionBufferAddress);
+
 	}
 	else
 	{
 		/* If it is not a function, then the statements are stored in a buffer and executed
 		   after the outermost block statement is finished */
+
+		printf("InteractiveModeBufferPosition=%lX\n",InteractiveModeBufferPosition);
 
 		sprintf(InteractiveModeBufferPosition,"%s\n",linebuf);		/* add to buffer with newline */
 
@@ -187,6 +206,8 @@ while(1) {
 
 	
 		if(IsBlockStatement(tokens[0]) == TRUE) {	/* if block statement */
+		//	printf("Is block statement\n");
+			
 			/* save start of block statement in linked list */
 
 			if(blockstatementsave_head == NULL) {	/* first */
@@ -236,14 +257,22 @@ while(1) {
 
 			do {
 				if(GetIsRunningFlag() == FALSE)	break;		/* not running */
+
+				printf("GetCurrentBufferPosition()=%lX\n",GetCurrentBufferPosition());
+
 				SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));	/* read line from buffer */
-	
+		
+				printf("linebuf=%s\n",linebuf);
+
 				if(ExecuteLine(linebuf) == -1) {		/* run line */
 					PrintError(GetLastError());
 					break;
 				}
 			
-				InteractiveModeBufferPosition += (strlen(linebuf)+1);
+				InteractiveModeBufferPosition=GetCurrentBufferPosition();
+				InteractiveModeBufferPosition += strlen(InteractiveModeBufferPosition);	/* point to next statement */
+				SetCurrentBufferPosition(InteractiveModeBufferPosition);
+
 		 	} while(*InteractiveModeBufferPosition != 0);
 
 			SetCurrentBufferPosition(SaveBufferAddress);	/* restore buffer address */

@@ -886,8 +886,12 @@ if(IsFunction(tokens[0]) == TRUE) {	/* Check if function already exists */
 if(funcs == NULL) {
 	funcs=malloc(sizeof(functions));		/* add new item to list */
 
-	funcs_end=funcs;
-	funcs_end->last=NULL;
+	if(funcs == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
+
+	funcs_end=funcs;	funcs_end->last=NULL;
 }
 else
 {
@@ -904,8 +908,8 @@ else
 }
 
 strcpy(funcs_end->name,tokens[0]);				/* copy name */
-funcs_end->funcstart=GetCurrentBufferPosition();
 
+funcs_end->funcstart=GetCurrentBufferPosition();
 if(currentfunction == NULL) {
 	funcs_end->linenumber=1;
 }
@@ -916,8 +920,9 @@ else
 
 /* skip ( and go to end */
 
-for(count=2;count<end;count++) {
+for(count=2;count < end;count++) {
 	if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
+
 		/* check if declaring variable with type */
 		typecount=0;
 
@@ -929,7 +934,6 @@ for(count=2;count<end;count++) {
 
 			typecount++;
 		 }
-
 	 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
 			udtptr=GetUDT(tokens[count+2]);
 			if(udtptr == NULL) {
@@ -959,7 +963,7 @@ for(count=2;count<end;count++) {
 		paramslast->next=malloc(sizeof(vars_t));		/* add to end */
 	  	paramsptr=paramslast->next;
 	}
-	
+
 	/* add function parameters */
 
 	if(vartypenames[typecount] != NULL) {			/* built-in type */
@@ -990,12 +994,13 @@ for(count=2;count<end;count++) {
 	}
 }
 
-
 funcs_end->funcargcount=NumberOfParameters;
+
+if(GetInteractiveModeFlag()) funcs_end->WasDeclaredInInteractiveMode == TRUE;	/* function was declared in interactive mode */
 
 /* get function return type */
 
-typecount=0;
+typecount=0;	
 
 if(strcmpi(tokens[end-1], "AS") == 0) {		/* type */
 	while(vartypenames[typecount] != NULL) {
@@ -1019,7 +1024,7 @@ else
 	strcpy(funcs_end->returntype,vartypenames[DEFAULT_TYPE_INT]);
 }
 
-if(strcmp(tokens[0],"main") == 0) {		/* special case for main() */
+if((strcmp(tokens[0],"main") == 0) || GetInteractiveModeFlag()) {		/* special case for main() or interactive mode */
 	SetLastError(0);
 	return(0);
 }
@@ -1127,7 +1132,7 @@ if(next == NULL) {
 	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 	return(-1);
 }
- 
+
 returnvalue=SubstituteVariables(start+2,end,tokens,evaltokens);			/* substitute variables */
 if(returnvalue == -1) return(-1);
 
@@ -1137,9 +1142,7 @@ currentfunction->callptr=GetCurrentBufferPosition();
 
 /* save information about the called function */
 
-strcpy(newfunc.name,next->name);			/* function name */
-
-newfunc.callptr=next->funcstart;			/* function start */
+strcpy(newfunc.name,next->name);			/* function name */newfunc.callptr=next->funcstart;			/* function start */
 
 SetCurrentBufferPosition(next->funcstart);
 
@@ -1201,7 +1204,6 @@ for(count=0;count<returnvalue;count += 2) {
 
 	parameters=parameters->next;
 	if(parameters == NULL) break;	
-		
 }
 
 /* check if number of arguments matches number of parameters */
@@ -1210,7 +1212,6 @@ if( (NumberOfArguments < next->funcargcount) || ((returnvalue/2) > NumberOfArgum
 	SetLastError(INVALID_ARGUMENT_COUNT);
 	return(-1);
 }
-
 
 /* call function */
 
@@ -2557,6 +2558,8 @@ SAVEINFORMATION *savenext;
 
 while(funcnext != NULL) {
 	FreeVariablesList(funcnext->parameters);	/* free parameters */
+
+	if(funcptr->WasDeclaredInInteractiveMode == TRUE) free(funcptr->funcstart);	/* function was declared in interactive mode */
 
 	funcptr=funcnext->next;
 

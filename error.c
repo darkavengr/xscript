@@ -76,6 +76,7 @@ char *errs[] = { "No error",\
 		 "Command can only be used in interactive mode",\
 		 "Module not found",\
 		 "I/O error",\
+		 "No such help topic exists",\
 };
 
 /*

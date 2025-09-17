@@ -1,0 +1,5 @@
+function DoubleNumber(n)
+return n*2
+endfunction
+print DoubleNumber(2)
+

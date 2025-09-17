@@ -468,11 +468,13 @@ int endtoken;
 bool IsInBracket;
 vars_t *tokenvar;
 char *tempstring[MAX_SIZE];
+int IsCondition;
 
 sigsetjmp(savestate,1);		/* save current context */
 
 for(count=1;count<tc;count++) {
 	IsInBracket=FALSE;
+	IsCondition=TRUE;
 
 	/* if string literal, string variable or function returning string */
 
@@ -515,10 +517,9 @@ for(count=1;count<tc;count++) {
 			retval.val.type=0;
 			retval.val.d=EvaluateExpression(printtokens,0,returnvalue);
 
-
 			/* if it's a condition print True or False */
 	
-			/*for(exprpos=count;exprpos<tc;exprpos++) {
+			for(exprpos=count;exprpos<tc;exprpos++) {
 				if( ((strcmp(tokens[exprpos],"=") == 0) && (strcmp(tokens[exprpos+1],"!") == 0)) ||
 				   ((strcmp(tokens[exprpos],">") == 0) && (strcmp(tokens[exprpos+1],">") != 0)) ||
 				   ((strcmp(tokens[exprpos],"<") == 0) && (strcmp(tokens[exprpos+1],"<") != 0)) ||
@@ -529,14 +530,19 @@ for(count=1;count<tc;count++) {
 		     			retval.val.d=EvaluateCondition(tokens,count,endtoken);
 	
 		     			retval.val.d == 1 ? printf("True ") : printf("False ");
+
+					count=endtoken+1;
+					IsCondition=TRUE;
 		     			break;
 		 		} 
-			}*/
+			}
 
-			if(endtoken <= tc) printf("%.6g ",retval.val.d);	/* Not conditional */
+			if(IsCondition == FALSE) {	/* Not conditional */
+				if(endtoken <= tc) printf("%.6g ",retval.val.d);
+			}
 		}
  
-		count=endtoken;
+//		count=endtoken;
 	}
 
 	sigsetjmp(savestate,1);		/* save current context */
@@ -1004,13 +1010,27 @@ SetSaveInformationBufferPointer(CurrentBufferPosition);
 while(1) {
 	sigsetjmp(savestate,1);		/* save current context */
 
+	printf("for_statement() CurrentBufferPosition=%lX\n",CurrentBufferPosition);
+
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
 
-	if(ExecuteLine(buf) == -1) {	/* run statement */
-		PopSaveInformation();
+	removenewline(buf);
 
-		ClearIsRunningFlag();
-		return(-1);
+	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+
+	printf("for_statement() buf=%s\n",buf);
+
+	if(strcmpi(tokens[0],"NEXT") != 0) {  
+		printf("for_statement() executing=%s\n",buf);
+
+		if(ExecuteLine(buf) == -1) {	/* run statement */
+			PopSaveInformation();
+
+			ClearIsRunningFlag();
+
+			printf("for eeeeeeeeeeeeeeeevillll 1\n");
+			return(-1);
+		}
 	}
 
 	sigsetjmp(savestate,1);		/* save current context */
@@ -1025,8 +1045,6 @@ while(1) {
 	d=*buf+(strlen(buf)-1);
 	if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
 	if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
-
- 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
 	sigsetjmp(savestate,1);
 
@@ -1049,16 +1067,6 @@ while(1) {
 	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);			/* set loop variable to next */	
 
 		sigsetjmp(savestate,1);		/* save current context */
-
-	      	if(*CurrentBufferPosition == 0) {		/* end of data */
-	      		PopSaveInformation();				 
-			ClearFunctionFlags(FOR_STATEMENT);
-
-			CurrentBufferPosition=GetSaveInformationBufferPointer();
-
-			SetLastError(SYNTAX_ERROR);
-			return(-1);
-	     	 }
 
 		if(
        		( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d <= exprtwo)) ||
@@ -1214,13 +1222,20 @@ return(0);
 }
 
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+printf("next_statement()\n");
+
 if((GetFunctionFlags() & FOR_STATEMENT) == 0) {
+	printf("FOR ERRRRRRRRRRRRRRRRRORRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n");
+
 	SetLastError(NEXT_WITHOUT_FOR);
 	return(-1);
 }
 
-	SetLastError(0);
-	return(0);
+printf("next_statement() no error\n");
+asm("int $3");
+
+SetLastError(0);
+return(0);
 }
 
 /*
@@ -1963,7 +1978,6 @@ return(++buf);			/* return new position */
  *
  */
 int strcmpi(char *source,char *dest) {
-char a,b;
 char *sourcetemp[MAX_SIZE];
 char *desttemp[MAX_SIZE];
 
