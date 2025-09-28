@@ -39,7 +39,7 @@ extern char *TokenCharacters;
 functions *funcs=NULL;
 functions *funcs_end=NULL;
 FUNCTIONCALLSTACK *functioncallstack=NULL;
-FUNCTIONCALLSTACK *functioncallstackend=NULL;
+FUNCTIONCALLSTACK *FunctionCallStackTop=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
 UserDefinedType *udt=NULL;
 char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG",NULL };
@@ -89,7 +89,6 @@ strcpy(newfunc.returntype,vartypenames[DEFAULT_TYPE_INT]);
 
 newfunc.type_int=DEFAULT_TYPE_INT;
 newfunc.lastlooptype=0;
-newfunc.last=NULL;
 newfunc.next=NULL;
 
 PushFunctionCallInformation(&newfunc);
@@ -1155,7 +1154,7 @@ strcpy(newfunc.returntype,next->returntype);
 
 PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
 
-currentfunction=functioncallstackend;			/* point to function */
+currentfunction=FunctionCallStackTop;			/* point to function */
 currentfunction->parameters=next->parameters;		/* point to parameters */
 
 //DeclareBuiltInVariables("","");				/* add built-in variables */
@@ -1237,6 +1236,7 @@ currentfunction->stat &= FUNCTION_STATEMENT;
 ReturnFromFunction();			/* set script's function return value */
 
 if(returnvalue != -1) SetLastError(0);
+
 return(returnvalue);
 }
 
@@ -1674,7 +1674,7 @@ return(FALSE);
  * 
  */
 int PushFunctionCallInformation(FUNCTIONCALLSTACK *func) {
-FUNCTIONCALLSTACK *previous;
+FUNCTIONCALLSTACK *NewTop;
 
 if(functioncallstack == NULL) {
 	functioncallstack=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
@@ -1683,48 +1683,44 @@ if(functioncallstack == NULL) {
 		return(-1);
 	}
 	
-	functioncallstackend=functioncallstack;
-	functioncallstackend->last=NULL;
+	FunctionCallStackTop=functioncallstack;
 }
 else	
 {
-	functioncallstackend->next=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
-	if(functioncallstackend->next == NULL) {
+	NewTop=malloc(sizeof(FUNCTIONCALLSTACK));		/* allocate new entry */
+	if(NewTop == NULL) {
 		SetLastError(NO_MEM);
 		return(-1);
 	}
 
-	previous=functioncallstackend;			/* save previous */
-	
-	functioncallstackend=functioncallstackend->next;
-	functioncallstackend->last=previous;			/* previous function */
+	NewTop->next=FunctionCallStackTop;			/* push onto top of stack */
+	FunctionCallStackTop=NewTop;
 }
 
-strcpy(functioncallstackend->name,func->name);		/* copy information */
-functioncallstackend->callptr=func->callptr;
-functioncallstackend->startlinenumber=func->startlinenumber;
-functioncallstackend->currentlinenumber=func->startlinenumber;
-functioncallstackend->saveinformation=func->saveinformation;
-functioncallstackend->saveinformation_top=func->saveinformation_top;
-functioncallstackend->vars=func->vars;
-functioncallstackend->stat=func->stat;
+strcpy(FunctionCallStackTop->name,func->name);		/* copy information */
+FunctionCallStackTop->callptr=func->callptr;
+FunctionCallStackTop->startlinenumber=func->startlinenumber;
+FunctionCallStackTop->currentlinenumber=func->startlinenumber;
+FunctionCallStackTop->saveinformation=func->saveinformation;
+FunctionCallStackTop->saveinformation_top=func->saveinformation_top;
+FunctionCallStackTop->vars=func->vars;
+FunctionCallStackTop->stat=func->stat;
 
-if(GetFunctionPointer(func->name) != NULL) functioncallstackend->parameters=GetFunctionPointer(func->name)->parameters;
+if(GetFunctionPointer(func->name) != NULL) FunctionCallStackTop->parameters=GetFunctionPointer(func->name)->parameters;
 
-functioncallstackend->moduleptr=func->moduleptr;
-strcpy(functioncallstackend->returntype,func->returntype);
-functioncallstackend->type_int=func->type_int;
-functioncallstackend->lastlooptype=func->lastlooptype;
-functioncallstackend->next=NULL;
+FunctionCallStackTop->moduleptr=func->moduleptr;
+strcpy(FunctionCallStackTop->returntype,func->returntype);
+FunctionCallStackTop->type_int=func->type_int;
+FunctionCallStackTop->lastlooptype=func->lastlooptype;
 
-currentfunction=functioncallstackend;
+currentfunction=FunctionCallStackTop;
 
 SetLastError(0);
 return(0);
 }
 
 /*
- *  Push entry onto function call stack
+ *  Pop entry from function call stack
  * 
  *  In: Nothing
  * 
@@ -1733,6 +1729,7 @@ return(0);
  */
 int PopFunctionCallInformation(void) {
 vars_t *vars;
+FUNCTIONCALLSTACK *OldTop;
 
 if(currentfunction == NULL) return(-1);
 
@@ -1747,18 +1744,19 @@ while(vars != NULL) {
 
 /* remove entry from function call stack */
 
-if(currentfunction->last != NULL) {
-	currentfunction=currentfunction->last;
+if(FunctionCallStackTop != NULL) {
+	OldTop=FunctionCallStackTop;				/* save current top of stack */
 
-//	free(currentfunction->next);
+	FunctionCallStackTop=FunctionCallStackTop->next;	/* remove from top of stack */
 
-	currentfunction->next=NULL;
+	free(OldTop);						/* free old top of stack */
 
-	functioncallstackend=currentfunction;
+	currentfunction=FunctionCallStackTop;			/* set current function */
 }
 
 SetCurrentBufferPosition(currentfunction->callptr);
 
+return(0);
 }
 
 /*
@@ -2343,7 +2341,7 @@ return(currentfunction->type_int);
  */
 int PushSaveInformation(void) {
 SAVEINFORMATION *info;
-SAVEINFORMATION *previousinfo;
+SAVEINFORMATION *newinfo;
 
 if(currentfunction == NULL) return(-1);
 
@@ -2354,28 +2352,23 @@ if(currentfunction->saveinformation_top == NULL) {
 		SetLastError(NO_MEM);
 		return(-1);
 	}
-
-	info=currentfunction->saveinformation_top;
-	info->last=NULL;
 }
 else
 {
-	previousinfo=currentfunction->saveinformation_top;		/* point to top */
-
-	previousinfo->next=malloc(sizeof(SAVEINFORMATION));		/* allocate new entry */
-	if(previousinfo->next == NULL) {
+	newinfo=malloc(sizeof(SAVEINFORMATION));		/* allocate new entry */
+	if(newinfo == NULL) {
 		SetLastError(NO_MEM);
 		return(-1);
 	}
 
-	info=previousinfo->next;
-	info->last=previousinfo;					/* link previous to next */
-	
+	newinfo->next=currentfunction->saveinformation_top;	/* put entry at top of stack */
+	currentfunction->saveinformation_top=newinfo;
 }
 
-info->bufptr=GetCurrentBufferPosition();
-info->linenumber=GetCurrentFunctionLine();
-info->next=NULL;
+currentfunction->saveinformation_top->bufptr=GetCurrentBufferPosition();
+currentfunction->saveinformation_top->linenumber=GetCurrentFunctionLine();
+
+return(0);
 }
 
 /*
@@ -2388,25 +2381,22 @@ info->next=NULL;
  */
 
 int PopSaveInformation(void) {
-SAVEINFORMATION *info;
-SAVEINFORMATION *previousinfo;
+SAVEINFORMATION *oldtop;
 
 if(currentfunction == NULL) return(-1);
 
-if(currentfunction->saveinformation_top->last != NULL) {
-	info=currentfunction->saveinformation_top;
+oldtop=currentfunction->saveinformation_top;		/* get current topmost entry */
 
-	previousinfo=info;
-	currentfunction->saveinformation_top=info->last;		/* point to previous */
+currentfunction->saveinformation_top=currentfunction->saveinformation_top->next;	/* remove from stack */
 
-	free(previousinfo);
-}
-else
-{
+free(oldtop);		/* free entry */
+
+if(currentfunction->saveinformation_top != NULL) {
 	SetCurrentBufferPosition(currentfunction->saveinformation_top->bufptr);
 	currentfunction->startlinenumber=currentfunction->saveinformation_top->linenumber;
 }
 
+return(0);
 }
 
 /*
@@ -2486,7 +2476,7 @@ return(-1);
 */
 
 FUNCTIONCALLSTACK *GetFunctionCallStackTop(void) {
-return(functioncallstackend);
+return(FunctionCallStackTop);
 }	
 
 /*
@@ -2559,7 +2549,7 @@ SAVEINFORMATION *savenext;
 while(funcnext != NULL) {
 	FreeVariablesList(funcnext->parameters);	/* free parameters */
 
-	if(funcptr->WasDeclaredInInteractiveMode == TRUE) free(funcptr->funcstart);	/* function was declared in interactive mode */
+	if(funcnext->WasDeclaredInInteractiveMode == TRUE) free(funcnext->funcstart);	/* function was declared in interactive mode */
 
 	funcptr=funcnext->next;
 

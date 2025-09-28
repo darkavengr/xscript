@@ -84,7 +84,7 @@ SwitchToInteractiveModeBuffer();		/* switch to interactive mode buffer */
 
 InitializeMainFunction(NULL,NULL);			/* Initialize main function */
 
-printf("XScript Version %d.%d.%d (C) Matthew Boote.\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR,XSCRIPT_VERSION_REVISION);
+printf("XScript version %d.%d.%d (C) Matthew Boote.\n",XSCRIPT_VERSION_MAJOR,XSCRIPT_VERSION_MINOR,XSCRIPT_VERSION_REVISION);
 printf("This program comes with ABSOLUTELY NO WARRANTY; for details type `help warranty'.\n");
 printf("This is free software, and you are welcome to redistribute it under certain conditions;\n");
 printf("type `help copying' for details.\n");
@@ -92,8 +92,6 @@ printf("Type help for general help.\n");
 
 while(1) {	
 	SwitchToInteractiveModeBuffer();		/* switch to interactive mode buffer */
-
-//	printf("block_statement_nest_count=%d\n",block_statement_nest_count);
 
 	if(block_statement_nest_count == 0) {
 		printf(">");
@@ -508,6 +506,7 @@ while(stack != NULL) {
 
 	varnext=stack->parameters;	/* point to parameters */
 
+
 	while(varnext != NULL) {
 		if(varnext->val != NULL) {
 			if(varnext->type_int == VAR_NUMBER) {				/* double precision */
@@ -532,7 +531,7 @@ while(stack != NULL) {
 	
 	printf(") : %s (%s:%d)\n",stack->returntype,stack->moduleptr->modulename,stack->currentlinenumber);
 
-	stack=stack->last;
+	stack=stack->next;
 }
 
 }

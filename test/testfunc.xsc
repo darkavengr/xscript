@@ -1,6 +1,7 @@
 function testfunction(a,b,c)
 print "Test function"
-#xxx
 return a*b*c
 endfunction
+
+testfunction(1,2,3)
 

@@ -73,7 +73,6 @@ typedef struct {
 typedef struct {
  char *bufptr;
  int linenumber;
- struct SAVEINFORMATION *last;
  struct SAVEINFORMATION *next;
 } SAVEINFORMATION;
 
@@ -106,7 +105,6 @@ typedef struct FUNCTIONCALLSTACK {
  int lastlooptype;
  MODULES *moduleptr;
  struct FUNCTIONCALLSTACK *next;
- struct FUNCTIONCALLSTACK *last;
 } FUNCTIONCALLSTACK;
 
 typedef struct {

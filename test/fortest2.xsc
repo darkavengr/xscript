@@ -1,4 +1,4 @@
-for x=1 to 10
+for x=10 to 1 step -1
 print x
 next x
 

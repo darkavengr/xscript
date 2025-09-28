@@ -1,0 +1,10 @@
+WHILE condition
+.
+.
+.
+WEND
+
+Execute statements until condition is TRUE.
+
+See also: FOR
+

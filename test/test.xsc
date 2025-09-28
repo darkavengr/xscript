@@ -1,5 +1,6 @@
-import "test/testfunc.xsc"
-print 2+2
-print testfunction(1,2,3)
+print -8 * 2
+
+
+
 
 

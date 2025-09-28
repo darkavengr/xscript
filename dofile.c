@@ -251,6 +251,8 @@ char *filename[MAX_SIZE];
 int end;
 int IsValid=FALSE;
 
+printf("lbuf=%s\n",lbuf);
+
 GetCurrentFile(filename);	/* get name of current file */
 
 if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n') || (((char) *lbuf) == 0)) { 			/* blank line */
@@ -414,6 +416,8 @@ for(count=1;count<tc;count++) {
 
 if((CheckFunctionExists(tokens[0]) != -1) && (IsValid == FALSE)) {
 	if(CallFunction(tokens,0,tc) == -1) return(-1);
+
+	IsValid=TRUE;
 } 
 
 if(IsValid == FALSE) {
@@ -474,7 +478,7 @@ sigsetjmp(savestate,1);		/* save current context */
 
 for(count=1;count<tc;count++) {
 	IsInBracket=FALSE;
-	IsCondition=TRUE;
+	IsCondition=FALSE;
 
 	/* if string literal, string variable or function returning string */
 
@@ -542,7 +546,7 @@ for(count=1;count<tc;count++) {
 			}
 		}
  
-//		count=endtoken;
+		count=endtoken;
 	}
 
 	sigsetjmp(savestate,1);		/* save current context */
@@ -840,7 +844,7 @@ int for_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int StartOfFirstExpression;
 int StartOfSecondExpression;
 int StartOfStepExpression;
-int steppos;
+double StepValue;
 double exprone;
 double exprtwo;
 varval loopcount;
@@ -904,17 +908,17 @@ if(StartOfSecondExpression == tc) {
 if(ParseVariableName(tokens,1,StartOfFirstExpression,&split) == -1) return(-1);
 
 for(StartOfStepExpression=1;StartOfStepExpression<tc;StartOfStepExpression++) {
-	if(strcmpi(tokens[StartOfStepExpression],"step") == 0) {		/* found start of step expression */
+	if(strcmpi(tokens[StartOfStepExpression],"STEP") == 0) {		/* found start of step expression */
 		StartOfStepExpression++;
 		break;
 	}
 }
 
 if(StartOfStepExpression == tc) {		/* no step keyword */
-	steppos=1;
+	StepValue=1;
 }
 else			/* have step keyword */
-{	
+{
 	if(IsValidExpression(outtokens,StartOfStepExpression,tc) == FALSE) {
 		PopSaveInformation();
 
@@ -928,7 +932,7 @@ else			/* have step keyword */
 		return(-1);
 	}
 
-	steppos=EvaluateExpression(tokens,0,returnvalue);		/* evaulate for step expression */
+	StepValue=EvaluateExpression(outtokens,0,returnvalue);		/* evaulate for step expression */
 }
 
 //  0   1    2 3 4  5
@@ -936,7 +940,7 @@ else			/* have step keyword */
 
 /* validate start and end values */
 
-if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression-1) == FALSE) {
+if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression) == FALSE) {
 	SetLastError(INVALID_EXPRESSION);
 	return(-1);
 }
@@ -946,7 +950,7 @@ if(IsValidExpression(tokens,StartOfSecondExpression,StartOfStepExpression) == FA
 	return(-1);
 }
 
-returnvalue=SubstituteVariables(StartOfFirstExpression,StartOfSecondExpression-1,tokens,outtokens);
+returnvalue=SubstituteVariables(StartOfFirstExpression,StartOfSecondExpression,tokens,outtokens);
 if(returnvalue == -1) {
 	PopSaveInformation();
 
@@ -1010,25 +1014,17 @@ SetSaveInformationBufferPointer(CurrentBufferPosition);
 while(1) {
 	sigsetjmp(savestate,1);		/* save current context */
 
-	printf("for_statement() CurrentBufferPosition=%lX\n",CurrentBufferPosition);
-
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
 
 	removenewline(buf);
 
 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
-	printf("for_statement() buf=%s\n",buf);
-
 	if(strcmpi(tokens[0],"NEXT") != 0) {  
-		printf("for_statement() executing=%s\n",buf);
-
 		if(ExecuteLine(buf) == -1) {	/* run statement */
 			PopSaveInformation();
 
 			ClearIsRunningFlag();
-
-			printf("for eeeeeeeeeeeeeeeevillll 1\n");
 			return(-1);
 		}
 	}
@@ -1057,24 +1053,24 @@ while(1) {
 		sigsetjmp(savestate,1);		/* save current context */
   
 	      /* increment or decrement counter */
-	      	if( (vartype == VAR_NUMBER) && (ifexpr == 1)) loopcount.d -= steppos;
-	      	if( (vartype == VAR_NUMBER) && (ifexpr == 0)) loopcount.d += steppos;      
-	      	if( (vartype == VAR_INTEGER) && (ifexpr == 1)) loopcount.i -= steppos;
-	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += steppos;      
-	      	if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=steppos;
-	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += steppos;      
+	      	if( (vartype == VAR_NUMBER) && (ifexpr == 1)) loopcount.d -= StepValue;
+	      	if( (vartype == VAR_NUMBER) && (ifexpr == 0)) loopcount.d += StepValue;      
+	      	if( (vartype == VAR_INTEGER) && (ifexpr == 1)) loopcount.i -= StepValue;
+	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += StepValue;      
+	      	if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=StepValue;
+	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += StepValue;      
 
 	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);			/* set loop variable to next */	
 
 		sigsetjmp(savestate,1);		/* save current context */
 
 		if(
-       		( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d <= exprtwo)) ||
-		((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d >= exprtwo)) ||
-		((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i <= exprtwo)) ||
-	        ((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i >= exprtwo)) ||
-	        ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f <= exprtwo)) ||
-	        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f >= exprtwo))
+       		( (vartype == VAR_NUMBER) && (ifexpr == 1) && (loopcount.d < exprtwo)) ||
+		((vartype == VAR_NUMBER) && (ifexpr == 0) && (loopcount.d > exprtwo)) ||
+		((vartype == VAR_INTEGER) && (ifexpr == 1) && (loopcount.i < exprtwo)) ||
+	        ((vartype == VAR_INTEGER) && (ifexpr == 0) && (loopcount.i > exprtwo)) ||
+	        ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f < exprtwo)) ||
+	        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f > exprtwo))
        		) break;
 
 		CurrentBufferPosition=GetSaveInformationBufferPointer();			/* get pointer to start of for statement */
@@ -1199,8 +1195,6 @@ else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
 	retval.val.f=EvaluateExpression(outtokens,0,substreturnvalue);	
 }
 
-ReturnFromFunction();			/* return */
-
 SetLastError(0);
 return(0);
 }
@@ -1222,17 +1216,10 @@ return(0);
 }
 
 int next_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-printf("next_statement()\n");
-
 if((GetFunctionFlags() & FOR_STATEMENT) == 0) {
-	printf("FOR ERRRRRRRRRRRRRRRRRORRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n");
-
 	SetLastError(NEXT_WITHOUT_FOR);
 	return(-1);
 }
-
-printf("next_statement() no error\n");
-asm("int $3");
 
 SetLastError(0);
 return(0);
@@ -1802,8 +1789,8 @@ return(-1);
 /*
  * Tokenize string
  *
- * In: char *linebuf			Line to tokenize
-		char *tokens[MAX_SIZE][MAX_SIZE]	Token array output
+ * In: linebuf				Line to tokenize
+       tokens[MAX_SIZE][MAX_SIZE]	Token array output
  *
  * Returns -1 on error or token count on success
  *
@@ -1815,13 +1802,13 @@ int tc;
 int count;
 char *d;
 char *s;
-char *nexttoken;
-int IsSeperator;
-char *b;
+int IsSeperatorCharacter;
+char *lastcharptr;
+char *nextcharptr;
 
 token=linebuf;
 
-while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace characters */
+while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leading whitespace characters */
 
 /* tokenize line */
 
@@ -1830,13 +1817,13 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
 	d=tokens[0];
 	memset(d,0,MAX_SIZE);				/* clear line */
 	
-	while(*token != 0) {
-		IsSeperator=FALSE;
+	while((char) *token != 0) {
+		IsSeperatorCharacter=FALSE;
 
 		if(*token == '"' ) {		/* quoted text */ 
 	   		*d++=*token++;
 
-	   		while(*token != 0) {
+	   		while((char)  *token != 0) {
 	    			*d++=*token++;
 
 	    			if(*(d-1) == '"') break;		/* quoted text */	
@@ -1850,45 +1837,63 @@ while(*token == ' ' || *token == '\t') token++;	/* skip leading whitespace chara
 	  		s=split;
 
 	  		while(*s != 0) {
-	    			if(*token == *s) {		/* token found */
-	   
-		    		b=token;
-		   	 	b--;
+	    			if((char) *token == *s) {		/* token found */
 
-		    		if(strlen(tokens[tc]) != 0) tc++;
+			    		if(strlen(tokens[tc]) != 0) tc++;
 	    
-		    		IsSeperator=TRUE;
-		    		d=tokens[tc]; 			
+			    		IsSeperatorCharacter=TRUE;
+			    		d=tokens[tc]; 			
 
-		    		memset(d,0,MAX_SIZE);				/* clear line */
+			    		memset(d,0,MAX_SIZE);				/* clear line */
 
-		    		if(*token != ' ') {
-		      			*d=*token++;
-	     		     		d=tokens[++tc]; 				      
-		    		}
-		    		else
-		    		{
-		      			token++;
-		    		}
+					/* ignore spaces between tokens; this then allows the following be be equivalent:
+						2 + 2
+						2+2
+					*/
+
+			    		if((char) *token != ' ') {
+						if((char) *token == '-') {		/* can be either part of the
+											token as a negative sign or a subtract operator token */
+							nextcharptr=token;
+							nextcharptr++;
+
+							if((char) *nextcharptr == ' ') tc++;
+	
+				      			*d++=*token++;
+						}
+						else
+						{
+			      				*d=*token++;	
+				     		     	d=tokens[++tc];
+						}
+			    		}
+			    		else
+					{
+						token++;		/* ignore spaces next to tokens */
+					}
 	   	}
 
 	 	s++;
 	 }
 
-	 if(IsSeperator == FALSE) *d++=*token++; /* non-token character */
+	 if(IsSeperatorCharacter == FALSE) *d++=*token++; /* non-token character */
 	}
 }
 
 if(strlen(tokens[tc]) > 0) tc++;		/* if there is data in the last token, increment the counter so it is accounted for */
 
+for(int countz=0;countz<tc;countz++) {
+	printf("parse tokens[%d]=%s\n",countz,tokens[countz]);
+}
+
 return(tc);
 }
 
 /*
- * Check if is seperator
+ * Check if seperator
  *
  * In: token		Token to check
-		sep		Seperator characters to check against
+       sep		Seperator characters to check against
  *
  * Returns TRUE or FALSE
  *
