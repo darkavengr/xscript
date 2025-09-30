@@ -1053,11 +1053,8 @@ while(1) {
 		sigsetjmp(savestate,1);		/* save current context */
   
 	      /* increment or decrement counter */
-	      	if( (vartype == VAR_NUMBER) && (ifexpr == 1)) loopcount.d -= StepValue;
 	      	if( (vartype == VAR_NUMBER) && (ifexpr == 0)) loopcount.d += StepValue;      
-	      	if( (vartype == VAR_INTEGER) && (ifexpr == 1)) loopcount.i -= StepValue;
-	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += StepValue;      
-	      	if( (vartype == VAR_SINGLE) && (ifexpr == 1)) loopcount.f -=StepValue;
+	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += StepValue;
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += StepValue;      
 
 	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);			/* set loop variable to next */	
