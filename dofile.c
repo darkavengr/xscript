@@ -53,6 +53,7 @@ char *TokenCharacters="+-*/<>=!%~|& \t()[],{};.#";
 int Flags=0;
 char *CurrentFile[MAX_SIZE];
 int CurrentLine=0;
+char *ConditionCharacters="<>=";
 
 /*
  * Load file
@@ -251,8 +252,6 @@ char *filename[MAX_SIZE];
 int end;
 int IsValid=FALSE;
 
-printf("lbuf=%s\n",lbuf);
-
 GetCurrentFile(filename);	/* get name of current file */
 
 if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n') || (((char) *lbuf) == 0)) { 			/* blank line */
@@ -264,7 +263,7 @@ if(GetTraceFlag()) {		/* print statement if trace is enabled */
 	printf("***** Tracing line %d in function %s: %s\n",GetCurrentFunctionLine(),filename,lbuf);
 }
 
-removenewline(lbuf);		/* remove newline from line */
+RemoveNewline(lbuf);		/* remove newline from line */
 
 while(*lbuf == ' ' || *lbuf == '\t') lbuf++;	/* skip white space */
 
@@ -705,7 +704,6 @@ if(tc < 2) {
 SetFunctionFlags(IF_STATEMENT);
 
 while(*CurrentBufferPosition != 0) {
-
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
 
 		if(IsValidExpression(tokens,1,tc-1) == FALSE) {
@@ -940,12 +938,12 @@ else			/* have step keyword */
 
 /* validate start and end values */
 
-if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression) == FALSE) {
+if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression-1) == FALSE) {
 	SetLastError(INVALID_EXPRESSION);
 	return(-1);
 }
 
-if(IsValidExpression(tokens,StartOfSecondExpression,StartOfStepExpression) == FALSE) {
+if(IsValidExpression(tokens,StartOfSecondExpression,StartOfStepExpression-1) == FALSE) {
 	SetLastError(INVALID_EXPRESSION);
 	return(-1);
 }
@@ -1016,7 +1014,7 @@ while(1) {
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
 
-	removenewline(buf);
+	RemoveNewline(buf);
 
 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
@@ -1051,13 +1049,12 @@ while(1) {
 		lc=GetSaveInformationLineCount();
 
 		sigsetjmp(savestate,1);		/* save current context */
-  
-	      /* increment or decrement counter */
+ 
 	      	if( (vartype == VAR_NUMBER) && (ifexpr == 0)) loopcount.d += StepValue;      
 	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += StepValue;
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += StepValue;      
 
-	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);			/* set loop variable to next */	
+	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);	/* set loop variable to next */	
 
 		sigsetjmp(savestate,1);		/* save current context */
 
@@ -1080,6 +1077,7 @@ while(1) {
 sigsetjmp(savestate,1);		/* save current context */
 
 PopSaveInformation();
+//CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* skip over "next" statement */	
 
 SetLastError(NO_ERROR);
 return(0);
@@ -1235,11 +1233,10 @@ return(0);
 int while_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *buf[MAX_SIZE];
 int exprtrue;
-char *d;
 int count;
 char *condition_tokens[MAX_SIZE][MAX_SIZE];
 int condition_tc;
-int substreturnvalue;
+int returnvalue;
 int copycount;
 
 if(tc < 1) {			/* Too few parameters */
@@ -1253,7 +1250,7 @@ for(copycount=1;copycount<tc;copycount++) {
 	strcpy(condition_tokens[count++],tokens[copycount]);
 }
 
-condition_tc=tc-1;
+condition_tc=count;
 
 SetFunctionFlags(WHILE_STATEMENT);
 
@@ -1262,49 +1259,59 @@ PushSaveInformation();		/* save while loop state */
 SetSaveInformationBufferPointer(CurrentBufferPosition);
 	
 do {
-     sigsetjmp(savestate,1);		/* save current context */
+	sigsetjmp(savestate,1);		/* save current context */
 
-     CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
-     if(IsValidExpression(condition_tokens,0,condition_tc) == FALSE) {
-	PopSaveInformation();
+	printf("buf=%s\n",buf);
 
-	SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-	return(-1);
-     }
+	RemoveNewline(buf);
 
-     exprtrue=EvaluateCondition(condition_tokens,0,condition_tc);			/* do condition */
+	if(IsValidExpression(condition_tokens,0,condition_tc) == FALSE) {
+		PopSaveInformation();
 
-     sigsetjmp(savestate,1);		/* save current context */
+		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+		return(-1);
+	}
 
-     tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-     if(tc == -1) {	
-	PopSaveInformation();
-	SetLastError(SYNTAX_ERROR);
-	return(-1);
-     }
-    
-     substreturnvalue=ExecuteLine(buf);
+	exprtrue=EvaluateCondition(condition_tokens,0,condition_tc);			/* do condition */
 
-     if(substreturnvalue != 0) {
-	PopSaveInformation();
-     	ClearIsRunningFlag();
-	return(substreturnvalue);
-     }
+	sigsetjmp(savestate,1);		/* save current context */
 
-     if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
+	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+	if(tc == -1) {	
+		PopSaveInformation();
+		SetLastError(SYNTAX_ERROR);
+		return(-1);
+	}
 
-     if((strcmpi(tokens[0],"WEND") == 0) && (exprtrue == 1)) {				/* at end of block, go back to start */
-    //	SetCurrentFunctionLine(GetSaveInformationLineCount());
-     	
-	CurrentBufferPosition=GetSaveInformationBufferPointer();
-     }
+	if(strcmpi(tokens[0],"WEND") == 0) {
+		if(exprtrue == 1) {				/* at end of block, go back to start */
+		    	SetCurrentFunctionLine(GetSaveInformationLineCount());
+		
+			CurrentBufferPosition=GetSaveInformationBufferPointer();
+		}
+		else
+		{
+			break;
+		}
+	}
 
+	returnvalue=ExecuteLine(buf);
+
+	if(returnvalue != 0) {
+		PopSaveInformation();
+		ClearIsRunningFlag();
+
+		return(returnvalue);
+	}
+
+	if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
 } while(exprtrue == 1);
 
 PopSaveInformation();
-	
-return(0);		      
+
+return(0);			 
 }
 
 /*
@@ -1834,7 +1841,7 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 	  		s=split;
 
 	  		while(*s != 0) {
-	    			if((char) *token == *s) {		/* token found */
+	    			if((char) *token == *s) {		/* seperator found */
 
 			    		if(strlen(tokens[tc]) != 0) tc++;
 	    
@@ -1849,7 +1856,66 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 					*/
 
 			    		if((char) *token != ' ') {
-						if((char) *token == '-') {		/* can be either part of the
+
+						/* handle seperators that are multi-character operators */
+
+						if((char) *token == '*') {		/* ** */
+							nextcharptr=token;
+							nextcharptr++;
+		
+							if((char) *nextcharptr != '*') {
+								tc++;
+						      		*d++=*token++;
+							}
+							else
+							{
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}	
+						}
+						else if((char) *token == '>') {		/* >> or >= */
+							nextcharptr=token;
+							nextcharptr++;
+										
+							if(((char) *nextcharptr != '>') && ((char) *nextcharptr != '=')) {
+								tc++;
+						      		*d++=*token++;
+							}
+							else
+							{
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+						}
+						else if((char) *token == '<') {		/* << or <= */					
+							nextcharptr=token;
+							nextcharptr++;
+	
+							if(((char) *nextcharptr != '<') && ((char) *nextcharptr != '=')) {
+								tc++;
+						      		*d++=*token++;
+							}
+							else
+							{
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}	
+						}
+						else if((char) *token == '!') {	
+							nextcharptr=token;
+							nextcharptr++;
+										
+							if((char) *nextcharptr != '=') {
+								tc++;
+						      		*d++=*token++;
+							}
+							else
+							{
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+						}
+						else if((char) *token == '-') {		/* can be either part of the
 											token as a negative sign or a subtract operator token */
 							nextcharptr=token;
 							nextcharptr++;
@@ -1858,7 +1924,7 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 	
 				      			*d++=*token++;
 						}
-						else
+						else		/* single character seperator */
 						{
 			      				*d=*token++;	
 				     		     	d=tokens[++tc];
@@ -1879,8 +1945,8 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 
 if(strlen(tokens[tc]) > 0) tc++;		/* if there is data in the last token, increment the counter so it is accounted for */
 
-for(int countz=0;countz<tc;countz++) {
-	printf("parse tokens[%d]=%s\n",countz,tokens[countz]);
+for(int countz=0;countz < tc;countz++) {
+	printf("token[%d]=%s\n",countz,tokens[countz]);
 }
 
 return(tc);
@@ -2187,7 +2253,7 @@ while(*s != '"') *b++=*s++;	/* copy character */
 return;
 }
 
-void removenewline(char *line) {
+void RemoveNewline(char *line) {
 char *b;
 
 if(strlen(line) > 1) {

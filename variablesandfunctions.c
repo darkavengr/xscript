@@ -77,7 +77,6 @@ strcpy(newfunc.name,"main");
 newfunc.callptr=NULL;
 newfunc.startlinenumber=1;
 newfunc.currentlinenumber=1;
-newfunc.saveinformation=NULL;
 newfunc.saveinformation_top=NULL;
 newfunc.parameters=NULL;
 newfunc.vars=NULL;
@@ -1054,7 +1053,7 @@ int lc;
 do {	
 	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */	
 
-	removenewline(linebuf);		/* remove newline */
+	RemoveNewline(linebuf);		/* remove newline */
 
 	TokenizeLine(linebuf,tokens,TokenCharacters);			/* tokenize line */
 
@@ -1156,6 +1155,7 @@ PushFunctionCallInformation(&newfunc);			/* push function information onto call 
 
 currentfunction=FunctionCallStackTop;			/* point to function */
 currentfunction->parameters=next->parameters;		/* point to parameters */
+currentfunction->saveinformation_top=NULL;
 
 //DeclareBuiltInVariables("","");				/* add built-in variables */
 
@@ -1701,7 +1701,6 @@ strcpy(FunctionCallStackTop->name,func->name);		/* copy information */
 FunctionCallStackTop->callptr=func->callptr;
 FunctionCallStackTop->startlinenumber=func->startlinenumber;
 FunctionCallStackTop->currentlinenumber=func->startlinenumber;
-FunctionCallStackTop->saveinformation=func->saveinformation;
 FunctionCallStackTop->saveinformation_top=func->saveinformation_top;
 FunctionCallStackTop->vars=func->vars;
 FunctionCallStackTop->stat=func->stat;
@@ -2389,11 +2388,12 @@ oldtop=currentfunction->saveinformation_top;		/* get current topmost entry */
 
 currentfunction->saveinformation_top=currentfunction->saveinformation_top->next;	/* remove from stack */
 
-free(oldtop);		/* free entry */
-
 if(currentfunction->saveinformation_top != NULL) {
-	SetCurrentBufferPosition(currentfunction->saveinformation_top->bufptr);
-	currentfunction->startlinenumber=currentfunction->saveinformation_top->linenumber;
+	free(oldtop);		/* free entry */
+}
+else
+{
+	return(-1);
 }
 
 return(0);
@@ -2564,7 +2564,7 @@ funcs=NULL;
 while(callstacknext != NULL) {
 	FreeVariablesList(callstacknext->vars);		/* free variables */
 
-	savenext=callstacknext->saveinformation;
+	savenext=callstacknext->saveinformation_top			;
 
 	while(savenext != NULL) {
 		free(savenext);

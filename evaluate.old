@@ -47,6 +47,7 @@ char *token;
 double exprone;
 char *temp[MAX_SIZE][MAX_SIZE];
 char *subexpr[MAX_SIZE][MAX_SIZE];
+varval val;
 int startexpr;
 int endexpr;
 int exprcount;
@@ -113,12 +114,40 @@ for(count=0;count<exprcount;count++) {
 	}
 }
 
+val.d=atof(temp[0]);
+
+for(count=0;count<exprcount;count++)  {
+	if((strcmp(tokens[count],">") == 0) && (strcmp(tokens[count+1],">") == 0)) {
+		count += 3;
+	}
+	else if((strcmp(tokens[count],"<") == 0) && (strcmp(tokens[count+1],"<") == 0)) {
+		count += 3;
+	}
+
+	if( (strcmp(tokens[count],"=") == 0) && (strcmp(tokens[count+1],"!") == 0)) {
+		val.d=EvaluateCondition(temp,count-1,count+3);
+	}
+	else if((strcmp(tokens[count],">") == 0) && (strcmp(tokens[count+1],">") != 0)) {
+		val.d=EvaluateCondition(temp,count-1,count+2);
+	}
+	else if((strcmp(tokens[count],"<") == 0) && (strcmp(tokens[count+1],"<") != 0)) {
+		val.d=EvaluateCondition(tokens,count-1,count+2);
+	}
+	else if((strcmp(tokens[count],">") == 0) && (strcmp(tokens[count+1],"=") == 0)) {
+		val.d=EvaluateCondition(temp,count-1,count+2);
+	}
+	else if((strcmp(tokens[count],"<") == 0) && (strcmp(tokens[count+1],"=") == 0)) {
+		val.d=EvaluateCondition(temp,count-1,count+2);
+	}
+}
+
 // BIDMAS
 
 /* split operators and operands into two arrays */
 
 operatorcount=0;
 operandcount=0;
+
 for(count=0;count < exprcount;count++)  {
 	if((strcmp(tokens[count],">>") == 0) || (strcmp(tokens[count],"<<") == 0) || \
 	   (strcmp(tokens[count],"+") == 0) || (strcmp(tokens[count],"-") == 0) || \
@@ -135,57 +164,89 @@ for(count=0;count < exprcount;count++)  {
 }
 
 for(count=0;count < operatorcount;count++)  {
+	printf("operator=%s\n",split_operators[count]);
+}
+
+for(count=0;count < operandcount;count++)  {
+	printf("operand=%s\n",split_operands[count]);
+}
+
+//asm("int $3");
+
+operandcount=0;
+val.d=0;
+
+ffor(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"/") == 0) {
-		sprintf(split_operands[count*2],"%.6g",(atof(split_operands[count*2]) / atof(split_operands[(count*2)+1])));
+		val.d += (atof(split_operands[(count*2)]) / atof(split_operands[(count*2)+1]));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 
+		operatorcount--;
 	 } 
 }
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"*") == 0) { 
-		sprintf(split_operands[count*2],"%.6g",atof(split_operands[count*2]) * atof(split_operands[(count*2)+1]));
+		val.d += (atof(split_operands[(count*2)]) * atof(split_operands[(count*2)+1]));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
+
+		operatorcount--;
 	 } 
 }
-	
+
 for(count=0;count < operatorcount;count++)  {
+	printf("add tokens[%d]=%s\n",count,split_operators[count]);
+
 	if(strcmp(split_operators[count],"+") == 0) { 
-		sprintf(split_operands[count*2],"%.6g",(atof(split_operands[count*2]) + atof(split_operands[(count*2)+1])));
+
+		printf("first add oprand=%.6g\n",atof(split_operands[count*2]));
+		printf("second add operand=%.6g\n",atof(split_operands[(count*2)+1]));
+		printf("part product=%.6g\n",atof(split_operands[count*2])+atof(split_operands[(count*2)+1]));
+
+		val.d += (atof(split_operands[(count*2)])+atof(split_operands[(count*2)+1]));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count/2)+1,(count/2)+1);		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
+
+		operatorcount--;
 	 } 
 }
 
 for(count=0;count < operatorcount;count++)  {
+//	printf("subtract tokens[%d]=%s\n",count,split_operators[count]);
+
 	if(strcmp(split_operators[count],"-") == 0) { 
-		sprintf(split_operands[count*2],"%.6g",(atof(split_operands[count*2]) - atof(split_operands[(count*2)+1])));
+
+		printf("first subtract oprand=%.6g\n",atof(split_operands[count*2]));
+		printf("second subtract operand=%.6g\n",atof(split_operands[(count*2)+1]));
+		printf("part difference=%.6g\n",atof(split_operands[count*2])-atof(split_operands[(count*2)+1]));
+
+		val.d -= (atof(split_operands[(count*2)])-atof(split_operands[(count*2)+1]));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	 } 
 }
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"<<") == 0) { 
-		sprintf(split_operands[count*2],"%d",(atoi(split_operands[count*2]) << atoi(split_operands[(count*2)+1])));
+		val.d += (atoi(split_operands[(count*2)]) << atoi(split_operands[(count*2)+1]));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	 } 
 }
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],">>") == 0) { 
-		sprintf(split_operands[count*2],"%d",(atoi(split_operands[count*2]) >> atoi(split_operands[(count*2)+1])));
+		val.d += (atof(split_operands[(count*2)])+atof(split_operands[(count*2)+1]));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	 } 
 }
 
@@ -193,10 +254,10 @@ for(count=0;count < operatorcount;count++)  {
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"**") == 0) { 
-		sprintf(split_operands[count*2],"%.6g",pow(atof(split_operands[count*2]),atof(split_operands[(count*2)+1])));
+		val.d += pow(atof(split_operands[(count*2)]),atof(split_operands[(count*2)+1]));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	 } 
 }
 
@@ -204,10 +265,11 @@ for(count=0;count < operatorcount;count++)  {
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"%") == 0) {
-		sprintf(split_operands[count*2],"%d",(atoi(split_operands[count*2]) % atoi(split_operands[(count*2)+1])));
+		val.d +=(int) atoi(temp[count*2]) % atoi(temp[(count*2)+1]);
+	 
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	}
 }
 
@@ -215,9 +277,21 @@ for(count=0;count < operatorcount;count++)  {
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"!") == 0) {
-		sprintf(split_operands[count*2],"%d",!atoi(split_operands[count*2]));
+		val.d +=(int) !atoi(temp[count*2]);
+	 
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
+		DeleteFromArray(split_operands,0,operandcount,count*2,count*2);		/* remove operand */
+	}
+}
+
+for(count=0;count < operatorcount;count++)  {
+	if(strcmp(split_operators[count],"%") == 0) {
+		val.d +=(int) atoi(temp[count*2]) % atoi(temp[(count*2)+1]);
+	 
+
+		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	}
 }
 
@@ -225,10 +299,11 @@ for(count=0;count < operatorcount;count++)  {
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"&") == 0) {
-		sprintf(split_operands[count*2],"%d",(atoi(split_operands[count*2]) & atoi(split_operands[(count*2)+1])));
+		val.d +=(int) atoi(temp[count*2]) & atoi(temp[(count*2)+1]);
+	 
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	}
 }
 
@@ -236,10 +311,11 @@ for(count=0;count < operatorcount;count++)  {
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"|") == 0) {
-		sprintf(split_operands[count*2],"%d",(atoi(split_operands[count*2]) | atoi(split_operands[(count*2)+1])));
+		val.d +=(int) atoi(temp[count*2]) | atoi(temp[(count*2)+1]);
+	 
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	}
 }
 
@@ -247,22 +323,20 @@ for(count=0;count < operatorcount;count++)  {
 
 for(count=0;count < operatorcount;count++)  {
 	if(strcmp(split_operators[count],"^") == 0) {
-		sprintf(split_operands[count*2],"%d",(atoi(split_operands[count*2]) ^ atoi(split_operands[(count*2)+1])));	
-
+		val.d +=(int) atoi(temp[count*2]) ^ atoi(temp[(count*2)+1]);
+	 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
-		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+		DeleteFromArray(split_operands,0,operandcount,count*2,(count*2)+1);		/* remove operand */
 	}
 }
 
-return(atof(split_operands[0]));
+return(val.d);
 }
 
 void DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend) {
 	int count;
-	char *temp[MAX_SIZE][MAX_SIZE];
+	char *temp[10][255];
 	int oc=0;
-
-	/* copy tokens that are not within range */
 
 	for(count=start;count<end;count++) {
 		if((count < deletestart) || (count > deleteend)) {
@@ -271,13 +345,9 @@ void DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletes
 
 	}
 
-	/* copy the tokens back to the target */
-
 	for(count=0;count<oc;count++) {
 		strcpy(arr[count],temp[count]); 
 	}
-
-	/* clear extra tokens at the end */
 
 	for(count=oc;count<end;count++) {
 		arr[count][0]=NULL; 

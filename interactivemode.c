@@ -103,7 +103,7 @@ while(1) {
 
 	fgets(linebuf,MAX_SIZE,stdin);			/* read line */
 
-	removenewline(linebuf);		/* remove newline characters */
+	RemoveNewline(linebuf);		/* remove newline characters */
 
 	GetTokenCharacters(tokenchars);			/* get token characters */
 	tc=TokenizeLine(linebuf,tokens,tokenchars);	/* tokenize line */

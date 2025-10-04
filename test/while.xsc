@@ -1,6 +1,14 @@
-a=1
+x=1
+y=1
 
-while a < 10
-	print a
-	a=a+1
+while x <= 10
+	y=1
+
+	while y <= 2
+		print x,y
+		y=y+1
+	wend
+
+	x=x+1
 wend
+

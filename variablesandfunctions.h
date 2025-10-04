@@ -94,7 +94,6 @@ typedef struct FUNCTIONCALLSTACK {
  char *callptr;
  int startlinenumber;
  int currentlinenumber;
- SAVEINFORMATION *saveinformation;
  SAVEINFORMATION *saveinformation_top;
  vars_t *vars;
  vars_t *vars_end;
