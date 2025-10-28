@@ -523,11 +523,12 @@ for(count=1;count<tc;count++) {
 			/* if it's a condition print True or False */
 	
 			for(exprpos=count;exprpos<tc;exprpos++) {
-				if( ((strcmp(tokens[exprpos],"=") == 0) && (strcmp(tokens[exprpos+1],"!") == 0)) ||
-				   ((strcmp(tokens[exprpos],">") == 0) && (strcmp(tokens[exprpos+1],">") != 0)) ||
-				   ((strcmp(tokens[exprpos],"<") == 0) && (strcmp(tokens[exprpos+1],"<") != 0)) ||
-				   ((strcmp(tokens[exprpos],">") == 0) && (strcmp(tokens[exprpos+1],"=") == 0)) ||
-				   ((strcmp(tokens[exprpos],"<") == 0) && (strcmp(tokens[exprpos+1],"=") == 0))) {
+				if( (strcmp(tokens[exprpos],"=") == 0) ||
+				   (strcmp(tokens[exprpos],"!=") == 0) || 
+				   (strcmp(tokens[exprpos],">=") == 0) || 
+				   (strcmp(tokens[exprpos],"<=") == 0) ||
+				   (strcmp(tokens[exprpos],">") == 0) ||
+				   (strcmp(tokens[exprpos],"<") == 0)) {
 
 					retval.val.type=0;
 		     			retval.val.d=EvaluateCondition(tokens,count,endtoken);
@@ -1800,6 +1801,8 @@ return(-1);
  *
  */
 
+/* TODO: Rewrite this function */
+
 int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split) {
 char *token;
 int tc;
@@ -1843,7 +1846,7 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 	  		while(*s != 0) {
 	    			if((char) *token == *s) {		/* seperator found */
 
-			    		if(strlen(tokens[tc]) != 0) tc++;
+			    		if((strlen(tokens[tc]) != 0) && (*token != '.')) tc++;
 	    
 			    		IsSeperatorCharacter=TRUE;
 			    		d=tokens[tc]; 			
@@ -1915,6 +1918,31 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 						      		*d++=*token++;
 							}
 						}
+						else if((char) *token == '.') {		/* can be either decimal point or member */
+							printf("decimallLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+
+							lastcharptr=token;
+							lastcharptr--;
+
+							nextcharptr=token;
+							nextcharptr++;
+
+							if( (((char)  *lastcharptr >= '0') && ((char)  *lastcharptr <= '9')) && 
+							    (((char) *nextcharptr >= '0') && ((char) *nextcharptr <= '9'))) {
+
+								printf("d=%lX\n",d);
+
+								*d++=*lastcharptr;
+								*d++=*token++;
+								*d++=*token++;
+
+								asm("int $3");
+							}
+							else
+							{
+								tc++;
+							}
+						}
 						else if((char) *token == '-') {		/* can be either part of the
 											token as a negative sign or a subtract operator token */
 							nextcharptr=token;
@@ -1962,14 +1990,14 @@ return(tc);
  *
  */
 int IsSeperator(char *token,char *sep) {
-char *s;
+char *SepPtr;
 
 if(*token == 0) return(TRUE);
 	
-s=sep;
+SepPtr=sep;
 
-while(*s != 0) {
-	if(*s++ == *token) return(TRUE);
+while(*SepPtr != 0) {
+	if((char) *SepPtr++ == (char) *token) return(TRUE);
 }
 
 if(IsStatement(token) == TRUE) return(TRUE);
@@ -1986,18 +2014,14 @@ return(FALSE);
  *
  */
 
-void touppercase(char *token) {
-	char *z;
-	char c;
+void ToUpperCase(char *token) {
+	char *tokenptr;
+	
+	tokenptr=token;
 
-	z=token;
-
-	while(*z != 0) { 	/* until end */
-	 if(*z >= 'a' &&  *z <= 'z') {				/* convert to lower case if upper case */
-	  *z -= 32;
-	 }
-
-	 z++;
+	while(*tokenptr != 0) { 	/* until end */
+		if(((char) *tokenptr >= 'a') &&  ((char) *tokenptr <= 'z')) *tokenptr -= 32;	/* convert to lower case if upper case */
+	  	tokenptr++;
 	}
 }
 
@@ -2057,8 +2081,8 @@ memset(desttemp,0,MAX_SIZE);
 strcpy(sourcetemp,source);
 strcpy(desttemp,dest);
 
-touppercase(sourcetemp);
-touppercase(desttemp);
+ToUpperCase(sourcetemp);
+ToUpperCase(desttemp);
 
 return(strcmp(sourcetemp,desttemp));		/* return result of string comparison */
 }

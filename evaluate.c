@@ -33,9 +33,9 @@
 /*
 * Evaluate expression
 *
-* In: tokens[][MAX_SIZE]	Tokens array containing expression
-*     start			Start in array
-*     end			End in array
+* In: tokens	Tokens array containing expression
+*     start	Start in array
+*     end	End in array
 *
 * Returns: result of expression
 *
@@ -55,8 +55,8 @@ int countx;
 int subtc;
 char *split_operators[MAX_SIZE][MAX_SIZE];
 char *split_operands[MAX_SIZE][MAX_SIZE];
-int operatorcount;
-int operandcount;
+int operatorcount=0;
+int operandcount=0;
 
 memset(temp,0,MAX_SIZE*MAX_SIZE);
 
@@ -120,17 +120,17 @@ for(count=0;count<exprcount;count++) {
 operatorcount=0;
 operandcount=0;
 for(count=0;count < exprcount;count++)  {
-	if((strcmp(tokens[count],">>") == 0) || (strcmp(tokens[count],"<<") == 0) || \
-	   (strcmp(tokens[count],"+") == 0) || (strcmp(tokens[count],"-") == 0) || \
-	   (strcmp(tokens[count],"*") == 0) || (strcmp(tokens[count],"/") == 0) || \
-	   (strcmp(tokens[count],"~") == 0) || (strcmp(tokens[count],"**") == 0) || \
-	   (strcmp(tokens[count],"%") == 0) || (strcmp(tokens[count],"&") == 0) || \
-	   (strcmp(tokens[count],"|") == 0) || (strcmp(tokens[count],"^") == 0)) {
-		strcpy(split_operators[operatorcount++],tokens[count]);
+	if((strcmp(temp[count],">>") == 0) || (strcmp(temp[count],"<<") == 0) || \
+	   (strcmp(temp[count],"+") == 0) || (strcmp(temp[count],"-") == 0) || \
+	   (strcmp(temp[count],"*") == 0) || (strcmp(temp[count],"/") == 0) || \
+	   (strcmp(temp[count],"~") == 0) || (strcmp(temp[count],"**") == 0) || \
+	   (strcmp(temp[count],"%") == 0) || (strcmp(temp[count],"&") == 0) || \
+	   (strcmp(temp[count],"|") == 0) || (strcmp(temp[count],"^") == 0)) {
+		strcpy(split_operators[operatorcount++],temp[count]);
 	}
 	else
 	{
-		strcpy(split_operands[operandcount++],tokens[count]);
+		strcpy(split_operands[operandcount++],temp[count]);
 	}
 }
 
@@ -324,7 +324,7 @@ for(exprpos=start;exprpos<end;exprpos++) {
 		break;
 	}
 	else if(strcmp(tokens[exprpos],">=") == 0) {
-		ifexpr=GTHAN;
+		ifexpr=EQGTHAN;
 		break;	
 	}
 	else if(strcmp(tokens[exprpos],"<") == 0) {
@@ -336,7 +336,7 @@ for(exprpos=start;exprpos<end;exprpos++) {
 		break;
 	}
 	else if(strcmp(tokens[exprpos],">") == 0) {
-		ifexpr=EQGTHAN;
+		ifexpr=GTHAN;
 		break;
 	}
 }
@@ -352,20 +352,20 @@ if(ifexpr == -1) {	/* evaluate non-zero or zero */
 }
 
 if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the line */
-	ConatecateStrings(exprpos+1,end,tokens,&secondval);					/* join all the strings on the line */
+	ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the lines */
+	ConatecateStrings(exprpos+1,end,tokens,&secondval);
 
 	return(!strcmp(firstval.s,secondval.s));
 }
 
 exprone=EvaluateExpression(tokens,start,exprpos);				/* evaluate expressions */
-exprtwo=EvaluateExpression(tokens,exprpos+1,end-1);
+exprtwo=EvaluateExpression(tokens,exprpos+1,end);
 
 exprtrue=0;
 
 switch(ifexpr) {
 
-	case EQUAL:
+	case EQUAL:					/* exprone = exprtwo */
 		return(exprone == exprtwo);
 
 	case NOTEQUAL:					/* exprone != exprtwo */ 

@@ -1480,21 +1480,20 @@ for(count=start;count<end;count++) {
 		    else
 		    {
 		      if(*tokens[count] == '"') {
-			strcpy(temp[outcount++],tokens[count]);
+				strcpy(temp[outcount++],tokens[count]);
 		      }
 		      else
 		      {
-	    	      	arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
+	    	      		arraysize=(GetVariableXSize(split.name)*GetVariableYSize(split.name));
 
-	    		if(((split.x*split.y) > arraysize) || arraysize < 0) {
-				SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
-				return(-1);
-			}
+	    			if(((split.x*split.y) > arraysize) || arraysize < 0) {
+					SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
+					return(-1);
+				}
 	
-		        if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy) == -1) return(-1);
+			        if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy) == -1) return(-1);
 
-		  	sprintf(temp[outcount++],"\"%s\"",val.s);
-
+			  	sprintf(temp[outcount++],"\"%s\"",val.s);
 		      }
 	      
 	            }
@@ -2593,8 +2592,10 @@ int IsNumber(char *token) {
 char *tokenptr=token;
 
 while((char) *tokenptr != 0) {
-	if( ((char ) *tokenptr < '0') || ((char ) *tokenptr > '9')) return(FALSE);
-	
+	if( ((char ) *tokenptr < '0') || ((char ) *tokenptr > '9')) {
+		if((char) *tokenptr != '.') return(FALSE);
+	}
+
 	tokenptr++;
 }
 
