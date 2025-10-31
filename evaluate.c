@@ -150,15 +150,19 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	 } 
 }
 	
 for(count=0;count < operatorcount;count++)  {
-	if(strcmp(split_operators[count],"+") == 0) { 
+	if(strcmp(split_operators[count],"+") == 0) {
 		sprintf(split_operands[count*2],"%.6g",(atof(split_operands[count*2]) + atof(split_operands[(count*2)+1])));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count/2)+1,(count/2)+1);		/* remove second operand */
+
+		count--;
 	 } 
 }
 
@@ -168,6 +172,8 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	 } 
 }
 
@@ -177,6 +183,8 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	 } 
 }
 
@@ -186,6 +194,8 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	 } 
 }
 
@@ -197,6 +207,8 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	 } 
 }
 
@@ -208,6 +220,8 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	}
 }
 
@@ -218,6 +232,8 @@ for(count=0;count < operatorcount;count++)  {
 		sprintf(split_operands[count*2],"%d",!atoi(split_operands[count*2]));
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
+
+		count--;
 	}
 }
 
@@ -229,6 +245,8 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	}
 }
 
@@ -240,6 +258,8 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	}
 }
 
@@ -251,6 +271,8 @@ for(count=0;count < operatorcount;count++)  {
 
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
+
+		count--;
 	}
 }
 

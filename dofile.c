@@ -1168,12 +1168,13 @@ else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */
 		return(-1);
 	}
 
-	 if(IsValidExpression(outtokens,0,substreturnvalue) == FALSE) {
+	if(IsValidExpression(outtokens,0,substreturnvalue) == FALSE) {
 		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
 		return(-1);
 	}
 
 	retval.val.d=EvaluateExpression(outtokens,0,substreturnvalue);
+
 }
 else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
 	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
@@ -1867,21 +1868,22 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 							nextcharptr++;
 		
 							if((char) *nextcharptr != '*') {
-								tc++;
 						      		*d++=*token++;
 							}
 							else
 							{
 						      		*d++=*token++;
 						      		*d++=*token++;
-							}	
+							}
+
+							IsSeperatorCharacter=FALSE;
+							d=tokens[++tc];	
 						}
 						else if((char) *token == '>') {		/* >> or >= */
 							nextcharptr=token;
 							nextcharptr++;
 										
 							if(((char) *nextcharptr != '>') && ((char) *nextcharptr != '=')) {
-								tc++;
 						      		*d++=*token++;
 							}
 							else
@@ -1889,6 +1891,9 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 						      		*d++=*token++;
 						      		*d++=*token++;
 							}
+
+							IsSeperatorCharacter=FALSE;
+							d=tokens[++tc];
 						}
 						else if((char) *token == '<') {		/* << or <= */					
 							nextcharptr=token;
@@ -1902,7 +1907,10 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 							{
 						      		*d++=*token++;
 						      		*d++=*token++;
-							}	
+							}
+
+							IsSeperatorCharacter=FALSE;
+							d=tokens[++tc];	
 						}
 						else if((char) *token == '!') {	
 							nextcharptr=token;
@@ -1917,10 +1925,11 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 						      		*d++=*token++;
 						      		*d++=*token++;
 							}
+
+							IsSeperatorCharacter=FALSE;
+							d=tokens[++tc];	
 						}
 						else if((char) *token == '.') {		/* can be either decimal point or member */
-							printf("decimallLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-
 							lastcharptr=token;
 							lastcharptr--;
 
@@ -1929,14 +1938,9 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 
 							if( (((char)  *lastcharptr >= '0') && ((char)  *lastcharptr <= '9')) && 
 							    (((char) *nextcharptr >= '0') && ((char) *nextcharptr <= '9'))) {
-
-								printf("d=%lX\n",d);
-
 								*d++=*lastcharptr;
 								*d++=*token++;
 								*d++=*token++;
-
-								asm("int $3");
 							}
 							else
 							{
@@ -1954,7 +1958,7 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 						}
 						else		/* single character seperator */
 						{
-			      				*d=*token++;	
+			      				*d++=*token++;	
 				     		     	d=tokens[++tc];
 						}
 			    		}
@@ -1973,9 +1977,9 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 
 if(strlen(tokens[tc]) > 0) tc++;		/* if there is data in the last token, increment the counter so it is accounted for */
 
-for(int countz=0;countz < tc;countz++) {
-	printf("token[%d]=%s\n",countz,tokens[countz]);
-}
+//for(int countz=0;countz < tc;countz++) {
+//	printf("token[%d]=%s\n",countz,tokens[countz]);
+//}
 
 return(tc);
 }
