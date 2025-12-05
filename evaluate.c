@@ -281,12 +281,12 @@ return(atof(split_operands[0]));
 
 void DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletestart,int deleteend) {
 	int count;
-	char *temp[MAX_SIZE][MAX_SIZE];
+	char *temp[127][MAX_SIZE];
 	int oc=0;
 
 	/* copy tokens that are not within range */
 
-	for(count=start;count<end;count++) {
+	for(count=start;count < end;count++) {
 		if((count < deletestart) || (count > deleteend)) {
 			strcpy(temp[oc++],arr[count]); 
 		}
@@ -295,13 +295,13 @@ void DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletes
 
 	/* copy the tokens back to the target */
 
-	for(count=0;count<oc;count++) {
+	for(count=0;count < oc;count++) {
 		strcpy(arr[count],temp[count]); 
 	}
 
 	/* clear extra tokens at the end */
 
-	for(count=oc;count<end;count++) {
+	for(count=oc;count < end;count++) {
 		arr[count][0]=NULL; 
 	}
 

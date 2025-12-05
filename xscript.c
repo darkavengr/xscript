@@ -26,6 +26,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <setjmp.h>
+#include <sys/resource.h>
+
 #include "size.h"
 #include "module.h"
 #include "variablesandfunctions.h"
@@ -61,6 +63,20 @@ varval cmdargs;
 int returnvalue;
 struct sigaction signalaction;
 char *fullpath[MAX_SIZE];
+struct rlimit new_rlimit;
+
+/* set stack size */
+if(getrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
+	perror("xscript:");
+	exit(1);
+}
+
+new_rlimit.rlim_max=1024*1024*1024;
+
+if(setrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
+	perror("xscript:");
+	exit(1);
+}
 
 /* get executable directory name from argv[0] */
 
@@ -121,6 +137,8 @@ else
 }
 
 cleanup();			/* deallocate lists */
+
+asm("int $3");
 exit(0);
 }
 

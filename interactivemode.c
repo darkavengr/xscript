@@ -502,10 +502,9 @@ stack=GetFunctionCallStackTop();
 while(stack != NULL) {
 	printf("#%d	%s(",callstackcount++,stack->name);
 
-	/* display parameters with values */
+	/* display initial parameters with values */
 
-	varnext=stack->parameters;	/* point to parameters */
-
+	varnext=stack->initialparameters;	/* point to parameters */
 
 	while(varnext != NULL) {
 		if(varnext->val != NULL) {

@@ -97,7 +97,7 @@ typedef struct FUNCTIONCALLSTACK {
  SAVEINFORMATION *saveinformation_top;
  vars_t *vars;
  vars_t *vars_end;
- vars_t *parameters;
+ vars_t *initialparameters;
  int stat;	
  char *returntype[MAX_SIZE];
  int type_int;

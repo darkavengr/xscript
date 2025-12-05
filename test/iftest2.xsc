@@ -1,7 +1,11 @@
-b=4
+b=123
 
-if b < 5 then
- print "Yay"
+if b = 4 then
+	print "Yay"
+elseif b = 5 then
+	print "Hahaha"
+else
+	print "BOOOOOOOOOOO"
 endif
 
 

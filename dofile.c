@@ -149,7 +149,7 @@ int returnvalue;
 varval progname;
 MODULES ModuleEntry;
 
-progname.s=malloc(strlen(filename));
+progname.s=malloc(strlen(filename)+1);
 if(progname.s == NULL) {
 	SetLastError(NO_MEM);
 	return(-1);
@@ -344,10 +344,12 @@ for(count=1;count<tc;count++) {
 			if(vartype == -1) CreateVariable(split.name,"STRING",split.x,split.y);		/* new variable */ 
 		  		 
 		  	ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
-		  	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy);	/* set variable */
+
+			/* set variable */
+		  	if(UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
 
 		  	SetLastError(0);
-			return(0	);
+			return(0);
 		}
 
 		/* number otherwise */
@@ -367,16 +369,16 @@ for(count=1;count<tc;count++) {
 		 if(vartype == VAR_NUMBER) {
 	 		val.d=exprone;
 	 	 }
-		else if(vartype == VAR_INTEGER) {
+		 else if(vartype == VAR_INTEGER) {
 	 		val.i=exprone;
-	 	}
-	 	else if(vartype == VAR_SINGLE) {
+	 	 }
+	 	 else if(vartype == VAR_SINGLE) {
 	 		val.f=exprone;
-	 	}
-		else if(vartype == VAR_LONG) {
+	 	 }
+		 else if(vartype == VAR_LONG) {
 	 		val.l=exprone;
-	 	}
-	 	else if(vartype == VAR_UDT) {			/* user-defined type */	 
+	 	 }
+	 	 else if(vartype == VAR_UDT) {			/* user-defined type */	 
 			if(ParseVariableName(tokens,count+1,tc,&assignsplit) == -1) return(-1);		/* split variable */
 
  			varptr=GetVariablePointer(split.name);		/* point to variable entry */
@@ -392,12 +394,16 @@ for(count=1;count<tc;count++) {
 			SetLastError(0);
 			return(0);
  		}
-
-		if(vartype == -1) {		/* new variable */ 	  
+		else if(vartype == -1) {		/* new variable */ 	  
 		 	val.d=exprone;
 
-		 	CreateVariable(split.name,"DOUBLE",split.x,split.y);			/* create variable */
-		 	UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy);
+			if((split.x > 1) || (split.y) > 1) {		/* can't create array by assignment */
+				SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+				return(-1);
+			}
+			 
+		 	if(CreateVariable(split.name,"DOUBLE",1,1) == -1) return(-1);		/* create variable */
+		 	if(UpdateVariable(split.name,split.fieldname,&val,0,0,0,0) == -1) return(-1);
 	
 		 	SetLastError(0);
 			return(0);
@@ -696,6 +702,8 @@ int countx;
 char *d;
 int exprtrue;
 int returnvalue;
+int save_expr_true;
+bool has_else_statement=FALSE;
 
 if(tc < 2) {
 	SetLastError(SYNTAX_ERROR);					/* Too few parameters */
@@ -704,106 +712,55 @@ if(tc < 2) {
 
 SetFunctionFlags(IF_STATEMENT);
 
+save_expr_true=-1;
+
 while(*CurrentBufferPosition != 0) {
+
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
-
-		if(IsValidExpression(tokens,1,tc-1) == FALSE) {
-			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+		if(IsValidExpression(tokens,1,tc-1) == FALSE) {	/* invalid expression */
+			SetLastError(INVALID_EXPRESSION);
 			return(-1);
-		 }
+		}
 
-		exprtrue=EvaluateCondition(tokens,1,tc-1);
+		sigsetjmp(savestate,1);		/* save current context */
+
+		exprtrue=EvaluateCondition(tokens,1,tc-1);	/* evaluate condition */
 		if(exprtrue == -1) return(-1);
 
-		if(exprtrue == 1) {
-			saveexprtrue=exprtrue;
-
-			do {
-				sigsetjmp(savestate,1);		/* save current context */
-
-		   		CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
-				if(*CurrentBufferPosition == 0) {
-					SetLastError(0);
-					return(0);
-				}
-
-				if(ExecuteLine(buf) == -1) return(-1);
-
-				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-				if(tc == -1) {
-					SetLastError(SYNTAX_ERROR);
-					return(-1);
-				}
-				
-				if(strcmpi(tokens[0],"ENDIF") == 0) {
-					SetFunctionFlags(IF_STATEMENT);
-
-					SetLastError(0);
-					return(0);
-				}
-
-	  		} while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF") != 0)  && (strcmpi(tokens[0],"ELSE") != 0));
-	 	}
-	 	else
-	 	{
-			do {
-	   			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
-				if(*CurrentBufferPosition == 0) {
-					SetLastError(0);
-					return(0);
-				}	
-
-				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-				if(tc == -1) {
-					SetLastError(SYNTAX_ERROR);
-					return(-1);
-				}
-				
-				if(strcmpi(tokens[0],"ENDIF") == 0) {
-					SetFunctionFlags(IF_STATEMENT);
-
-					SetLastError(0);
-					return(0);
-				}
-
-	  		} while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF") != 0)  && (strcmpi(tokens[0],"ELSE") != 0));
-		}
+		save_expr_true=exprtrue;			/* save evaluate status */
 	}
 
-
-	if((strcmpi(tokens[0],"ELSE") == 0)) {
-
-		if(saveexprtrue == 0) {
-	    		do {
-				sigsetjmp(savestate,1);		/* save current context */
-
-	   			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
-				if(*CurrentBufferPosition == 0) {
-					SetLastError(0);
-					return(0);
-				}
-
-				if(ExecuteLine(buf) == -1) return(-1);
-
-				tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-				if(tc == -1) {
-					SetLastError(SYNTAX_ERROR);	
-					return(-1);
-				}
-					
-				if(strcmpi(tokens[0],"ENDIF") == 0) {
-					ClearFunctionFlags(IF_STATEMENT);
-
-					SetLastError(0);
-					return(0);
-				}
-
-	  		} while((strcmpi(tokens[0],"ENDIF") != 0) && (strcmpi(tokens[0],"ELSEIF")) != 0);
-		}
+	if(*CurrentBufferPosition == 0) {
+		SetLastError(0);
+		return(0);
 	}
 
+	if((exprtrue == 1) || ((save_expr_true == 0) && (has_else_statement == TRUE))) {
+		save_expr_true=exprtrue;
+
+		if(ExecuteLine(buf) == -1) return(-1);
+	}
+	
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+
+	memset(tokens,0,MAX_SIZE*MAX_SIZE);
+
 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+	if(tc == -1) {
+		SetLastError(SYNTAX_ERROR);
+		return(-1);
+	}
+
+	if(strcmpi(tokens[0],"ENDIF") == 0) {
+		SetFunctionFlags(IF_STATEMENT);
+
+		SetLastError(0);
+		return(0);
+	}
+	else if(strcmpi(tokens[0],"ELSE") == 0) { 			
+		has_else_statement=TRUE;			/* has ELSE statement */
+	}
+
 }
 
 SetLastError(IF_WITHOUT_ENDIF);
@@ -968,35 +925,41 @@ if(returnvalue == -1) {
 exprtwo=EvaluateExpression(outtokens,0,returnvalue);			/* end value */
 
 if(IsVariable(split.name) == FALSE) {				/* create variable if it doesn't exist */
-	CreateVariable(split.name,"DOUBLE",split.x,split.y);
+	CreateVariable(split.name,"DOUBLE",1,1);
 }
 
 vartype=GetVariableType(split.name);			/* check if string */
 
-switch(vartype) {
-	case -1:
-		loopcount.d=exprone;
-		vartype=VAR_NUMBER;
-		break;
-
-	case VAR_STRING: 
-		SetLastError(TYPE_ERROR);
-		return(-1);
-
-	case VAR_NUMBER:
-		loopcount.d=exprone;
-		break;
-
-	case VAR_INTEGER:
-		loopcount.i=exprone;
-		break;
-
-	case VAR_SINGLE:
-		loopcount.f=exprone;
-		break;
+if(vartype == -1) {
+	loopcount.d=exprone;
+	vartype=VAR_NUMBER;
+}
+else if(vartype == VAR_STRING) {
+	SetLastError(TYPE_ERROR);
+	return(-1);
+}
+else if(vartype == VAR_NUMBER) {
+	loopcount.d=exprone;
+}
+else if(vartype == VAR_INTEGER) {
+	loopcount.i=exprone;
+}
+else if(vartype == VAR_SINGLE) {
+	loopcount.f=exprone;
 }
 
+//printf("split.name=%lX %s\n",split.name,split.name);
+//printf("split.fieldname=%lX %s\n",split.fieldname,split.fieldname);
+//printf("split.x=%d\n",split.x);
+//printf("split.y=%d\n",split.y);
+//printf("split.fieldx=%d\n",split.fieldx);
+//printf("split.fieldy=%d\n",split.fieldy);
+
+//asm("int $3");
 UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);			/* set loop variable to next */	
+
+//printf("for_statement() 1\n");
+//asm("int $3");
 
 if(exprone >= exprtwo) {
 	ifexpr=1;
@@ -1055,7 +1018,12 @@ while(1) {
 	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += StepValue;
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += StepValue;      
 
+		///printf("split.fieldname=%s\n",split.fieldname);
+
 	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);	/* set loop variable to next */	
+
+		//printf("for_statement() 2\n");
+		//asm("int $3");
 
 		sigsetjmp(savestate,1);		/* save current context */
 
@@ -1135,12 +1103,12 @@ retval.val.type=GetFunctionReturnType();		/* get return type */
 retval.has_returned_value=TRUE;				/* set has returned value flag */
 
 if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
-	if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
-		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+	//if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
+	//	retval.has_returned_value=FALSE;	/* clear has returned value flag */
 
-		SetLastError(INVALID_EXPRESSION);
-		return(-1);	
-	}
+	//	SetLastError(INVALID_EXPRESSION);
+	//	return(-1);	
+	//}
 }
 
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
@@ -1883,7 +1851,7 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 							nextcharptr=token;
 							nextcharptr++;
 										
-							if(((char) *nextcharptr != '>') && ((char) *nextcharptr != '=')) {
+							if((char) *nextcharptr != '=') {
 						      		*d++=*token++;
 							}
 							else
@@ -1899,8 +1867,7 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 							nextcharptr=token;
 							nextcharptr++;
 	
-							if(((char) *nextcharptr != '<') && ((char) *nextcharptr != '=')) {
-								tc++;
+							if((char) *nextcharptr != '=') {
 						      		*d++=*token++;
 							}
 							else

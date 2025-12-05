@@ -77,6 +77,7 @@ char *errs[] = { "No error",\
 		 "Module not found",\
 		 "I/O error",\
 		 "No such help topic exists",\
+		 "Invalid array size",\
 };
 
 /*
@@ -127,8 +128,8 @@ varval errval;
 char *errfunc[MAX_SIZE];
 
 last_error=errornumber;
-
 errval.i=errornumber;				/* update error number */
+
 UpdateVariable("ERR","",&errval,0,0,0,0);
 
 errval.i=GetCurrentFunctionLine();		/* update error line */
@@ -136,7 +137,7 @@ UpdateVariable("ERRL","",&errval,0,0,0,0);
 
 GetCurrentFunctionName(errfunc);		/* get faulting function */
 
-errval.s=malloc(strlen(errfunc));
+errval.s=malloc(strlen(errfunc)+1);
 if(errval.s == NULL) return;
 
 strcpy(errval.s,errfunc);
