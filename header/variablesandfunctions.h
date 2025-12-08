@@ -5,6 +5,7 @@
 #define WHILE_STATEMENT			4
 #define FUNCTION_STATEMENT		8
 #define FUNCTION_INTERACTIVE_MODE	16
+#define WAS_ITERATED			32
 
 #define VAR_NUMBER  0
 #define VAR_STRING  1
@@ -83,6 +84,7 @@ typedef struct func {
  char *returntype[MAX_SIZE];
  int type_int;
  vars_t *parameters;
+ vars_t *parameters_end;
  int linenumber;
  bool WasDeclaredInInteractiveMode;
  struct func *last;

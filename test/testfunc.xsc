@@ -1,16 +1,6 @@
-function third_test_function(x as integer,y as single,z as double) as integer
-print 666
+function testfunction(a as integer,b as integer,c as integer) as integer
+return a*b*c
 endfunction
 
-function second_test_function()
-third_test_function(4,5,6)
-print 23+2
-endfunction
-
-function testfunction(a,b,c) as integer
-print 9*9
-second_test_function()
-endfunction
-
-testfunction(1,2,3)
+print testfunction(1,2,3)
 

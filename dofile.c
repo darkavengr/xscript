@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
+#include <stdarg.h>;
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -84,20 +84,13 @@ fseek(handle,0,SEEK_SET);				/* seek back to start */
 
 sigsetjmp(savestate,1);		/* save current context */
 	
-if(FileBuffer == NULL) {				/* first time */
-	FileBuffer=malloc(filesize+1);			/* allocate buffer */
+if(FileBuffer != NULL) free(FileBuffer);		/* not first time */
 
-	if(FileBuffer == NULL) {
-		SetLastError(NO_MEM);		/* no memory */
-		return(-1);
-	}
-}
-else
-{
-	if(realloc(FileBuffer,FileBufferSize+filesize) == NULL) {
-		SetLastError(NO_MEM);		/* resize buffer */
-		return(-1);
-	}
+FileBuffer=malloc(filesize+1);			/* allocate buffer */
+
+if(FileBuffer == NULL) {
+	SetLastError(NO_MEM);		/* no memory */
+	return(-1);
 }
 
 sigsetjmp(savestate,1);		/* save current context */
@@ -125,7 +118,7 @@ ClearIsRunningFlag();
 strcpy(ModuleEntry.modulename,filename);	/* module filename */
 ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
 ModuleEntry.StartInBuffer=FileBuffer;		/* start adress of module in buffer */
-
+ModuleEntry.dlhandle=NULL;
 ModuleEntry.EndInBuffer=FileBuffer;		/* end adress of module in buffer */
 ModuleEntry.EndInBuffer += filesize;
 AddToModulesList(&ModuleEntry);
@@ -306,8 +299,6 @@ if(IsStatement(tokens[0])) {
 for(count=1;count<tc;count++) {
 
 	if((strcmp(tokens[count],"=") == 0) && (IsValid == FALSE)) {
-		IsValid=TRUE;
-
  		if(ParseVariableName(tokens,0,count,&split) == -1) return(-1);		/* split variable */  	
 
 		if(IsValidVariableOrKeyword(split.name) == FALSE) {	/* Variable name is invalid */
@@ -354,7 +345,7 @@ for(count=1;count<tc;count++) {
 
 		/* number otherwise */
 
-		 if( ((((char) *outtokens[count+1]) == '"') && (vartype != VAR_STRING))) {
+		if( ((((char) *tokens[count+1]) == '"') && (vartype != VAR_STRING))) {
 			SetLastError(TYPE_ERROR);
 			return(-1);
 		}
@@ -401,10 +392,10 @@ for(count=1;count<tc;count++) {
 				SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 				return(-1);
 			}
-			 
+			
 		 	if(CreateVariable(split.name,"DOUBLE",1,1) == -1) return(-1);		/* create variable */
 		 	if(UpdateVariable(split.name,split.fieldname,&val,0,0,0,0) == -1) return(-1);
-	
+
 		 	SetLastError(0);
 			return(0);
 		 }
@@ -715,7 +706,6 @@ SetFunctionFlags(IF_STATEMENT);
 save_expr_true=-1;
 
 while(*CurrentBufferPosition != 0) {
-
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
 		if(IsValidExpression(tokens,1,tc-1) == FALSE) {	/* invalid expression */
 			SetLastError(INVALID_EXPRESSION);
@@ -740,7 +730,7 @@ while(*CurrentBufferPosition != 0) {
 
 		if(ExecuteLine(buf) == -1) return(-1);
 	}
-	
+
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
 	memset(tokens,0,MAX_SIZE*MAX_SIZE);
@@ -752,7 +742,7 @@ while(*CurrentBufferPosition != 0) {
 	}
 
 	if(strcmpi(tokens[0],"ENDIF") == 0) {
-		SetFunctionFlags(IF_STATEMENT);
+		ClearFunctionFlags(IF_STATEMENT);
 
 		SetLastError(0);
 		return(0);
@@ -761,6 +751,13 @@ while(*CurrentBufferPosition != 0) {
 		has_else_statement=TRUE;			/* has ELSE statement */
 	}
 
+}
+
+if(GetFunctionFlags() & WAS_ITERATED) {		/* ENDIF was skipped over by ITERATE statement */
+	ClearFunctionFlags(WAS_ITERATED);
+
+	SetLastError(0);
+	return(0);
 }
 
 SetLastError(IF_WITHOUT_ENDIF);
@@ -803,16 +800,17 @@ int StartOfStepExpression;
 double StepValue;
 double exprone;
 double exprtwo;
-varval loopcount;
-int ifexpr;
 char *d;
 char *buf[MAX_SIZE];
-int vartype;
 varsplit split;
 int returnvalue;
 int lc=GetSaveInformationLineCount();
 char *outtokens[MAX_SIZE][MAX_SIZE];
 int endcount;
+int vartype;
+varval loopcount;
+int ifexpr;
+varval test;
 
 PushSaveInformation();
 
@@ -928,8 +926,8 @@ if(IsVariable(split.name) == FALSE) {				/* create variable if it doesn't exist 
 	CreateVariable(split.name,"DOUBLE",1,1);
 }
 
-vartype=GetVariableType(split.name);			/* check if string */
 
+vartype=GetVariableType(split.name);
 if(vartype == -1) {
 	loopcount.d=exprone;
 	vartype=VAR_NUMBER;
@@ -948,18 +946,8 @@ else if(vartype == VAR_SINGLE) {
 	loopcount.f=exprone;
 }
 
-//printf("split.name=%lX %s\n",split.name,split.name);
-//printf("split.fieldname=%lX %s\n",split.fieldname,split.fieldname);
-//printf("split.x=%d\n",split.x);
-//printf("split.y=%d\n",split.y);
-//printf("split.fieldx=%d\n",split.fieldx);
-//printf("split.fieldy=%d\n",split.fieldy);
-
-//asm("int $3");
-UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);			/* set loop variable to next */	
-
-//printf("for_statement() 1\n");
-//asm("int $3");
+/* set loop variable to initial value */
+if(UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
 
 if(exprone >= exprtwo) {
 	ifexpr=1;
@@ -978,7 +966,13 @@ while(1) {
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
 
+	//printf("CurrentBufferPosition=%lX\n",CurrentBufferPosition);
+
+	if( (((char) *buf) == '\r') || (((char) *buf) == '\n') || (((char) *buf) == 0)) continue; 	/* skip blank line */
+
 	RemoveNewline(buf);
+
+	//printf("for buf=%s\n",buf);
 
 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 
@@ -1000,13 +994,7 @@ while(1) {
 
 	sigsetjmp(savestate,1);		/* save current context */
 
-	d=*buf+(strlen(buf)-1);
-	if(*(buf+(strlen(buf)-1)) == '\n') *d=0;	/* remove newline from line if found */
-	if(*(buf+(strlen(buf)-1)) == '\r') *d=0;	/* remove newline from line if found */ 
-
-	sigsetjmp(savestate,1);
-
-	if(strcmpi(tokens[0],"NEXT") == 0) {   
+	if(strcmpi(tokens[0],"NEXT") == 0) {
 		sigsetjmp(savestate,1);		/* save current context */
   
 		SetCurrentFunctionLine(GetSaveInformationLineCount());
@@ -1018,12 +1006,8 @@ while(1) {
 	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += StepValue;
 	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += StepValue;      
 
-		///printf("split.fieldname=%s\n",split.fieldname);
-
-	      	UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy);	/* set loop variable to next */	
-
-		//printf("for_statement() 2\n");
-		//asm("int $3");
+		/* set loop variable to next */	
+	      	if(UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
 
 		sigsetjmp(savestate,1);		/* save current context */
 
@@ -1035,7 +1019,7 @@ while(1) {
 	        ((vartype == VAR_SINGLE) && (ifexpr == 1) && (loopcount.f < exprtwo)) ||
 	        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f > exprtwo))
        		) break;
-
+	
 		CurrentBufferPosition=GetSaveInformationBufferPointer();			/* get pointer to start of for statement */
     	} 
 
@@ -1103,12 +1087,12 @@ retval.val.type=GetFunctionReturnType();		/* get return type */
 retval.has_returned_value=TRUE;				/* set has returned value flag */
 
 if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
-	//if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
-	//	retval.has_returned_value=FALSE;	/* clear has returned value flag */
+	if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
 
-	//	SetLastError(INVALID_EXPRESSION);
-	//	return(-1);	
-	//}
+		SetLastError(INVALID_EXPRESSION);
+		return(-1);	
+	}
 }
 
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
@@ -1122,10 +1106,7 @@ else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
 		return(-1);
 	}
 	
-	 if(IsValidExpression(tokens,1,tc) == FALSE) {
-		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-		return(-1);
-	}
+	
 	
 	retval.val.i=EvaluateExpression(outtokens,0,substreturnvalue+1);
 }
@@ -1165,7 +1146,8 @@ return(0);
 }
 
 int get_return_value(varval *val) {
-	val=&retval.val;
+	memcpy(val,&retval.val,sizeof(varval));
+
 	SetLastError(0);
 	return(0);
 }
@@ -1233,8 +1215,6 @@ do {
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
-	printf("buf=%s\n",buf);
-
 	RemoveNewline(buf);
 
 	if(IsValidExpression(condition_tokens,0,condition_tc) == FALSE) {
@@ -1297,16 +1277,18 @@ return(0);
 int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 /* If in interactive mode, return to command prompt, otherwise exit interpreter */
 
-	if(GetInteractiveModeFlag() == TRUE) {
-		ClearIsRunningFlag();
+if(GetInteractiveModeFlag() == TRUE) {
+	ClearIsRunningFlag();
 
-		SetLastError(atoi(tokens[1]));
-		return(0);
-	}
-	else
-	{
-		exit(atoi(tokens[1]));
-	}
+	SetLastError(atoi(tokens[1]));
+	return(0);
+}
+else
+{
+	exit(atoi(tokens[1]));
+}
+
+return(0);
 }
 
 /*
@@ -1416,7 +1398,7 @@ while(*CurrentBufferPosition != 0) {
 		return(0);
 	}
 
-	if((strcmpi(tokens[1],"FOR") == 0) && (GetFunctionFlags() & FOR_STATEMENT)){
+	if((strcmpi(tokens[1],"NEXT") == 0) && (GetFunctionFlags() & FOR_STATEMENT)){
 	 	ClearFunctionFlags(FOR_STATEMENT);
 
 		SetLastError(0);
@@ -1443,28 +1425,30 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 varsplit split;
 int vartype;
 int count;
+char *vartypeptr;
 
 /* if there is a type in the declare statement */
 
 for(count=1;count<tc;count++) {
-	if(strcmpi(tokens[count],"AS") == 0) break;
+	if(strcmpi(tokens[count],"AS") == 0) {
+		if(ParseVariableName(tokens,1,count-1,&split) == -1) return(-1);	/* parse variable name */
+
+		vartypeptr=tokens[count+1];
+		break;
+	}
+	else
+	{
+		if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);	/* parse variable name */
+
+		vartypeptr=vartypenames[DEFAULT_TYPE_INT];
+		break;
+	}
 }
 
-if(count < tc) {		/* found type */
-	if(ParseVariableName(tokens,1,count-1,&split) == -1) return(-1);	/* parse variable name */
+if(split.x == 0) split.x=1;	/* can't have 0 size arrays */
+if(split.y == 0) split.y=1;
 
-	retval.val.type=vartype;
-	retval.val.i=CreateVariable(split.name,tokens[count+1],split.x,split.y);
-}
-else
-{
-	if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);	/* parse variable name */
-
-	retval.val.type=VAR_NUMBER;
-	retval.val.i=CreateVariable(split.name,vartypenames[DEFAULT_TYPE_INT],split.x,split.y);
-}
-
-if(retval.val.i == -1) return(-1);
+if(CreateVariable(split.name,vartypeptr,split.x,split.y) == -1) return(-1);
 
 SetLastError(0);
 return(0);
@@ -1481,14 +1465,45 @@ return(0);
  */
 
 int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(((GetFunctionFlags() & FOR_STATEMENT)) || ((GetFunctionFlags() & WHILE_STATEMENT))) {
-	CurrentBufferPosition=GetSaveInformationBufferPointer();
+char *CurrentBufferPosition;
+char *SavePosition;
+char *buf[MAX_SIZE];
 
-	SetLastError(0);
-	return(0);
+printf("Iterate, maaaaaaaaaaaan!\n");
+
+/* find end of loop */
+CurrentBufferPosition=GetCurrentBufferPosition();
+
+while(*CurrentBufferPosition != 0) {
+	SavePosition=CurrentBufferPosition;		/* save position before end of for/while loop */
+
+	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+
+	printf("iterate buf=%s\n",buf);
+
+	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+	if(tc == -1) {
+		SetLastError(SYNTAX_ERROR);
+		return(-1);
+	}
+
+	printf("tokens[0]=%s\n",tokens[0]);
+
+	if((GetFunctionFlags() & FOR_STATEMENT) && (strcmpi(tokens[0],"NEXT") == 0) ||
+	   (GetFunctionFlags() & WHILE_STATEMENT) && (strcmpi(tokens[0],"WEND") == 0)) {
+		printf("FOUND NEXT OR WEND\n");
+		printf("SavePosition=%lX\n",SavePosition);
+		asm("int $3");
+
+		SetFunctionFlags(WAS_ITERATED);
+
+		SetCurrentBufferPosition(SavePosition);	/* go to line before NEXT/WEND statement so the FOR/WHILE loop is handled properly */
+		return(0);
+	}
+
 }
 
-SetLastError(ITERATE_WITHOUT_LOOP);
+SetLastError(SYNTAX_ERROR);
 return(-1);
 }
 
@@ -1722,8 +1737,13 @@ if((var->xsize == 0) && (var->ysize == 0)) {
 
 if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);		/* parse variable name */
 
-SetLastError(ResizeArray(split.name,split.x,split.y));
-return(-1);
+if(split.x == 0) split.x=1;		/* can't have 0 size */
+if(split.y == 0) split.y=1;
+
+if(ResizeArray(split.name,split.x,split.y) == -1) return(-1);
+
+SetLastError(NO_ERROR);
+return(0);
 }
 /*
  * Help command

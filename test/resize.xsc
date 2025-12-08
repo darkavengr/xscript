@@ -1,0 +1,6 @@
+declare testarray(10)
+
+testarray(1)=1234
+print testarray(1)
+
+

@@ -55,7 +55,7 @@ char *errs[] = { "No error",\
 		 "ITERATE without FOR or WHILE",\
 		 "Variable already exists",\
 		 "Variable or function not defined",\
-		 "EXIT WHILE without WHILE",\
+		 "WEND without WHILE",\
 		 "FOR without NEXT",\
 		 "User-defined type already exists",\
 		 "TYPE without ENDTYPE",\
@@ -78,6 +78,7 @@ char *errs[] = { "No error",\
 		 "I/O error",\
 		 "No such help topic exists",\
 		 "Invalid array size",\
+		 "No file loaded",\
 };
 
 /*

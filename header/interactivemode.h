@@ -33,7 +33,7 @@ void sbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int cbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 void SwitchToInteractiveModeBuffer(void);
 int list_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-void trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 typedef struct {
 	int linenumber;

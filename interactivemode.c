@@ -73,7 +73,7 @@ ClearIsRunningFlag();
 
 SetCurrentFile("");				/* No file currently */
 
-InteractiveModeBuffer=malloc(INTERACTIVE_BUFFER_SIZE);		/* allocate buffer for interactive mode */
+InteractiveModeBuffer=calloc(1,INTERACTIVE_BUFFER_SIZE);		/* allocate buffer for interactive mode */
 if(InteractiveModeBuffer == NULL) {
 	 perror("xscript");
 	 exit(NO_MEM);
@@ -283,12 +283,12 @@ exit(0);
  */
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if(GetIsFileLoadedFlag() == FALSE) { 	/* no program running */
-	PrintError(NO_RUNNING_PROGRAM);
+	SetLastError(NO_RUNNING_PROGRAM);
 	return(-1);
 }
 
 if(GetInteractiveModeFlag() == FALSE) {	/* not in interactive mode */
-	PrintError(NOT_IN_INTERACTIVE_MODE);
+	SetLastError(NOT_IN_INTERACTIVE_MODE);
 	return(-1);
 }
 
@@ -325,19 +325,19 @@ list_variables(tokens[1]);
 int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;
 char *filename[MAX_SIZE];
-
+int retval;
 if(GetInteractiveModeFlag() == FALSE) {	/* not in interactive mode */
-	PrintError(NOT_IN_INTERACTIVE_MODE);
+	SetLastError(NOT_IN_INTERACTIVE_MODE);
 	return(-1);
 }
 
 if(tc < 1) {						/* Not enough parameters */
-	PrintError(SYNTAX_ERROR);
+	SetLastError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
 }
 
 if(IsValidString(tokens[1]) == FALSE) {			/* is valid string */
-	PrintError(SYNTAX_ERROR);
+	SetLastError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
 }
 
@@ -359,18 +359,18 @@ int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *currentfile[MAX_SIZE];
 
 if(GetInteractiveModeFlag() == FALSE) {	/* not in interactive mode */
-	PrintError(NOT_IN_INTERACTIVE_MODE);
+	SetLastError(NOT_IN_INTERACTIVE_MODE);
 	return(-1);
 }
 
 GetCurrentFile(currentfile);		/* get current file */
 
 if(strlen(currentfile) == 0) {		/* check if there is a file */
-	printf("No file loaded\n");
+	SetLastError(NO_FILE_LOADED);
 	return(0);
 }
 
-return(ExecuteFile(currentfile,NULL));	/* run file */
+return(ExecuteFile(currentfile,""));	/* run file */
 }
 
 /*
@@ -383,7 +383,7 @@ return(ExecuteFile(currentfile,NULL));	/* run file */
  *
  */
 
-void trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if(tc < 2) {			/* Display trace status */
 	if(GetTraceFlag() == TRUE) {
 		printf("Trace is ON\n");
@@ -393,7 +393,7 @@ if(tc < 2) {			/* Display trace status */
 		printf("Trace is OFF\n");
 	}
 
-	return;	
+	return(0);
 }
 
 if(strcmpi(tokens[1],"ON") == 0) {		/* enable trace */
@@ -404,10 +404,11 @@ else if(strcmpi(tokens[1],"OFF") == 0) {		/* disable trace */
 }
 else
 {
-	PrintError(INVALID_VALUE);
+	SetLastError(INVALID_VALUE);
+	return(-1);
 }
 
-return;
+return(0);
 }
 
 /*
@@ -422,7 +423,7 @@ return;
 void sbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 if(tc < 2) {						/* Too few parameters */
-	PrintError(SYNTAX_ERROR);
+	SetLastError(SYNTAX_ERROR);
 	return(-1);
 }
 
@@ -443,7 +444,7 @@ return(0);
  */
 int cbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if(tc < 2) {						/* Not enough parameters */
-	PrintError(SYNTAX_ERROR);
+	SetLastError(SYNTAX_ERROR);
 	return(SYNTAX_ERROR);
 }
 

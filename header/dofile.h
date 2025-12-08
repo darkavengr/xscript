@@ -16,7 +16,6 @@ int end_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int else_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int elseif_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int endfunction_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int include_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
@@ -35,7 +34,6 @@ int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int backtrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-
 int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
 int IsSeperator(char *token,char *sep);
 int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int end);

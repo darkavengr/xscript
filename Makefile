@@ -2,7 +2,7 @@ CC = gcc
 OBJFILES = debug.o module.o variablesandfunctions.o dofile.o evaluate.o itoa.o xscript.o error.o statements.o interactivemode.o help.o
 OUTFILE  = xscript
 FLAGS    = -lm
-CCFLAGS = -c -w -fstack-protector-all -fsanitize=address
+CCFLAGS = -c -w -I header -fstack-protector-all
 
 ifeq ($(OS),Windows_NT)
 	OUTFILE += ".exe"

@@ -78,6 +78,8 @@ if(setrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
 	exit(1);
 }
 
+InitalizeModules();		/* initalize modules */
+
 /* get executable directory name from argv[0] */
 
 memset(dirname,0,MAX_SIZE);

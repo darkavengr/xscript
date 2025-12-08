@@ -400,3 +400,7 @@ SetLastError(NO_ERROR);
 return(0);
 }
 
+void InitalizeModules(void) {
+modules=NULL;
+}
+
