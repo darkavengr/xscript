@@ -102,7 +102,7 @@ for(count=start;count<end;count++) {
 	}
 	else
 	{	
-		strcpy(temp[exprcount++],tokens[count]);
+		strncpy(temp[exprcount++],tokens[count],MAX_SIZE);
 	}
 }
 
@@ -126,11 +126,11 @@ for(count=0;count < exprcount;count++)  {
 	   (strcmp(temp[count],"~") == 0) || (strcmp(temp[count],"**") == 0) || \
 	   (strcmp(temp[count],"%") == 0) || (strcmp(temp[count],"&") == 0) || \
 	   (strcmp(temp[count],"|") == 0) || (strcmp(temp[count],"^") == 0)) {
-		strcpy(split_operators[operatorcount++],temp[count]);
+		strncpy(split_operators[operatorcount++],temp[count],MAX_SIZE);
 	}
 	else
 	{
-		strcpy(split_operands[operandcount++],temp[count]);
+		strncpy(split_operands[operandcount++],temp[count],MAX_SIZE);
 	}
 }
 
@@ -288,7 +288,7 @@ void DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletes
 
 	for(count=start;count < end;count++) {
 		if((count < deletestart) || (count > deleteend)) {
-			strcpy(temp[oc++],arr[count]); 
+			strncpy(temp[oc++],arr[count],MAX_SIZE); 
 		}
 
 	}
@@ -296,7 +296,7 @@ void DeleteFromArray(char *arr[MAX_SIZE][MAX_SIZE],int start,int end,int deletes
 	/* copy the tokens back to the target */
 
 	for(count=0;count < oc;count++) {
-		strcpy(arr[count],temp[count]); 
+		strncpy(arr[count],temp[count],MAX_SIZE); 
 	}
 
 	/* clear extra tokens at the end */
@@ -377,7 +377,7 @@ if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
 	ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the lines */
 	ConatecateStrings(exprpos+1,end,tokens,&secondval);
 
-	return(!strcmp(firstval.s,secondval.s));
+	return(!strncmp(firstval.s,secondval.s,MAX_SIZE));
 }
 
 exprone=EvaluateExpression(tokens,start,exprpos);				/* evaluate expressions */
@@ -434,6 +434,7 @@ int subcount=0;
 int outcount=0;
 int evaltc;
 int resultloopcount=0;
+int retval;
 
 struct {
 	int result;
@@ -472,19 +473,32 @@ for(count=0;count<evaltc+1;count++) {
 	}
 	else
 	{		
-		strcpy(temp[outcount++],evaltokens[count]);
+		strncpy(temp[outcount++],evaltokens[count],MAX_SIZE);
 	}
 
 }
 
 /* Do conditions outside brackets */
 
+	//printf("outcount=%d\n",outcount);
+
 	startcount=0;
 
-	for(count=0;count<outcount;count++) {
-
+	for(count=0;count < outcount;count++) {
 		if((strcmpi(temp[count],"AND") == 0) || (strcmpi(temp[count],"OR") == 0) || (count >= outcount-1)) {
-			results[resultcount].result=EvaluateSingleCondition(temp,startcount,count+1);		
+			//printf("Found %s condition\n",temp[count]);
+
+			//printf("**********\n");
+
+			//for(countx=startcount;countx < count;countx++) {
+			//	printf("temp[%d]=%s\n",countx,temp[countx]);
+			//}
+
+			//printf("**********\n");
+
+			results[resultcount].result=EvaluateSingleCondition(temp,startcount,count);		
+
+			//printf("Condition result=%d\n",results[resultcount].result);
 
 			if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
 			if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
@@ -504,7 +518,16 @@ for(count=0;count<evaltc+1;count++) {
 
 	/* If there are no sub conditions, use whole expression */
 
-	if(resultcount == 1) return(EvaluateSingleCondition(temp,0,outcount));
+	//printf("resultcount=%d\n",resultcount);
+
+	if(resultcount == 1) {
+		retval=EvaluateSingleCondition(temp,0,outcount);
+
+		//printf("retval=%d\n",retval);
+		//asm("int $3");
+
+		return(retval);
+	}
 
 	overallresult=0;
 
@@ -512,28 +535,45 @@ for(count=0;count<evaltc+1;count++) {
 
 	while(resultloopcount < resultcount) {
 		if(results[resultloopcount].and_or == CONDITION_AND) {		// and
-			overallresult=results[resultloopcount].result;
-			overallresult=results[resultloopcount+1].result;
+			//printf("AND condition\n");
+			//printf("AND conditions=%d %d\n",results[resultloopcount].result,results[resultloopcount+1].result);
+
+			overallresult=results[resultloopcount].result && results[resultloopcount+1].result;
 
 			resultloopcount += 2;
 		}
 		else if(results[resultloopcount].and_or == CONDITION_OR) {		// or
+			//printf("OR condition\n");
+
 			overallresult=(results[resultloopcount].result || results[resultloopcount+1].result);
-			count += 2;
+			resultloopcount += 2;
 		}
 		else if(results[resultloopcount].and_or == CONDITION_END) {		// end
+			//printf("END condition\n");
+
 			if(results[resultloopcount-1].and_or == CONDITION_AND) {
-				overallresult = (results[resultloopcount].result == results[resultloopcount+1].result);
+				//printf("Previous was AND condition\n");
+
+				overallresult = (overallresult && results[resultloopcount].result);
 				resultloopcount += 2;
+			}
+			else if(results[resultloopcount-1].and_or == CONDITION_OR) {
+				//printf("Previous was OR condition\n");
+
+				overallresult = (overallresult || results[resultloopcount].result);
+				resultloopcount += 2;
+			}
 		}
 		else
 		{
+			//printf("other condition\n");
+
 			overallresult = (results[resultloopcount].result || results[resultloopcount+1].result);
 		 	resultloopcount += 2;
 		}
 
+		//printf("overallresult=%d\n",overallresult);
 	}
-}
 
 return(overallresult);
 }

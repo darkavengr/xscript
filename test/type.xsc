@@ -1,8 +1,3 @@
-#type Pay
-#	PayGrade as integer
-#	Salary as double
-#endtype
-
 type Employee
 	id as integer
 	firstname as string
@@ -15,11 +10,8 @@ type Employee
 	dob as string
 endtype
 
-declare someone(3) as Employee
+#declare someone(3) as Employee
 
-someone(2).id=666
-print someone(2).id
-
-
-
+#someone(2).id=666
+#print someone(2).id
 

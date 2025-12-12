@@ -38,7 +38,8 @@ char *errs[] = { "No error",\
 		 "ENDFUNCTION without FUNCTION",\
 		 "Invalid variable name",\
 		 "Out of memory",\
-		 "EXIT outside of FOR or WHILE loop",\
+		 "EXIT FOR outside of FOR loop",\
+		 "EXIT WHILE outside of WHILE loop",\
 		 "Missing XSCRIPT_MODULE_PATH enviroment variable",
 		 "Syntax error",\
 		 "Error calling library function",\
@@ -55,7 +56,6 @@ char *errs[] = { "No error",\
 		 "ITERATE without FOR or WHILE",\
 		 "Variable already exists",\
 		 "Variable or function not defined",\
-		 "WEND without WHILE",\
 		 "FOR without NEXT",\
 		 "User-defined type already exists",\
 		 "TYPE without ENDTYPE",\
@@ -138,10 +138,10 @@ UpdateVariable("ERRL","",&errval,0,0,0,0);
 
 GetCurrentFunctionName(errfunc);		/* get faulting function */
 
-errval.s=malloc(strlen(errfunc)+1);
+errval.s=malloc(MAX_SIZE);
 if(errval.s == NULL) return;
 
-strcpy(errval.s,errfunc);
+strncpy(errval.s,errfunc,MAX_SIZE);
 
 UpdateVariable("ERRFUNC","",&errval,0,0,0,0);
 

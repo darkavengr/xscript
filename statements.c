@@ -54,6 +54,7 @@ statement statements[] = {
 	     { "CATCH",NULL,&catch_statement,FALSE},\
 	     { "RESIZE",NULL,&resize_statement,FALSE},\
 	     { "LIBCALL",NULL,&libcall_statement,FALSE},\
+	     { "DELETE",NULL,&delete_statement,FALSE},\
 	     { "AS",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "TO",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "STEP",NULL,&bad_keyword_as_statement,FALSE},\

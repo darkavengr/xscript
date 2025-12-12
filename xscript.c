@@ -101,16 +101,16 @@ if(argc > 1) {
 	}
 	else
 	{
-		strcpy(fullpath,argv[1]);	/* if is absolute path then just copy it */
+		strncpy(fullpath,argv[1],MAX_SIZE);	/* if is absolute path then just copy it */
 	}
 }
 
 /* get arguments */
 
 for(count=2;count<argc;count++) {
-	strcat(args,argv[count]);
+	strncat(args,argv[count],MAX_SIZE);
 
-	if(count < argc-1) strcat(args," ");
+	if(count < argc-1) strncat(args," ",MAX_SIZE);
 }
 
 signalaction.sa_sigaction=&signalhandler;
@@ -183,7 +183,7 @@ printf("xscript: Signal %d received\n",sig);
 }
 
 void GetExecutableDirectoryName(char *name) {
-strcpy(name,dirname);
+strncpy(name,dirname,MAX_SIZE);
 }
 
 void cleanup(void) {

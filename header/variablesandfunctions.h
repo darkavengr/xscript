@@ -57,7 +57,6 @@ typedef struct vartype {
  int ysize;
  char *udt_type[MAX_SIZE];
  int type_int;
- struct vartype *last;
  struct vartype *next;
 } vars_t;
 
@@ -166,4 +165,5 @@ void FreeVariablesList(vars_t *vars);
 int IsNumber(char *str);
 functions *GetFunctionPointer(char *name);
 FUNCTIONCALLSTACK *GetFunctionCallStackTop(void);
+void FreeVariableValues(varval *val,int type,int xsize,int ysize);
 

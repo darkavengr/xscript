@@ -57,7 +57,7 @@ ModuleEntry.dlhandle=LoadModule(filename);	/* load module */
 if(ModuleEntry.dlhandle == NULL) return(-1);
 
 /* add module entry */
-strcpy(ModuleEntry.modulename,filename);
+strncpy(ModuleEntry.modulename,filename,MAX_SIZE);
 ModuleEntry.flags=MODULE_BINARY;
 AddToModulesList(&ModuleEntry);		/* add to modules list */
 

@@ -55,7 +55,7 @@ if(strlen(functionname) == 0) {		/* no function */
 }
 else
 {
-	strcpy(funcname,functionname);
+	strncpy(funcname,functionname,MAX_SIZE);
 }
 
 /* check if breakpoint set */
@@ -69,7 +69,7 @@ else
 	next=breakpoints;
  
 	while(next != NULL) {
-		if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) {	/* breakpoint already set */  
+		if((next->linenumber == linenumber) && (strncmp(next->functionname,functionname,MAX_SIZE) == 0)) {	/* breakpoint already set */  
 			SetLastError(BREAKPOINT_DOES_NOT_EXIST);
 			return(-1);
     		}
@@ -82,7 +82,7 @@ else
 }
 
 breakpointend->linenumber=linenumber;
-strcpy(breakpointend->functionname,funcname);
+strncpy(breakpointend->functionname,funcname,MAX_SIZE);
 
 return(0);
 }
@@ -106,7 +106,7 @@ int clear_breakpoint(int linenumber,char *functionname) {
     last=next;
 
 
-    if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) {	/* breakpoint already set */  
+    if((next->linenumber == linenumber) && (strncmp(next->functionname,functionname,MAX_SIZE) == 0)) {	/* breakpoint already set */  
 
 	    if(next == breakpoints) {		/* head */
 		free(breakpoints);
@@ -145,7 +145,7 @@ next=breakpoints;
  
 while(next != NULL) {
 
-	if((next->linenumber == linenumber) && (strcmp(next->functionname,functionname) == 0)) return(TRUE);
+	if((next->linenumber == linenumber) && (strncmp(next->functionname,functionname,MAX_SIZE) == 0)) return(TRUE);
 	    
 	next=next->next;
 }
@@ -238,8 +238,11 @@ int list_variables(char *name) {
 vars_t var;
 int padcount;
 
+/* list specific variable */
+
 if(strlen(name) > 0) {
-	if(FindVariable(name,&var) == -1) {
+
+	if(GetVariablePointer(name) == NULL) {
 		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);	
 		return(-1);
 	}
@@ -250,6 +253,8 @@ if(strlen(name) > 0) {
 	SetLastError(0);	
 	return(0);
 }
+
+/* list all variables */
 
 FindFirstVariable(&var);
 	

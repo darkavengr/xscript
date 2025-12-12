@@ -212,7 +212,7 @@ while(1) {
 				blockstatementsave_end->last=savelast;
 			}
 
-			strcpy(blockstatementsave_end->token,tokens[0]);
+			strncpy(blockstatementsave_end->token,tokens[0],MAX_SIZE);
 			block_statement_nest_count++;
 		}
 	
