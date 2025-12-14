@@ -36,6 +36,7 @@ extern char *vartypenames[];
 
 BREAKPOINT *breakpoints;
 BREAKPOINT *breakpointend;
+BREAKPOINT *findptr;
 
 /*
  * Set breakpoint
@@ -51,17 +52,15 @@ BREAKPOINT *next;
 char *funcname[MAX_SIZE];
 
 if(strlen(functionname) == 0) {		/* no function */
-	GetCurrentFunctionName(funcname);
+	strncpy(funcname,GetCurrentFunctionName(),MAX_SIZE);
 }
 else
 {
 	strncpy(funcname,functionname,MAX_SIZE);
 }
 
-/* check if breakpoint set */
-
 if(breakpoints == NULL) {
-	breakpoints=malloc(sizeof(BREAKPOINT));
+	breakpoints=calloc(1,sizeof(BREAKPOINT));
 	breakpointend=breakpoints;
 }
 else
@@ -69,16 +68,16 @@ else
 	next=breakpoints;
  
 	while(next != NULL) {
-		if((next->linenumber == linenumber) && (strncmp(next->functionname,functionname,MAX_SIZE) == 0)) {	/* breakpoint already set */  
-			SetLastError(BREAKPOINT_DOES_NOT_EXIST);
-			return(-1);
-    		}
+		/* breakpoint already set */
+		if((next->linenumber == linenumber) && (strncmp(next->functionname,funcname,MAX_SIZE) == 0)) break;
 
     		next=next->next;
    	}
 
-	breakpointend->next=malloc(sizeof(BREAKPOINT));
-	breakpointend=breakpointend->next;
+	if(next == NULL) {	/* add breakpoint if it does not exist */
+		breakpointend->next=calloc(1,sizeof(BREAKPOINT));
+		breakpointend=breakpointend->next;
+	}
 }
 
 breakpointend->linenumber=linenumber;
@@ -106,7 +105,7 @@ int clear_breakpoint(int linenumber,char *functionname) {
     last=next;
 
 
-    if((next->linenumber == linenumber) && (strncmp(next->functionname,functionname,MAX_SIZE) == 0)) {	/* breakpoint already set */  
+    if((next->linenumber == linenumber) && (strncmp(next->functionname,functionname,MAX_SIZE) == 0)) {	/* breakpoint found */  
 
 	    if(next == breakpoints) {		/* head */
 		free(breakpoints);
@@ -126,8 +125,9 @@ int clear_breakpoint(int linenumber,char *functionname) {
 	    
     next=next->next;
  }
-
- return(0);
+ 
+SetLastError(BREAKPOINT_DOES_NOT_EXIST); 
+return(-1);
 }
 
 /*
@@ -144,6 +144,7 @@ BREAKPOINT *next;
 next=breakpoints;
  
 while(next != NULL) {
+	printf("check_breakpoint() %s %s %d %d\n",next->functionname,functionname,next->linenumber,linenumber);
 
 	if((next->linenumber == linenumber) && (strncmp(next->functionname,functionname,MAX_SIZE) == 0)) return(TRUE);
 	    
@@ -268,4 +269,18 @@ do {
 SetLastError(0);	
 return(0);
 }
+
+/*
+ * Find first breakpoint
+ *
+ * In: Nothing
+ *
+ * Returns: Pointer to first breakpoint
+ *
+ */
+BREAKPOINT *GetBreakpointsPointer(void) {
+findptr=breakpoints;
+return(findptr);
+}
+
 

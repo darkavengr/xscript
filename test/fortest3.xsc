@@ -1,6 +1,6 @@
-for x=1 to 10
-	for y=1 to 2
-		print x,y
-	next y
+sbreak 2
+for x=1 to 1000000000000
+	print x
 next x
+
 

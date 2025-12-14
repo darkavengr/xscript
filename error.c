@@ -126,7 +126,6 @@ return;
  */
 void SetLastError(int errornumber) {
 varval errval;
-char *errfunc[MAX_SIZE];
 
 last_error=errornumber;
 errval.i=errornumber;				/* update error number */
@@ -136,12 +135,10 @@ UpdateVariable("ERR","",&errval,0,0,0,0);
 errval.i=GetCurrentFunctionLine();		/* update error line */
 UpdateVariable("ERRL","",&errval,0,0,0,0);
 
-GetCurrentFunctionName(errfunc);		/* get faulting function */
-
-errval.s=malloc(MAX_SIZE);
+errval.s=calloc(1,MAX_SIZE);
 if(errval.s == NULL) return;
 
-strncpy(errval.s,errfunc,MAX_SIZE);
+if(GetCurrentFunctionName() != NULL) strncpy(errval.s,GetCurrentFunctionName(),MAX_SIZE);
 
 UpdateVariable("ERRFUNC","",&errval,0,0,0,0);
 

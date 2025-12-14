@@ -28,18 +28,12 @@ int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int single_step_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 void sbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int cbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int lbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 void SwitchToInteractiveModeBuffer(void);
 int list_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-
-typedef struct {
-	int linenumber;
-	char *functionname[MAX_SIZE];
-	struct BREAKPOINT *next;
-} BREAKPOINT;
 
 typedef struct {
 	char *token[MAX_SIZE];

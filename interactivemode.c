@@ -30,6 +30,7 @@
 #include "statements.h"
 #include "version.h"
 #include "debugmacro.h"
+#include "debug.h"
 
 extern sigjmp_buf savestate;
 extern int savestatereturn;
@@ -55,7 +56,6 @@ char *bufptr;
 char *linebuf[MAX_SIZE];
 int statementcount;
 char *tokenchars[MAX_SIZE];
-char *functionname[MAX_SIZE];
 int tc;
 BLOCKSTATEMENTSAVE *blockstatementsave_head=NULL;
 BLOCKSTATEMENTSAVE *blockstatementsave_end=NULL;
@@ -140,7 +140,7 @@ while(1) {
 		/* Copy input line to function buffer and resize the buffer */
 
 		if(FunctionBufferAddress == NULL) {		/* first allocation */
-			FunctionBufferAddress=malloc(strlen(linebuf));
+			FunctionBufferAddress=calloc(1,strlen(linebuf));
 			if(FunctionBufferAddress == NULL) {
 				IsDeclaringFunction=FALSE;
 
@@ -188,8 +188,7 @@ while(1) {
 			/* save start of block statement in linked list */
 
 			if(blockstatementsave_head == NULL) {	/* first */
-				blockstatementsave_head=malloc(sizeof(BLOCKSTATEMENTSAVE));
-
+				blockstatementsave_head=calloc(1,sizeof(BLOCKSTATEMENTSAVE));
 				if(blockstatementsave_head == NULL) {
 					PrintError(NO_MEM);
 					return(NO_MEM);
@@ -201,7 +200,7 @@ while(1) {
 			}
 			else
 			{
-				blockstatementsave_end->next=malloc(sizeof(BLOCKSTATEMENTSAVE));
+				blockstatementsave_end->next=calloc(1,sizeof(BLOCKSTATEMENTSAVE));
 				if(blockstatementsave_end->next == NULL) {
 					PrintError(NO_MEM);
 					continue;
@@ -227,8 +226,6 @@ while(1) {
 
 		if(block_statement_nest_count == 0) {	 /* if at end of entering statements */
 			SwitchToInteractiveModeBuffer();		/* switch to interactive mode buffer */
-
-			GetCurrentFunctionName(functionname);		/* get current function name */
 
 			SetIsRunningFlag();
 
@@ -294,8 +291,6 @@ if(GetInteractiveModeFlag() == FALSE) {	/* not in interactive mode */
 
 SetIsRunningFlag();
 SwitchToFileBuffer();			/* switch to file buffer */
-
-//asm("int $3");
 
 siglongjmp(savestate,0);
 }
@@ -427,7 +422,7 @@ if(tc < 2) {						/* Too few parameters */
 	return(-1);
 }
 
-set_breakpoint(atoi(tokens[2]),tokens[3]);
+set_breakpoint(atoi(tokens[1]),tokens[2]);
 
 SetLastError(NO_ERROR);
 return(0);
@@ -448,7 +443,7 @@ if(tc < 2) {						/* Not enough parameters */
 	return(SYNTAX_ERROR);
 }
 
-clear_breakpoint(atoi(tokens[2]),tokens[3]);
+clear_breakpoint(atoi(tokens[1]),tokens[2]);
 
 SetLastError(NO_ERROR);
 return(0);
@@ -477,6 +472,31 @@ SetCurrentBufferPosition(InteractiveModeBuffer);
  */
 int backtrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 PrintBackTrace();
+return(0);
+}
+
+/*
+ * lbreak command
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+int lbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+BREAKPOINT *next;
+
+/* display breakpoints */
+
+next=GetBreakpointsPointer();		/* find first breakpoint */
+
+while(next != NULL) {
+	printf("%d %s\n",next->linenumber,next->functionname);
+
+	next=next->next;
+}
+
 return(0);
 }
 

@@ -144,7 +144,7 @@ return;
 
 int AddToModulesList(MODULES *entry) {
 if(modules == NULL) {			/* first in list */
-	modules=malloc(sizeof(MODULES));
+	modules=calloc(1,sizeof(MODULES));
 	if(modules == NULL) {
 		SetLastError(NO_MEM);
 	  	return(-1);
@@ -155,7 +155,7 @@ if(modules == NULL) {			/* first in list */
 }
 else
 {
-	modules_end->next=malloc(sizeof(MODULES));                         	
+	modules_end->next=calloc(1,sizeof(MODULES));                         	
 	if(modules_end->next == NULL) {
  		SetLastError(NO_MEM);
  		return(-1);
@@ -244,7 +244,7 @@ for(count=0;count<paramcount;count++) {
 	vartype=GetVariableType(parameters[count]);		/* get variable type */
 
 	if(vartype == VAR_SINGLE) {
-		varptrs[count]=malloc(sizeof(float));				/* allocate parameter */
+		varptrs[count]=calloc(1,sizeof(float));				/* allocate parameter */
 		if(varptrs[count] == NULL) {
 			SetLastError(NO_MEM);
 			return(-1);
@@ -254,7 +254,7 @@ for(count=0;count<paramcount;count++) {
 		varptrs[count]=&tempsingle[singlecount];
 	}
 	else if(vartype == VAR_NUMBER) {
-		varptrs[count]=malloc(sizeof(double));		/* allocate parameter */
+		varptrs[count]=calloc(1,sizeof(double));		/* allocate parameter */
 		if(varptrs[count] == NULL) {
 			SetLastError(NO_MEM);
 			return(-1);
@@ -264,17 +264,18 @@ for(count=0;count<paramcount;count++) {
 		varptrs[count]=&tempdouble[doublecount];
 	}
 	else if(vartype == VAR_INTEGER) {
-		varptrs[count]=malloc(sizeof(int));				/* allocate parameter */
+		varptrs[count]=calloc(1,sizeof(int));				/* allocate parameter */
 		if(varptrs[count] == NULL) {
 			SetLastError(NO_MEM);
 			return(-1);
 		}
 
+
 		tempint[integercount]=atoi(parameters_subst[count]);
 		varptrs[count]=&tempint[integercount];
 	}
 	else if(vartype == VAR_LONG) {
-		varptrs[count]=malloc(sizeof(long));				/* allocate parameter */
+		varptrs[count]=calloc(1,sizeof(long));				/* allocate parameter */
 		if(varptrs[count] == NULL) {
 			SetLastError(NO_MEM);
 			return(-1);
@@ -284,7 +285,7 @@ for(count=0;count<paramcount;count++) {
 		varptrs[count]=&templong[longcount];
 	}
 	else if(vartype == VAR_STRING) {
-		varptrs[count]=malloc(strlen(parameters[count]));
+		varptrs[count]=calloc(1,strlen(parameters[count]));
 		if(varptrs[count] == NULL) {
 			SetLastError(NO_MEM);
 			return(-1);
@@ -293,7 +294,7 @@ for(count=0;count<paramcount;count++) {
 		StripQuotesFromString(parameters[count],varptrs[count]);	/* remove quotes from string parameter */	
 	}
 	else if(vartype == VAR_UDT) {
-		varptrs[count]=malloc(sizeof(UserDefinedType));				/* allocate parameter */
+		varptrs[count]=calloc(1,sizeof(UserDefinedType));				/* allocate parameter */
 		if(varptrs[count] == NULL) {
 			SetLastError(NO_MEM);
 			return(-1);
@@ -339,8 +340,6 @@ else if(result_type == VAR_INTEGER) {
 	}
 
 	resultvar.i=callptr_integer(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]);
-
-	printf("Called function and returned integer\n");
 }
 else if(result_type == VAR_LONG) {
 	callptr_long=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
@@ -358,9 +357,10 @@ else if(result_type == VAR_STRING) {
 		return(-1);
 	}
 
-	resultvar.s=malloc(MAX_SIZE);
+	resultvar.s=calloc(1,MAX_SIZE);
 	if(resultvar.s == NULL) {
 		SetLastError(NO_MEM);
+		return(-1);
 	}
 
 	strcpy(resultvar.s,callptr_string(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]));
@@ -380,17 +380,17 @@ else if(result_type == VAR_UDT) {
 
 	
 	if(paramvar->udt == NULL) {	/* allocate UDT */
-		paramvar->udt=malloc(sizeof(UserDefinedType));
-
-		if(paramvar->udt == NULL)
+		paramvar->udt=calloc(1,sizeof(UserDefinedType));
+		if(paramvar->udt == NULL) {
 			SetLastError(NO_MEM);
 			return(-1);
 		}
 
-	memcpy(paramvar->udt,callptr_udt(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]),sizeof(UserDefinedType));
+		memcpy(paramvar->udt,callptr_udt(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]),sizeof(UserDefinedType));
 
-	SetLastError(NO_ERROR);
-	return(0);
+		SetLastError(NO_ERROR);
+		return(0);
+	}
 }
 
 /* update result variable */

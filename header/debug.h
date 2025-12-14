@@ -5,7 +5,10 @@ void PrintVariableValue(vars_t *var);
 int list_variables(char *name);
 
 typedef struct {
- int linenumber;
- char *functionname[MAX_SIZE];
- struct BREAKPOINT *next;
+	int linenumber;
+	char *functionname[MAX_SIZE];
+	struct BREAKPOINT *next;
 } BREAKPOINT;
+
+BREAKPOINT *GetBreakpointsPointer(void);
+

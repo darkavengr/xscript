@@ -78,6 +78,7 @@ statement statements[] = {
 	     { "RUN",NULL,&run_command,FALSE},\
 	     { "SBREAK",NULL,&sbreak_command,FALSE},\
 	     { "CBREAK",NULL,&cbreak_command,FALSE},\
+	     { "LBREAK",NULL,&lbreak_command,FALSE},\
 	     { "HELP",NULL,&help_command,FALSE},\
 	     { "TRACE",NULL,&trace_command,FALSE},\
 	     { "BACKTRACE",NULL,&backtrace_command,FALSE},\

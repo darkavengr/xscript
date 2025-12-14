@@ -86,8 +86,7 @@ sigsetjmp(savestate,1);		/* save current context */
 	
 if(FileBuffer != NULL) free(FileBuffer);		/* not first time */
 
-FileBuffer=malloc(filesize+1);			/* allocate buffer */
-
+FileBuffer=calloc(1,filesize+1);			/* allocate buffer */
 if(FileBuffer == NULL) {
 	SetLastError(NO_MEM);		/* no memory */
 	return(-1);
@@ -142,7 +141,7 @@ int returnvalue;
 varval progname;
 MODULES ModuleEntry;
 
-progname.s=malloc(strlen(filename)+1);
+progname.s=calloc(1,strlen(filename)+1);
 if(progname.s == NULL) {
 	SetLastError(NO_MEM);
 	return(-1);
@@ -244,6 +243,7 @@ int returnvalue;
 char *filename[MAX_SIZE];
 int end;
 int IsValid=FALSE;
+char *functionname[MAX_SIZE];
 
 GetCurrentFile(filename);	/* get name of current file */
 
@@ -332,15 +332,11 @@ for(count=1;count<tc;count++) {
 		}
 
 		if( (((char) *tokens[count+1]) == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
-			if(split.x == 0) split.x=1;		/* can't have arrays of size 0 */
-			if(split.y == 0) split.y=1;
-
 			if(vartype == -1) {
-				if(CreateVariable(split.name,"STRING",split.x,split.y) == -1) return(-1); /* create new string variable */ 
-		
+				if(CreateVariable(split.name,"STRING",1,1) == -1) return(-1); /* create new string variable */ 
 			}
-		  		 
-		  	ConatecateStrings(count+1,tc,tokens,&val);					/* join all the strings on the line */
+		  
+		  	if(ConatecateStrings(count+1,tc,tokens,&val) == -1) return(-1);					/* join all the strings on the line */
 
 			/* set variable */
 		  	if(UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
@@ -400,7 +396,7 @@ for(count=1;count<tc;count++) {
 			}
 			
 		 	if(CreateVariable(split.name,"DOUBLE",1,1) == -1) return(-1);		/* create variable */
-		 	if(UpdateVariable(split.name,split.fieldname,&val,0,0,0,0) == -1) return(-1);
+		 	if(UpdateVariable(split.name,split.fieldname,&val,1,1,0,0) == -1) return(-1);
 
 		 	SetLastError(0);
 			return(0);
@@ -427,7 +423,7 @@ if(IsValid == FALSE) {
 	return(-1);
 }
 
-if(check_breakpoint(GetCurrentFunctionLine(),filename) == TRUE) {	/* if there is a breakpoint */
+if((check_breakpoint(GetCurrentFunctionLine(),GetCurrentFunctionName()) == TRUE) && (GetIsRunningFlag() == TRUE)) {	/* if there is a breakpoint */
 	printf("***** Reached breakpoint: %s line %d\n",filename,GetCurrentFunctionLine());
 
 	ClearIsRunningFlag();
@@ -478,7 +474,7 @@ int IsCondition;
 
 sigsetjmp(savestate,1);		/* save current context */
 
-for(count=1;count<tc;count++) {
+for(count=1;count < tc;count++) {
 	IsInBracket=FALSE;
 	IsCondition=FALSE;
 
@@ -486,7 +482,7 @@ for(count=1;count<tc;count++) {
 
 	sigsetjmp(savestate,1);		/* save current context */
 
-	for(endtoken=count;endtoken<tc;endtoken++) {
+	for(endtoken=count;endtoken < tc;endtoken++) {
 		/* is function parameter or array subscript */
 
 		if((strcmp(tokens[endtoken],"(") == 0) || (strcmp(tokens[endtoken],"[") == 0)) IsInBracket=TRUE;														
@@ -494,7 +490,6 @@ for(count=1;count<tc;count++) {
 
 		if((IsInBracket == FALSE) && (strcmp(tokens[endtoken],",") == 0)) break;		/* found separator not subscript */
 	}
-
 
 	sigsetjmp(savestate,1);		/* save current context */
 
@@ -505,10 +500,15 @@ for(count=1;count<tc;count++) {
 		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);	
 		if(returnvalue == -1) return(-1);		/* error occurred */
 
-		count += ConatecateStrings(0,returnvalue,printtokens,&val);		/* join all the strings in the token */
+		returnvalue=ConatecateStrings(0,returnvalue,printtokens,&val);
+		if(returnvalue == -1) return(-1);		/* join all the strings in the token */
+
+		memset(tempstring,0,MAX_SIZE);
 
 		StripQuotesFromString(val.s,tempstring);	/* remove quotes from string */
 		printf("%s",tempstring);
+
+		count += returnvalue;
 	}
 	else
 	{
@@ -1112,7 +1112,7 @@ if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
 }
 
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
-	ConatecateStrings(1,tc,tokens,&retval.val);		/* get strings */
+	if(ConatecateStrings(1,tc,tokens,&retval.val) == -1) return(-1);	/* get strings */
 }
 else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
 	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
@@ -1547,12 +1547,12 @@ if(tc < 1) {
 
 strncpy(addudt.name,tokens[1],MAX_SIZE);
 
-addudt.field=malloc(sizeof(UserDefinedTypeField));	/* add first field */
+addudt.field=calloc(1,sizeof(UserDefinedTypeField));	/* add first field */
 if(addudt.field == NULL) {
 	SetLastError(NO_MEM); 
 	return(-1);
 }
-	
+
 fieldptr=addudt.field;
 
 /* add user-defined type fields */
@@ -1600,12 +1600,12 @@ do {
 	if(*CurrentBufferPosition == 0) break;		/* at end */
 	
 /* add link to next field */
-	fieldptr->next=malloc(sizeof(UserDefinedTypeField));
+	fieldptr->next=calloc(1,sizeof(UserDefinedTypeField));
 	if(fieldptr->next == NULL) {
 		SetLastError(NO_MEM);
 		return(-1);
 	}
-	
+
 	fieldptr=fieldptr->next;
 
 } while(*CurrentBufferPosition != 0);
@@ -2211,7 +2211,7 @@ if(!handle) {
 
 /* read module into buffer */
 
-ModuleEntry.StartInBuffer=malloc(includestat.st_size);		/* start adress of module in buffer */
+ModuleEntry.StartInBuffer=calloc(1,includestat.st_size);		/* start adress of module in buffer */
 if(ModuleEntry.StartInBuffer == NULL) {
 	fclose(handle);
 
@@ -2278,19 +2278,20 @@ return(TRUE);
 }
 
 void StripQuotesFromString(char *str,char *buf) {
-char *s;
-char *b;
+char *strptr=str;
+char *bufptr=buf;
 
 if(IsValidString(str) == FALSE) return;		/* not valid string */
 
 /* copy filename without quotes */
 
-s=str;
-s++;
+strptr++;
 
-b=buf;
+while((char) *strptr != 0) {
+	if((char) *strptr == '"') break;
 
-while(*s != '"') *b++=*s++;	/* copy character */
+	*bufptr++=*strptr++;	/* copy character */
+}
 
 return;
 }

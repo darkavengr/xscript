@@ -1,9 +1,9 @@
 The following are keywords. Type help {keyword} to get help for {keyword}
 
-AND        AS	    BACKTRACE CATCH	   CBREAK     CONTINUE    DECLARE   DELETE  DOUBLE
-ELSE       ELSEIF   END       ENDFUNCTION  ENDIF      ENDTRY	  ENDTYPE   EXIT    FALSE
-FOR        FUNCTION HELP      IF	   IMPORT     INTEGER	  ITERATE   LOAD    LONG
-NEXT       NOT      OR	      PRINT	   QUIT	      RESIZE	  RETURN    RUN	    SBREAK
-SINGLE     STEP	    STRING    THEN	   TO         TRACE       TRUE	    TRY	    TYPE
-VARIABLES  WEND     WHILE
+AND        AS	      BACKTRACE CATCH	     CBREAK     CONTINUE  DECLARE   DELETE  DOUBLE
+ELSE       ELSEIF     END       ENDFUNCTION  ENDIF      ENDTRY	  ENDTYPE   EXIT    FALSE
+FOR        FUNCTION   HELP      IF	     IMPORT     INTEGER	  ITERATE   LBREAK  LOAD
+LONG       NEXT       NOT       OR	     PRINT      QUIT	  RESIZE    RETURN  RUN
+SBREAK     SINGLE     STEP      STRING       THEN	TO        TRACE     TRUE    TRY
+TYPE       VARIABLES  WEND      WHILE
 

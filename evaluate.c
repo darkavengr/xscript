@@ -374,8 +374,8 @@ if(ifexpr == -1) {	/* evaluate non-zero or zero */
 }
 
 if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	ConatecateStrings(start,exprpos-1,tokens,&firstval);					/* join all the strings on the lines */
-	ConatecateStrings(exprpos+1,end,tokens,&secondval);
+	if(ConatecateStrings(start,exprpos-1,tokens,&firstval) == -1) return(-1);		/* join all the strings on the lines */
+	if(ConatecateStrings(exprpos+1,end,tokens,&secondval) == -1) return(-1);
 
 	return(!strncmp(firstval.s,secondval.s,MAX_SIZE));
 }

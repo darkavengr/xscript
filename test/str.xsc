@@ -1,3 +1,2 @@
-a="Test"
-print a
+print "Two plus two is ",2+2," yes",3+2,1,2,"haha!"
 

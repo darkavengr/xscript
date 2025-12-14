@@ -142,7 +142,7 @@ vars_t *GetVariablePointer(char *name);
 int GetFieldValueFromUserDefinedType(char *varname,char *fieldname,varval *val,int fieldx,int fieldy);
 int IsValidVariableType(char *type);
 int GetFieldTypeFromUserDefinedType(char *varname,char *fieldname);
-void GetCurrentFunctionName(char *buf);
+char *GetCurrentFunctionName(void);
 int GetCurrentFunctionLine(void);
 void SetCurrentFunctionLine(int linenumber);
 void SetFunctionCallPtr(char *ptr);
