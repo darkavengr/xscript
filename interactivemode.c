@@ -500,19 +500,6 @@ while(next != NULL) {
 return(0);
 }
 
-/*
- * Free interactive mode buffer
- *
- * In: Nothing
- *
- * Returns: Nothing
- *
- */
-void FreeInteractiveModeBuffer(void) {
-if(InteractiveModeBuffer != NULL) free(InteractiveModeBuffer);
-return;
-}
-
 void PrintBackTrace(void) {
 FUNCTIONCALLSTACK *stack;
 int callstackcount=0;

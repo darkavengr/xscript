@@ -158,7 +158,7 @@ int GetVariableXSize(char *name);
 int GetVariableYSize(char *name);
 int IsFunction(char *name);
 SAVEINFORMATION *GetSaveInformation(void);
-void InitializeMainFunction(char *progname,char *args);
+int InitializeMainFunction(char *progname,char *args);
 void DeclareBuiltInVariables(char *progname,char *args);
 void FreeFunctionsAndVariables(void);
 void FreeVariablesList(vars_t *vars);

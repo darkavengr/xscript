@@ -108,9 +108,7 @@ else
 
 asm("int $3");
 
-if(GetInteractiveModeFlag() == FALSE) {
-	exit(errornumber); 		/* If running from non-interactive source, exit */
-}
+if(GetInteractiveModeFlag() == FALSE) exit(errornumber); 		/* If running from non-interactive source, exit */
 
 return;
 }

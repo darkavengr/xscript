@@ -55,21 +55,22 @@ int callpos=0;
  *  Returns: Nothing
  * 
  */
-void InitializeMainFunction(char *progname,char *args) {
+int InitializeMainFunction(char *progname,char *args) {
 FUNCTIONCALLSTACK newfunc;
 functions mainfunc;
 char *tokens[MAX_SIZE][MAX_SIZE];
-int NextToken=2;
+int NumberOfDeclareTokens;
 int whichreturntype;
 
 /* Add main function to list of functions */
 
+NumberOfDeclareTokens=0;
+
 strncpy(tokens[0],"main",MAX_SIZE);
 strncpy(tokens[1],"(",MAX_SIZE);
-if(args != NULL) strncpy(tokens[NextToken++],args,MAX_SIZE);
-strncpy(tokens[NextToken],")",MAX_SIZE);
+strncpy(tokens[2],")",MAX_SIZE);
 
-DeclareFunction(tokens,4);			/* declare main function */
+if(DeclareFunction(tokens,3) == -1) return(-1);			/* declare main function */
 
 /* push main function onto call stack */
 strncpy(newfunc.name,"main",MAX_SIZE);
@@ -134,19 +135,15 @@ if(args != NULL) {
 }
 
 free(cmdargs.s);
-
-udt=NULL;		/* set pointers to null */
-funcs=NULL;
-funcs_end=NULL;
 }
 
 /*
  *  Create variable
  * 
  *  In: name	Variable name
-	      type	Variable type
-	      xsize	Size of X subscript
-	      ysize	Size of Y subscript
+	type	Variable type
+	xsize	Size of X subscript
+	ysize	Size of Y subscript
  * 
  *  Returns -1 on failure or 0 on success
  * 
@@ -344,7 +341,7 @@ else if(next->type_int == VAR_STRING) {	/* string */
 		}
 	} 
 
-	strncpy(next->val[x*y].s,val->s,strlen(val->s)+1);	/* copy value */
+	//strncpy(next->val[x*y].s,val->s,strlen(val->s)+1);	/* copy value */
 	return(0);
 }
 else if(next->type_int == VAR_INTEGER) {	/* integer */
@@ -954,6 +951,8 @@ else
 /* skip ( and go to end */
 
 for(count=2;count < end;count++) {
+	if(strcmpi(tokens[count],")") == 0) break;		/* at end */
+	
 	if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
 
 		/* check if declaring variable with type */
@@ -976,6 +975,7 @@ for(count=2;count < end;count++) {
 
 			strncpy(vartype,tokens[count+2],MAX_SIZE);
 		}
+
 	}
 	  
 /* add parameter */
@@ -1010,14 +1010,18 @@ for(count=2;count < end;count++) {
 	NumberOfParameters++;
 
 	if(strcmpi(tokens[count+1], "AS") == 0) {
-		count += 3;		/* skip "AS", type and "," */
+		if(strcmp(tokens[count+3], ")") == 0) {
+			count += 2;
+		}
+		else
+		{
+			count += 3;		/* skip "AS", type and "," */
+		}
 	}
 	else
 	{
 		count++;		/* skip , */
 	}
-
-	if(strcmpi(tokens[count],")") == 0) break;		/* at end */
 }
 
 funcs_end->funcargcount=NumberOfParameters;
@@ -2503,16 +2507,17 @@ return(TRUE);
 void FreeVariablesList(vars_t *vars) {
 vars_t *next=vars;
 int count;
-vars_t *savenext;
+vars_t *savenext;	
 
 while(next != NULL) {
 	/* If it's a string variable, free it */
 	if(next->type_int == VAR_STRING) {
-		for(count=0;count<(next->xsize*next->ysize);count++) {
-			free(next->val[count].s);
+		for(count=0;count < (next->xsize*next->ysize);count++) {
+			if(next->val[count].s != NULL) free(next->val[count].s);
 		}
 	}
 
+	if(next->val != NULL) free(next->val);	/* free values */
 
 	savenext=next->next;
 
@@ -2538,7 +2543,6 @@ functions *funcptr;
 vars_t *varnext;
 FUNCTIONCALLSTACK *callstacknext=functioncallstack;
 FUNCTIONCALLSTACK *callstackptr;
-
 SAVEINFORMATION *savenext;
 SAVEINFORMATION *old;
 
@@ -2563,17 +2567,19 @@ funcs=NULL;
 
 while(callstacknext != NULL) {
 	FreeVariablesList(callstacknext->vars);		/* free variables */
+	FreeVariablesList(callstacknext->initialparameters);
 
 	savenext=callstacknext->saveinformation_top			;
 
 	while(savenext != NULL) {
-		old=savenext;
+		old=savenext->next;
 		free(savenext);
 
-		savenext=old->next;
+		savenext=old;
 	}
 	
 	callstackptr=callstacknext->next;
+
 	free(callstacknext);
 	callstacknext=callstackptr;
 }

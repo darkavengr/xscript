@@ -1,3 +1,2 @@
-message="Hello"
-print message
+print 2+2
 

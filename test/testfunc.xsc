@@ -1,4 +1,4 @@
-function testfunction(a as integer,b as integer,c as integer) as integer
+function testfunction(a as integer,b as integer,c) as double
 return a*b*c
 endfunction
 

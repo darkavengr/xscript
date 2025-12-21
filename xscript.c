@@ -37,6 +37,7 @@
 #include "interactivemode.h"
 #include "dofile.h"
 #include "debugmacro.h"
+#include "errors.h"
 
 sigjmp_buf savestate;
 int savestatereturn;
@@ -55,14 +56,17 @@ bool IsPaused=FALSE;
 
 int main(int argc, char **argv) {
 int count;
-char *args[MAX_SIZE];
+char *args=NULL;
 char *filename=NULL;
 char *dptr;
 char *aptr;
 varval cmdargs;
 int returnvalue;
 struct sigaction signalaction;
+struct sigaction oldsignalaction;
+sigset_t sigset;
 char *fullpath[MAX_SIZE];
+char *cwd[MAX_SIZE];
 struct rlimit new_rlimit;
 
 /* set stack size */
@@ -97,7 +101,7 @@ memset(fullpath,0,MAX_SIZE);
 
 if(argc > 1) {
 	if(*argv[1] != '/') {			/* if is relative path */
-		sprintf(fullpath,"%s/%s",getcwd(args,MAX_SIZE),argv[1]);	/* prepend current directory to relative path */
+		snprintf(fullpath,MAX_SIZE,"%s/%s",getcwd(cwd,MAX_SIZE),argv[1]);	/* prepend current directory to relative path */
 	}
 	else
 	{
@@ -107,16 +111,25 @@ if(argc > 1) {
 
 /* get arguments */
 
-for(count=2;count<argc;count++) {
-	strncat(args,argv[count],MAX_SIZE);
+if(argc >= 3) {
+	args=calloc(1,MAX_SIZE);		/* allocate args buffer */
+	if(args == NULL) {
+		PrintError(NO_MEM);
+		return(-1);
+	}
 
-	if(count < argc-1) strncat(args," ",MAX_SIZE);
+	for(count=2;count < argc;count++) {
+		strncat(args,argv[count],MAX_SIZE);
+
+		if(count < argc-1) strncat(args," ",MAX_SIZE);
+	}
 }
 
 signalaction.sa_sigaction=&signalhandler;
 signalaction.sa_flags=SA_NODEFER;
+signalaction.sa_mask=sigset;
 
-if(sigaction(SIGINT,&signalaction,NULL) == -1) {		/* set signal handler */
+if(sigaction(SIGINT,&signalaction,&oldsignalaction) == -1) {		/* set signal handler */
 	perror("xscript:");
 	exit(1);
 }
@@ -133,14 +146,15 @@ else
 	if(ExecuteFile(fullpath,args) == -1) {	/* execute file */
 		PrintError(GetLastError());
 
+		free(args);
 		cleanup();		/* deallocate lists */
 		exit(returnvalue);
 	}
+
+	free(args);
 }
 
 cleanup();			/* deallocate lists */
-
-asm("int $3");
 exit(0);
 }
 
@@ -189,7 +203,5 @@ strncpy(name,dirname,MAX_SIZE);
 void cleanup(void) {
 FreeFunctionsAndVariables();			/* free functions and variables */
 FreeModulesList();				/* free modules */
-
-FreeInteractiveModeBuffer();	/* free interactive mode buffer */
 }
 

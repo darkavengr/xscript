@@ -13,8 +13,12 @@ else
 endif
 
 all: $(OBJFILES)
+	$(CC) $(OBJFILES) -o $(OUTFILE) $(FLAGS)
+
+debug: $(OBJFILES)
 	$(CC) $(OBJFILES) -o $(OUTFILE) $(FLAGS) -fsanitize=address
 
+debug:
 
 statements.o:
 	$(CC) $(CCFLAGS) statements.c
