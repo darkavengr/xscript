@@ -1,0 +1,12 @@
+function IsPositive(number as integer) as boolean
+if number > 0 then
+	return True
+else
+	return False
+endif
+endfunction
+
+print IsPositive(-2)
+
+
+

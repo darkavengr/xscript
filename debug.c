@@ -33,6 +33,7 @@
 #include "dofile.h"
 
 extern char *vartypenames[];
+extern char *truefalse[];
 
 BREAKPOINT *breakpoints;
 BREAKPOINT *breakpointend;
@@ -214,6 +215,10 @@ for(ycount=0;ycount != ysize;ycount++) {
 
 			  case VAR_SINGLE:				/* single */	     
 				printf("%f",var->val[(xcount*xsize)+ycount].f);
+			        break;
+
+			  case VAR_BOOLEAN:				/* boolean */
+				printf("%s",truefalse[var->val[(xcount*xsize)+ycount].b]);
 			        break;
   		}
 	

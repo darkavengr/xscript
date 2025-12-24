@@ -1,11 +1,11 @@
 Xscript supports the following types:
 
-single		Single-precision number
-double		Double-precision number
-integer		Integer
-long		Long integer
-string		String
+SINGLE		Single-precision number
+DOUBLE		Double-precision number
+INTEGER		Integer
+LONG		Long integer
+BOOLEAN		Boolean
+STRING		String
 "Data"		String literals
 
-See also: TYPE, DECLARE
-
+See also: TYPE, DECLARE, TRUE, FALSE

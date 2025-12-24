@@ -215,6 +215,7 @@ double (*callptr_double)(void *,void *,void *,void *,void *,void *,void *,void *
 float (*callptr_single)(void *,void *,void *,void *,void *,void *,void *,void *);
 long (*callptr_long)(void *,void *,void *,void *,void *,void *,void *,void *);
 char *(*callptr_string)(void *,void *,void *,void *,void *,void *,void *,void *);
+bool (*callptr_boolean)(void *,void *,void *,void *,void *,void *,void *,void *);
 UserDefinedType *(*callptr_udt)(void *,void *,void *,void *,void *,void *,void *,void *);
 FUNCTIONCALLSTACK modulefunctioncall;
 varval resultvar;
@@ -276,6 +277,16 @@ for(count=0;count<paramcount;count++) {
 	}
 	else if(vartype == VAR_LONG) {
 		varptrs[count]=calloc(1,sizeof(long));				/* allocate parameter */
+		if(varptrs[count] == NULL) {
+			SetLastError(NO_MEM);
+			return(-1);
+		}
+
+		templong[longcount]=atol(parameters_subst[count]);
+		varptrs[count]=&templong[longcount];
+	}
+	else if(vartype == VAR_BOOLEAN) {
+		varptrs[count]=calloc(1,sizeof(bool));				/* allocate parameter */
 		if(varptrs[count] == NULL) {
 			SetLastError(NO_MEM);
 			return(-1);
@@ -349,6 +360,15 @@ else if(result_type == VAR_LONG) {
 	}
 
 	resultvar.l=callptr_long(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]);
+}
+else if(result_type == VAR_BOOLEAN) {
+	callptr_boolean=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
+	if(callptr_boolean == NULL) {
+		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+		return(-1);
+	}
+
+	resultvar.b=callptr_boolean(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]);
 }
 else if(result_type == VAR_STRING) {
 	callptr_string=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);

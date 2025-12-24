@@ -5,7 +5,7 @@
 
    XScript is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the LNumberOfIncludedFilesense, or
+   the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
 
    XScript is distributed in the hope that it will be useful,
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with XScript.  If not, see <https://www.gnu.org/lNumberOfIncludedFilesenses/>.
+   along with XScript.  If not, see <https://www.gnu.org/Licenses/>.
 */
 
 /* File and statement processing functions  */
@@ -326,12 +326,12 @@ for(count=1;count<tc;count++) {
 			}
 		}
 
-		if((((char) *outtokens[count+1]) != '"') && (vartype == VAR_STRING)) {
+		if((((char) *outtokens[0]) != '"') && (vartype == VAR_STRING)) {
 			SetLastError(TYPE_ERROR);
 			return(-1);
 		}
 
-		if( (((char) *tokens[count+1]) == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
+		if( (((char) *tokens[0]) == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
 			if(vartype == -1) {
 				if(CreateVariable(split.name,"STRING",1,1) == -1) return(-1); /* create new string variable */ 
 			}
@@ -347,31 +347,43 @@ for(count=1;count<tc;count++) {
 
 		/* number otherwise */
 
-		if( ((((char) *tokens[count+1]) == '"') && (vartype != VAR_STRING))) {
+		if( ((((char) *tokens[0]) == '"') && (vartype != VAR_STRING))) {
 			SetLastError(TYPE_ERROR);
 			return(-1);
 		}
 	
-		 if(IsValidExpression(tokens,0,returnvalue) == FALSE) {
+		if(IsValidExpression(tokens,0,returnvalue) == FALSE) {
 			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
 			return(-1);
-		 }
+		}
 
-		 exprone=EvaluateExpression(outtokens,0,returnvalue);
+		exprone=EvaluateExpression(outtokens,0,returnvalue);
 
-		 if(vartype == VAR_NUMBER) {
+		if(vartype == VAR_NUMBER) {
 	 		val.d=exprone;
-	 	 }
-		 else if(vartype == VAR_INTEGER) {
+	 	}
+		else if(vartype == VAR_INTEGER) {
 	 		val.i=exprone;
-	 	 }
-	 	 else if(vartype == VAR_SINGLE) {
+	 	}
+	 	else if(vartype == VAR_SINGLE) {
 	 		val.f=exprone;
-	 	 }
-		 else if(vartype == VAR_LONG) {
+	 	}
+		else if(vartype == VAR_LONG) {
 	 		val.l=exprone;
-	 	 }
-	 	 else if(vartype == VAR_UDT) {			/* user-defined type */	 
+	 	}
+		else if(vartype == VAR_BOOLEAN) {
+			if(exprone == 0) {
+				val.b=FALSE;
+			}
+			else if(exprone == 1) {
+				val.b=TRUE;
+			}
+	 		else if(exprone > 1) {		/* invalid value */
+				SetLastError(TYPE_ERROR);
+				return(-1);
+			}
+	 	}
+	 	else if(vartype == VAR_UDT) {			/* user-defined type */	 
 			if(ParseVariableName(tokens,count+1,tc,&assignsplit) == -1) return(-1);		/* split variable */
 
  			varptr=GetVariablePointer(split.name);		/* point to variable entry */
@@ -390,13 +402,14 @@ for(count=1;count<tc;count++) {
 		else if(vartype == -1) {		/* new variable */ 	  
 		 	val.d=exprone;
 
+			printf("val.d=%.6g\n",val.d);
 			if((split.x > 1) || (split.y) > 1) {		/* can't create array by assignment */
 				SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 				return(-1);
 			}
 			
 		 	if(CreateVariable(split.name,"DOUBLE",1,1) == -1) return(-1);		/* create variable */
-		 	if(UpdateVariable(split.name,split.fieldname,&val,1,1,0,0) == -1) return(-1);
+		 	if(UpdateVariable(split.name,split.fieldname,&val,0,0,0,0) == -1) return(-1);
 
 		 	SetLastError(0);
 			return(0);
@@ -515,7 +528,7 @@ for(count=1;count < tc;count++) {
 		sigsetjmp(savestate,1);		/* save current context */
 
 		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
-	
+
 		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);
 		if(returnvalue == -1) return(-1);
 
@@ -952,7 +965,7 @@ if(vartype == -1) {
 	loopcount.d=exprone;
 	vartype=VAR_NUMBER;
 }
-else if(vartype == VAR_STRING) {
+else if((vartype == VAR_STRING) || (vartype == VAR_BOOLEAN)) {
 	SetLastError(TYPE_ERROR);
 	return(-1);
 }
@@ -1114,47 +1127,31 @@ if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 	if(ConatecateStrings(1,tc,tokens,&retval.val) == -1) return(-1);	/* get strings */
 }
-else if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
-	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
-
-	if(substreturnvalue == -1) {
-		retval.has_returned_value=FALSE;	/* clear has returned value flag */
-		return(-1);
-	}
-	
-	
-	
-	retval.val.i=EvaluateExpression(outtokens,0,substreturnvalue+1);
-}
-else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 
-	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
-	if(substreturnvalue == -1) {
-		retval.has_returned_value=FALSE;	/* clear has returned value flag */
-		return(-1);
-	}
-
-	if(IsValidExpression(outtokens,0,substreturnvalue) == FALSE) {
+else {
+	if(IsValidExpression(tokens,1,tc) == FALSE) {
 		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
 		return(-1);
 	}
 
-	retval.val.d=EvaluateExpression(outtokens,0,substreturnvalue);
-
-}
-else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
 	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
 	if(substreturnvalue == -1) {
 		retval.has_returned_value=FALSE;	/* clear has returned value flag */
-
 		return(-1);
 	}
 
-	 if(IsValidExpression(tokens,1,tc) == FALSE) {
-		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-		return(-1);
+	if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */		
+		retval.val.i=EvaluateExpression(outtokens,0,substreturnvalue+1);
 	}
-	
-	retval.val.f=EvaluateExpression(outtokens,0,substreturnvalue);	
+	else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 	
+		retval.val.d=EvaluateExpression(outtokens,0,substreturnvalue);
+
+	}
+	else if(GetFunctionReturnType() == VAR_SINGLE) {		/* returning single */
+		retval.val.f=EvaluateExpression(outtokens,0,substreturnvalue);	
+	}
+	else if(GetFunctionReturnType() == VAR_BOOLEAN) {		/* returning boolean */
+		retval.val.b=EvaluateExpression(outtokens,0,substreturnvalue);	
+	}
 }
 
 SetLastError(0);
@@ -1438,24 +1435,24 @@ int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 varsplit split;
 int vartype;
 int count;
-char *vartypeptr;
+char *vartypeptr=NULL;
 
 /* if there is a type in the declare statement */
 
-for(count=1;count<tc;count++) {
+for(count=1;count < tc;count++) {
+
 	if(strcmpi(tokens[count],"AS") == 0) {
 		if(ParseVariableName(tokens,1,count-1,&split) == -1) return(-1);	/* parse variable name */
 
 		vartypeptr=tokens[count+1];
 		break;
 	}
-	else
-	{
-		if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);	/* parse variable name */
+}
 
-		vartypeptr=vartypenames[DEFAULT_TYPE_INT];
-		break;
-	}
+if(vartypeptr == NULL) {
+	if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);	/* parse variable name */
+
+	vartypeptr=vartypenames[DEFAULT_TYPE_INT];
 }
 
 if(split.x == 0) split.x=1;	/* can't have 0 size arrays */

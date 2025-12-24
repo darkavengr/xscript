@@ -33,6 +33,7 @@
 #include "dofile.h"
 #include "evaluate.h"
 #include "debugmacro.h"
+#include "version.h"
 
 extern char *TokenCharacters;
 
@@ -42,7 +43,8 @@ FUNCTIONCALLSTACK *functioncallstack=NULL;
 FUNCTIONCALLSTACK *FunctionCallStackTop=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
 UserDefinedType *udt=NULL;
-char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG",NULL };
+char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG","BOOLEAN",NULL };
+char *truefalse[] = { "True","False" };
 functionreturnvalue retval;
 vars_t *findvar;
 int callpos=0;
@@ -117,22 +119,28 @@ CreateVariable("ERR","INTEGER",1,1);			/* error number */
 CreateVariable("ERRL","INTEGER",1,1);			/* error line */
 CreateVariable("ERRFUNC","STRING",1,1);			/* error function */
 
-CreateVariable("PROGRAMNAME","STRING",1,1);
-CreateVariable("COMMAND","STRING",1,1);
-
-/* get program name */
-
 if(progname != NULL) {
+	CreateVariable("PROGRAMNAME","STRING",1,1);		/* script name */
+
 	strncpy(cmdargs.s,progname,MAX_SIZE);
 	UpdateVariable("PROGRAMNAME","",&cmdargs,0,0,0,0);
 }
 
-/* get command-line arguments, if any */
+
+/* Command-line arguments, if any */
 
 if(args != NULL) {
+	CreateVariable("COMMAND","STRING",1,1);
+
 	strncpy(cmdargs.s,args,MAX_SIZE);
 	UpdateVariable("COMMAND","",&cmdargs,0,0,0,0);
 }
+
+/* XScript version */
+CreateVariable("VERSION","DOUBLE",1,1);
+
+cmdargs.d=(double) XSCRIPT_VERSION_MAJOR+((double) XSCRIPT_VERSION_MINOR/100)+((double) XSCRIPT_VERSION_REVISION/1000);
+UpdateVariable("VERSION","",&cmdargs,0,0,0,0);
 
 free(cmdargs.s);
 }
@@ -173,14 +181,12 @@ if((xsize == 0) || (ysize == 0)) {		/* invalid array size */
 
 if(currentfunction == NULL) return(-1);
 
-/* Check if variable name is a reserved name */
-
-if(IsStatement(name)) {
+if(IsStatement(name)) {				/* Check if variable name is a reserved name */
 	SetLastError(INVALID_VARIABLE_NAME);
 	return(-1);
 }
 
-if(IsVariable(name)) {
+if(IsVariable(name)) {				/* check if variable exists */
 	SetLastError(VARIABLE_EXISTS);
 	return(-1);
 }
@@ -309,6 +315,8 @@ UserDefinedType *udtptr;
 UserDefinedTypeField *fieldptr;
 UserDefinedTypeField *udtfield;
 
+//printf("UPDATE name=%s (%d,%d)\n",name,x,y);
+
 if(currentfunction == NULL) {
 	return(-1);
 }
@@ -316,6 +324,8 @@ else
 {
 	next=GetVariablePointer(name);		/* get variable entry */
 	if(next == NULL) {
+		printf("BAD\n");
+
 		PrintError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 		return(-1);
 	}
@@ -330,6 +340,7 @@ if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) {		/* outside array */
 
 if(next->type_int == VAR_NUMBER) {		/* double precision */
 	next->val[x*y].d=val->d;
+
 	return(0);
 }
 else if(next->type_int == VAR_STRING) {	/* string */
@@ -341,7 +352,7 @@ else if(next->type_int == VAR_STRING) {	/* string */
 		}
 	} 
 
-	//strncpy(next->val[x*y].s,val->s,strlen(val->s)+1);	/* copy value */
+	strncpy(next->val[x*y].s,val->s,strlen(val->s));	/* copy value */
 	return(0);
 }
 else if(next->type_int == VAR_INTEGER) {	/* integer */
@@ -354,6 +365,10 @@ else if(next->type_int == VAR_SINGLE) {	/* single */
 }	
 else if(next->type_int == VAR_LONG) {	/* long */
 	next->val[x*y].l=val->l;
+	return(0);
+}
+else if(next->type_int == VAR_BOOLEAN) {	/* boolean */
+	next->val[x*y].b=val->b;
 	return(0);
 }
 else {					/* user-defined type */	
@@ -482,11 +497,18 @@ if(((char) *name >= '0') && ((char) *name <= '9')) {
 		break;
 
 	      case VAR_SINGLE:				/* Single precision */
+		val->f=atof(name);
 		break;
 
 	      case VAR_LONG:				/* long */
 	      	val->l=atol(name);
 		break;
+
+	      case VAR_BOOLEAN:
+		if(atoi(name) > 1) {		/* Invalid boolean value */
+			SetLastError(TYPE_ERROR);
+			return(-1);
+		}
 
 	      default:
 	      	val->d=atof(name);
@@ -555,6 +577,10 @@ else if(next->type_int == VAR_LONG) {
 	val->l=next->val[x*y].l;
 
 	SetLastError(0);
+	return(0);
+}
+else if(next->type_int == VAR_BOOLEAN) {	/* boolean */
+	val->b=next->val[x*y].b;
 	return(0);
 }
 else {					/* User-defined type */
@@ -1198,7 +1224,7 @@ currentfunction->initialparameters=NULL;
 currentfunction->saveinformation_top=NULL;
 currentfunction->vars=NULL;
 
-DeclareBuiltInVariables("","");			/* declare built-in variables */
+DeclareBuiltInVariables(NULL,NULL);			/* declare built-in variables */
 
 parameters=next->parameters;
 
@@ -1220,8 +1246,15 @@ for(count=0;count<returnvalue;count += 2) {
 	else if(parameters->type_int == VAR_LONG) {
 		paramval.l=atol(evaltokens[count]);
 	}
-	else {
-	  	
+	else if(parameters->type_int == VAR_BOOLEAN) {
+		if(atoi(evaltokens[count]) > 1) {		/* Invalid value */
+			SetLastError(TYPE_ERROR);
+
+			PopFunctionCallInformation();
+			return(-1);
+		}
+
+		paramval.b=atoi(evaltokens[count]);
 	}
 
 	if(parameters->type_int == VAR_UDT) {			/* user defined type */
@@ -1266,8 +1299,9 @@ for(count=0;count<returnvalue;count += 2) {
 }
 
 /* check if number of arguments matches number of parameters */
+/*    Starts from 0 to allow for functions without parameters, but +1 to prevent off-by-one errors */
 
-if( (NumberOfArguments < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
+if( ((NumberOfArguments+1) < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
 	SetLastError(INVALID_ARGUMENT_COUNT);
 	return(-1);
 }
@@ -1481,6 +1515,9 @@ for(count=start;count<end;count++) {
 		 	else if(subst_returnvalue.type == VAR_LONG) {			/* returning long */
 				sprintf(temp[outcount++],"%ld",retval.val.l);
 		  	}
+			else if(subst_returnvalue.type == VAR_BOOLEAN) {			/* returning boolean */
+				sprintf(temp[outcount++],"%d",retval.val.b);
+		  	}
 	    }
 
 	    count=countx+1;
@@ -1572,7 +1609,9 @@ for(count=start;count<end;count++) {
 	       	}
 		else if(type == VAR_LONG) {   
 		    sprintf(temp[outcount++],"%ld",val.l);
-
+	       	}
+		else if(type == VAR_BOOLEAN) {   
+		    sprintf(temp[outcount++],"%d",val.b);
 	       	}
 	 }
 	else if (((char) *tokens[count] == '"') || IsSeperator(tokens[count],TokenCharacters) || IsNumber(tokens[count])) {
@@ -2091,6 +2130,11 @@ while(udtfield != NULL) {
 		 }
 		 else if(udtfield->type == VAR_SINGLE) {
 		        val->f=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].f;
+		        SetLastError(0);
+			return(0);
+		 }
+ 		else if(udtfield->type == VAR_BOOLEAN) {
+		        val->b=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].b;
 		        SetLastError(0);
 			return(0);
 		 }

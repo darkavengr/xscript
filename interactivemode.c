@@ -35,7 +35,8 @@
 extern sigjmp_buf savestate;
 extern int savestatereturn;
 extern char *TokenCharacters;
-		
+extern char *truefalse;
+	
 jmp_buf single_step_save_state;
 char *InteractiveModeBuffer=NULL;
 char *InteractiveModeBufferPosition=NULL;
@@ -527,6 +528,12 @@ while(stack != NULL) {
        			}
 			else if(varnext->type_int == VAR_SINGLE) {				/* single */	     
 				printf("%s=%f",varnext->varname,varnext->val->f);
+			}
+			else if(varnext->type_int == VAR_LONG) {				/* long */ 
+				printf("%s=%f",varnext->varname,varnext->val->l);
+			}
+			else if(varnext->type_int == VAR_BOOLEAN) {				/* boolean */  
+				printf("%s=%s",truefalse[varnext->varname,varnext->val->b]);
 			}
 
 			if((varnext != NULL) && (varnext->next != NULL)) printf(", ");

@@ -1,0 +1,9 @@
+function BoolParamTest(a as boolean, b as boolean,c as boolean,x as integer)
+print a,b,c
+endfunction
+
+BoolParamTest(true,true,false,123)
+
+
+
+

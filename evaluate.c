@@ -480,25 +480,11 @@ for(count=0;count<evaltc+1;count++) {
 
 /* Do conditions outside brackets */
 
-	//printf("outcount=%d\n",outcount);
-
 	startcount=0;
 
 	for(count=0;count < outcount;count++) {
 		if((strcmpi(temp[count],"AND") == 0) || (strcmpi(temp[count],"OR") == 0) || (count >= outcount-1)) {
-			//printf("Found %s condition\n",temp[count]);
-
-			//printf("**********\n");
-
-			//for(countx=startcount;countx < count;countx++) {
-			//	printf("temp[%d]=%s\n",countx,temp[countx]);
-			//}
-
-			//printf("**********\n");
-
 			results[resultcount].result=EvaluateSingleCondition(temp,startcount,count);		
-
-			//printf("Condition result=%d\n",results[resultcount].result);
 
 			if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
 			if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
@@ -517,15 +503,8 @@ for(count=0;count<evaltc+1;count++) {
 	}
 
 	/* If there are no sub conditions, use whole expression */
-
-	//printf("resultcount=%d\n",resultcount);
-
 	if(resultcount == 1) {
 		retval=EvaluateSingleCondition(temp,0,outcount);
-
-		//printf("retval=%d\n",retval);
-		//asm("int $3");
-
 		return(retval);
 	}
 
@@ -535,44 +514,29 @@ for(count=0;count<evaltc+1;count++) {
 
 	while(resultloopcount < resultcount) {
 		if(results[resultloopcount].and_or == CONDITION_AND) {		// and
-			//printf("AND condition\n");
-			//printf("AND conditions=%d %d\n",results[resultloopcount].result,results[resultloopcount+1].result);
-
 			overallresult=results[resultloopcount].result && results[resultloopcount+1].result;
 
 			resultloopcount += 2;
 		}
 		else if(results[resultloopcount].and_or == CONDITION_OR) {		// or
-			//printf("OR condition\n");
-
 			overallresult=(results[resultloopcount].result || results[resultloopcount+1].result);
 			resultloopcount += 2;
 		}
 		else if(results[resultloopcount].and_or == CONDITION_END) {		// end
-			//printf("END condition\n");
-
 			if(results[resultloopcount-1].and_or == CONDITION_AND) {
-				//printf("Previous was AND condition\n");
-
 				overallresult = (overallresult && results[resultloopcount].result);
 				resultloopcount += 2;
 			}
 			else if(results[resultloopcount-1].and_or == CONDITION_OR) {
-				//printf("Previous was OR condition\n");
-
 				overallresult = (overallresult || results[resultloopcount].result);
 				resultloopcount += 2;
 			}
 		}
 		else
 		{
-			//printf("other condition\n");
-
 			overallresult = (results[resultloopcount].result || results[resultloopcount+1].result);
 		 	resultloopcount += 2;
 		}
-
-		//printf("overallresult=%d\n",overallresult);
 	}
 
 return(overallresult);
