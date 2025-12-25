@@ -44,7 +44,7 @@ FUNCTIONCALLSTACK *FunctionCallStackTop=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
 UserDefinedType *udt=NULL;
 char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG","BOOLEAN",NULL };
-char *truefalse[] = { "True","False" };
+char *truefalse[] = { "False","True" };
 functionreturnvalue retval;
 vars_t *findvar;
 int callpos=0;
@@ -142,6 +142,7 @@ CreateVariable("VERSION","DOUBLE",1,1);
 cmdargs.d=(double) XSCRIPT_VERSION_MAJOR+((double) XSCRIPT_VERSION_MINOR/100)+((double) XSCRIPT_VERSION_REVISION/1000);
 UpdateVariable("VERSION","",&cmdargs,0,0,0,0);
 
+GetVariablePointer("VERSION")->IsConstant=TRUE;		/* set variable as constant */
 free(cmdargs.s);
 }
 
@@ -324,8 +325,6 @@ else
 {
 	next=GetVariablePointer(name);		/* get variable entry */
 	if(next == NULL) {
-		printf("BAD\n");
-
 		PrintError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 		return(-1);
 	}
@@ -333,6 +332,11 @@ else
 
 if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) {		/* outside array */
 	PrintError(INVALID_ARRAY_SUBSCRIPT);
+	return(-1);
+}
+
+if(next->IsConstant == TRUE) {			/* if constant variable */
+	SetLastError(IS_CONSTANT);
 	return(-1);
 }
 
@@ -420,6 +424,7 @@ else {					/* user-defined type */
 
 return(0);
 }
+
 /*
  *  Resize array
  * 

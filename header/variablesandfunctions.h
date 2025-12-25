@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include "module.h"
 
 #define FOR_STATEMENT			1
 #define IF_STATEMENT			2
@@ -26,94 +27,99 @@
 #define MAX_NEST_COUNT 256
 #define DEFAULT_TYPE_INT VAR_NUMBER
 
-typedef struct {
- double d;
- char *s;
- int i;
- float f;
- long int l;
- bool b;
- int type;
-} varval;
+#ifndef VARIABLESANDFUNCTIONS_H
+	#define VARIABLESANDFUNCTIONS_H
 
-typedef struct {
- char *fieldname[MAX_SIZE];
- varval *fieldval;
- int xsize;
- int ysize;
- int type;
- struct UserDefinedTypeField *next;
-} UserDefinedTypeField;
+	typedef struct {
+	double d;
+	char *s;
+	int i;
+	float f;
+	long int l;
+	bool b;
+	int type;
+	} varval;
 
-typedef struct  {
- char *name[MAX_SIZE];
- UserDefinedTypeField *field;
- struct UserDefinedType *next;
-} UserDefinedType;
+	typedef struct {
+		char *fieldname[MAX_SIZE];
+		varval *fieldval;
+		int xsize;
+		int ysize;
+		int type;
+		struct UserDefinedTypeField *next;
+	} UserDefinedTypeField;
 
-typedef struct vartype {
- char *varname[MAX_SIZE];
- varval *val;
- UserDefinedType *udt;
- int xsize;
- int ysize;
- char *udt_type[MAX_SIZE];
- int type_int;
- struct vartype *next;
-} vars_t;
+	typedef struct  {
+		char *name[MAX_SIZE];
+		UserDefinedTypeField *field;
+		struct UserDefinedType *next;
+	} UserDefinedType;
 
-typedef struct {
- char *name[MAX_SIZE];
- int x;
- int y;
- int arraytype;
- char *fieldname[MAX_SIZE];
- int fieldx;
- int fieldy;
-} varsplit;
+	typedef struct vartype {
+		char *varname[MAX_SIZE];
+		varval *val;
+		UserDefinedType *udt;
+		int xsize;
+		int ysize;
+		char *udt_type[MAX_SIZE];
+		int type_int;
+		bool IsConstant;
+		struct vartype *next;
+	} vars_t;
 
-typedef struct {
- char *bufptr;
- int linenumber;
- struct SAVEINFORMATION *next;
-} SAVEINFORMATION;
+	typedef struct {
+		char *name[MAX_SIZE];
+		int x;
+		int y;
+		int arraytype;
+		char *fieldname[MAX_SIZE];
+		int fieldx;
+		int fieldy;
+	} varsplit;
 
-typedef struct func {
- char *name[MAX_SIZE];
- char *funcstart;
- int funcargcount;
- char *returntype[MAX_SIZE];
- int type_int;
- vars_t *parameters;
- vars_t *parameters_end;
- int linenumber;
- bool WasDeclaredInInteractiveMode;
- struct func *last;
- struct func *next;
-} functions;
+	typedef struct {
+		char *bufptr;
+		int linenumber;
+		struct SAVEINFORMATION *next;
+	} SAVEINFORMATION;
 
-typedef struct FUNCTIONCALLSTACK {
- char *name[MAX_SIZE];
- char *callptr;
- int startlinenumber;
- int currentlinenumber;
- SAVEINFORMATION *saveinformation_top;
- vars_t *vars;
- vars_t *vars_end;
- vars_t *initialparameters;
- int stat;	
- char *returntype[MAX_SIZE];
- int type_int;
- int lastlooptype;
- MODULES *moduleptr;
- struct FUNCTIONCALLSTACK *next;
-} FUNCTIONCALLSTACK;
+	typedef struct func {
+		char *name[MAX_SIZE];
+		char *funcstart;
+		int funcargcount;
+		char *returntype[MAX_SIZE];
+		int type_int;
+		vars_t *parameters;
+ 		vars_t *parameters_end;
+		int linenumber;
+		bool WasDeclaredInInteractiveMode;
+		struct func *last;
+		struct func *next;
+	} functions;
 
-typedef struct {
- varval val;
- UserDefinedType *udt;
- bool has_returned_value;
-} functionreturnvalue;
+	typedef struct FUNCTIONCALLSTACK {
+		char *name[MAX_SIZE];
+		char *callptr;
+		int startlinenumber;
+		int currentlinenumber;
+		SAVEINFORMATION *saveinformation_top;
+		vars_t *vars;
+		vars_t *vars_end;
+		vars_t *initialparameters;
+		int stat;	
+		char *returntype[MAX_SIZE];
+		int type_int;
+		int lastlooptype;
+		MODULES *moduleptr;
+		struct FUNCTIONCALLSTACK *next;
+	} FUNCTIONCALLSTACK;
+
+	typedef struct {
+		varval val;
+		UserDefinedType *udt;
+		bool has_returned_value;
+	} functionreturnvalue;
+#endif
 
 void FreeFunctions(void);
 int CreateVariable(char *name,char *type,int xsize,int ysize);

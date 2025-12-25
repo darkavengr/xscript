@@ -40,6 +40,7 @@
 
 extern jmp_buf savestate;
 extern char *vartypenames[];
+extern char *truefalse[];
 
 int saveexprtrue=0;
 functionreturnvalue retval;
@@ -415,7 +416,7 @@ for(count=1;count<tc;count++) {
 			return(0);
 		 }
 
-		 UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy);
+		 if(UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
 
 		 SetLastError(0);
 		 return(0);		 
@@ -1433,9 +1434,16 @@ return(0);
 
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 varsplit split;
-int vartype;
 int count;
 char *vartypeptr=NULL;
+char *savevartypeptr=NULL;
+int assigncount;
+bool HaveValue=FALSE;
+varval declareval;
+int xsize;
+int ysize;
+bool IsConstant=FALSE;
+vars_t *varptr;
 
 /* if there is a type in the declare statement */
 
@@ -1444,21 +1452,98 @@ for(count=1;count < tc;count++) {
 	if(strcmpi(tokens[count],"AS") == 0) {
 		if(ParseVariableName(tokens,1,count-1,&split) == -1) return(-1);	/* parse variable name */
 
-		vartypeptr=tokens[count+1];
+		if(strcmpi(tokens[count+1],"CONSTANT") == 0) {	/* constant variable */
+			vartypeptr=tokens[count+2];
+			IsConstant=TRUE;
+		}
+		else
+		{
+			vartypeptr=tokens[count+1];
+		}
+
+		savevartypeptr=vartypeptr;
 		break;
 	}
 }
 
-if(vartypeptr == NULL) {
+if(vartypeptr == NULL) {			/* use default type */
 	if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);	/* parse variable name */
 
 	vartypeptr=vartypenames[DEFAULT_TYPE_INT];
 }
 
-if(split.x == 0) split.x=1;	/* can't have 0 size arrays */
-if(split.y == 0) split.y=1;
+/* get x and y size for CreateVariable() */
 
-if(CreateVariable(split.name,vartypeptr,split.x,split.y) == -1) return(-1);
+if(split.x == 0) {
+	xsize=1;	/* can't have 0 size arrays */
+}
+else
+{
+	xsize=split.x;
+}
+
+if(split.y == 0) {
+	ysize=1;	/* can't have 0 size arrays */
+}
+else
+{
+	ysize=split.y;
+}
+
+/* find = */
+
+for(assigncount=1;assigncount < tc;assigncount++) {
+
+	if(strcmp(tokens[assigncount],"=") == 0) {		/* found = */
+		if(assigncount == tc) {		/* no value */
+			SetLastError(SYNTAX_ERROR);
+			return(-1);
+		}
+
+		if(savevartypeptr == NULL) {		/* can't assign to UDT variables */
+			SetLastError(TYPE_ERROR);
+			return(-1);
+		}
+
+		HaveValue=TRUE;
+		break;
+	}
+}
+
+if(CreateVariable(split.name,vartypeptr,xsize,ysize) == -1) return(-1);
+
+if(HaveValue == TRUE) {		/* set value */
+	switch(GetVariableType(split.name)) {
+		case VAR_NUMBER:
+			declareval.d=EvaluateExpression(tokens,assigncount+1,tc);		/* evaluate expression */
+			break;
+
+		case VAR_STRING:
+			if(ConatecateStrings(assigncount+1,tc,tokens,&declareval) == -1) return(-1);	/* join all the strings on the line */
+			break;
+
+		case VAR_INTEGER:
+			declareval.i=EvaluateExpression(tokens,assigncount+1,tc);		/* evaluate expression */
+			break;
+
+		case VAR_SINGLE:
+			declareval.f=EvaluateExpression(tokens,assigncount+1,tc);
+			break;
+
+		case VAR_LONG:
+			declareval.l=EvaluateExpression(tokens,assigncount+1,tc);
+			break;
+
+		case VAR_BOOLEAN:
+			declareval.b=EvaluateExpression(tokens,assigncount+1,tc);		/* evaluate expression */
+			break;
+
+	}
+
+	if(UpdateVariable(split.name,NULL,&declareval,split.x,split.y,0,0) == -1) return(-1);
+
+	GetVariablePointer(split.name)->IsConstant=IsConstant;		/* set variable as constant */
+}
 
 SetLastError(0);
 return(0);
@@ -2300,5 +2385,7 @@ if(strlen(line) > 1) {
 	b=(line+strlen(line))-1;
 	if((*b == '\n') || (*b == '\r')) *b=0;
 }
+
+return;
 }
 

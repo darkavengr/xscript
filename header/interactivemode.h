@@ -35,9 +35,13 @@ void SwitchToInteractiveModeBuffer(void);
 int list_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
-typedef struct {
-	char *token[MAX_SIZE];
-	struct BLOCKSTATEMENTSAVE *last;
-	struct BLOCKSTATEMENTSAVE *next;
-} BLOCKSTATEMENTSAVE;
+#ifndef INTERACTIVEMODE_H
+	#define INTERACTIVEMODE_H
+
+	typedef struct {
+		char *token[MAX_SIZE];
+		struct BLOCKSTATEMENTSAVE *last;
+		struct BLOCKSTATEMENTSAVE *next;
+	} BLOCKSTATEMENTSAVE;
+#endif
 

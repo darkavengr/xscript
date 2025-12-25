@@ -50,4 +50,5 @@
 #define HELP_TOPIC_DOES_NOT_EXIST		49
 #define INVALID_ARRAY_SIZE			50
 #define NO_FILE_LOADED				51
+#define IS_CONSTANT				52
 

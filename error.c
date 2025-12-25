@@ -28,57 +28,58 @@
 int last_error=0;
 
 char *errs[] = { "No error",\
-		 "File not found",\
-		 "Invalid expression",\
-		 "IF statement without ENDIF",\
-		 "FOR statement without NEXT",\
-		 "WHILE without WEND",\
-		 "ELSE or ELSEIF without IF",\
-		 "ENDIF without IF",\
-		 "ENDFUNCTION without FUNCTION",\
-		 "Invalid variable name",\
-		 "Out of memory",\
-		 "EXIT FOR outside of FOR loop",\
-		 "EXIT WHILE outside of WHILE loop",\
-		 "Missing XSCRIPT_MODULE_PATH enviroment variable",
-		 "Syntax error",\
-		 "Error calling library function",\
-		 "Invalid statement",\
-		 "Cannot declare a function inside another function",\
-		 "FUNCTION without ENDFUNCTION",\
-		 "NEXT without FOR",
-		 "WEND without WHILE",\
-		 "Duplicate function name",\
-		 "Invalid number of arguments to function call",\
-		 "Invalid array subscript",\
-		 "Type mismatch",\
-		 "Invalid variable type",\
-		 "ITERATE without FOR or WHILE",\
-		 "Variable already exists",\
-		 "Variable or function not defined",\
-		 "FOR without NEXT",\
-		 "User-defined type already exists",\
-		 "TYPE without ENDTYPE",\
-		 "Field in user-defined type does not exist",\
-		 "Breakpoint not found",\
-		 "No program loaded",\
-		 "Invalid value",\
-		 "Include file without main file",\
-		 "TRY without CATCH",\
-		 "TRY without ENDTRY",\
-		 "CATCH without TRY",\
-		 "ENDTRY without TRY",\
-		 "No program currently running",\
-		 "Not an array",\
-		 "Missing array subscript",\
-		 "User-defined type does not exist",\
-		 "TYPE without ENDTYPE",\
-		 "Command can only be used in interactive mode",\
-		 "Module not found",\
-		 "I/O error",\
-		 "No such help topic exists",\
-		 "Invalid array size",\
-		 "No file loaded",\
+		"File not found",\
+		"Invalid expression",\
+		"IF statement without ENDIF",\
+		"FOR statement without NEXT",\
+		"WHILE without WEND",\
+		"ELSE or ELSEIF without IF",\
+		"ENDIF without IF",\
+		"ENDFUNCTION without FUNCTION",\
+		"Invalid variable name",\
+		"Out of memory",\
+		"EXIT FOR outside of FOR loop",\
+		"EXIT WHILE outside of WHILE loop",\
+		"Missing XSCRIPT_MODULE_PATH enviroment variable",
+		"Syntax error",\
+		"Error calling library function",\
+		"Invalid statement",\
+		"Cannot declare a function inside another function",\
+		"FUNCTION without ENDFUNCTION",\
+		"NEXT without FOR",
+		"WEND without WHILE",\
+		"Duplicate function name",\
+		"Invalid number of arguments to function call",\
+		"Invalid array subscript",\
+		"Type mismatch",\
+		"Invalid variable type",\
+		"ITERATE without FOR or WHILE",\
+		"Variable already exists",\
+		"Variable or function not defined",\
+		"FOR without NEXT",\
+		"User-defined type already exists",\
+		"TYPE without ENDTYPE",\
+		"Field in user-defined type does not exist",\
+		"Breakpoint not found",\
+		"No program loaded",\
+		"Invalid value",\
+		"Include file without main file",\
+		"TRY without CATCH",\
+		"TRY without ENDTRY",\
+		"CATCH without TRY",\
+		"ENDTRY without TRY",\
+		"No program currently running",\
+		"Not an array",\
+		"Missing array subscript",\
+		"User-defined type does not exist",\
+		"TYPE without ENDTYPE",\
+		"Command can only be used in interactive mode",\
+		"Module not found",\
+		"I/O error",\
+		"No such help topic exists",\
+		"Invalid array size",\
+		"No file loaded",\
+		"Variable is constant",\
 };
 
 /*

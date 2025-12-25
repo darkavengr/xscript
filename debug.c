@@ -218,7 +218,7 @@ for(ycount=0;ycount != ysize;ycount++) {
 			        break;
 
 			  case VAR_BOOLEAN:				/* boolean */
-				printf("%s",truefalse[var->val[(xcount*xsize)+ycount].b]);
+				printf("%s",truefalse[var->val[xcount*ycount].b]);
 			        break;
   		}
 	

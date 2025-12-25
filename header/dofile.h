@@ -69,10 +69,15 @@ void ClearBreakFlag(void);
 int GetBreakFlag(void);
 void StripQuotesFromString(char *str,char *buf);
 
-typedef struct {
- char *statement;
- char *endstatement;
- unsigned int (*call_statement)(int,void *);		/* function pointer */
- int is_block_statement;
+#ifndef DOFILE_H
+	#define DOFILE_H
+
+	typedef struct {
+		char *statement;
+		char *endstatement;
+		unsigned int (*call_statement)(int,void *);		/* function pointer */
+		int is_block_statement;
 } statement;
+#endif
+
 

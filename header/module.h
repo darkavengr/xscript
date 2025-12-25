@@ -1,18 +1,21 @@
 #define MODULE_BINARY	1
 #define MODULE_SCRIPT	2
 
+#ifndef MODULE_H
+	#define MODULE_H
+
+	typedef struct {
+		char *modulename[MAX_SIZE];
+		void *dlhandle;
+		int flags;
+		char *StartInBuffer;
+		char *EndInBuffer;
+		struct MODULES *last;
+		struct MODULES *next;
+	} MODULES;
+#endif
+
 int AddModule(char *modulename);
-
-typedef struct {
- char *modulename[MAX_SIZE];
- void *dlhandle;
- int flags;
- char *StartInBuffer;
- char *EndInBuffer;
- struct MODULES *last;
- struct MODULES *next;
-} MODULES;
-
 int AddModule(char *filename);
 void *GetModuleHandle(char *module);
 MODULES *GetModuleEntry(char *module);

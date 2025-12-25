@@ -1,2 +1,4 @@
-declare a as integer
+declare teststr as constant string = "Testing"
+teststr="Hello"
 
+print teststr

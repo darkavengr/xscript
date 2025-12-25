@@ -64,6 +64,7 @@ statement statements[] = {
 	     { "INTEGER",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "SINGLE",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "LONG",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "BOOLEAN",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "AND",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "OR",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "NOT",NULL,&bad_keyword_as_statement,FALSE},\
@@ -71,6 +72,7 @@ statement statements[] = {
 	     { "TRUE",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "FALSE",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "IN",NULL,&bad_keyword_as_statement,FALSE},\
+	     { "CONSTANT",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "QUIT",NULL,&quit_command,FALSE},\
 	     { "VARIABLES",NULL,&variables_command,FALSE},\
 	     { "CONTINUE",NULL,&continue_command,FALSE},\
