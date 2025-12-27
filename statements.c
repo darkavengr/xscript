@@ -55,6 +55,8 @@ statement statements[] = {
 	     { "RESIZE",NULL,&resize_statement,FALSE},\
 	     { "LIBCALL",NULL,&libcall_statement,FALSE},\
 	     { "DELETE",NULL,&delete_statement,FALSE},\
+	     { "REPEAT","UNTIL",&repeat_statement,TRUE},\
+	     { "UNTIL",NULL,&until_statement,FALSE},\
 	     { "AS",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "TO",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "STEP",NULL,&bad_keyword_as_statement,FALSE},\

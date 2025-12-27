@@ -27,6 +27,8 @@ int libcall_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int bad_keyword_as_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int type_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int delete_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int repeat_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int until_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int continue_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);

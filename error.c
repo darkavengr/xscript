@@ -80,6 +80,8 @@ char *errs[] = { "No error",\
 		"Invalid array size",\
 		"No file loaded",\
 		"Variable is constant",\
+		"REPEAT without UNTIL",\
+		"UNTIL without REPEAT",\
 };
 
 /*

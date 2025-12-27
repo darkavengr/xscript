@@ -176,6 +176,8 @@ SetFunctionCallPtr(saveCurrentBufferPosition);		/* set start of current function
 SetCurrentFile(filename);			/* set current executing file */
 
 do {
+	memset(linebuf,0,LINE_SIZE);		/* clear buffer */
+
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,linebuf,LINE_SIZE);			/* get data */
 	SetCurrentFileBufferPosition(CurrentBufferPosition);
 
@@ -248,18 +250,18 @@ char *functionname[MAX_SIZE];
 
 GetCurrentFile(filename);	/* get name of current file */
 
-if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n') || (((char) *lbuf) == 0)) { 			/* blank line */
-	SetLastError(0);
-	return(0);
-}
-
 if(GetTraceFlag()) {		/* print statement if trace is enabled */
 	printf("***** Tracing line %d in function %s: %s\n",GetCurrentFunctionLine(),filename,lbuf);
 }
 
 RemoveNewline(lbuf);		/* remove newline from line */
 
-while(*lbuf == ' ' || *lbuf == '\t') lbuf++;	/* skip white space */
+while(((char) *lbuf == ' ') || ((char) *lbuf == '\t')) lbuf++;	/* skip white space */
+	
+if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n') || (((char) *lbuf) == 0) || (((char) *lbuf) == '\t')) {
+	SetLastError(0);
+	return(0);
+}
 
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
@@ -403,7 +405,6 @@ for(count=1;count<tc;count++) {
 		else if(vartype == -1) {		/* new variable */ 	  
 		 	val.d=exprone;
 
-			printf("val.d=%.6g\n",val.d);
 			if((split.x > 1) || (split.y) > 1) {		/* can't create array by assignment */
 				SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 				return(-1);
@@ -441,6 +442,16 @@ if((check_breakpoint(GetCurrentFunctionLine(),GetCurrentFunctionName()) == TRUE)
 	printf("***** Reached breakpoint: %s line %d\n",filename,GetCurrentFunctionLine());
 
 	ClearIsRunningFlag();
+}
+
+SetLastError(0);
+return(0);
+}
+
+int until_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+if((GetFunctionFlags() &REPEAT_STATEMENT) == 0) {
+	SetLastError(UNTIL_WITHOUT_REPEAT);
+	return(-1);
 }
 
 SetLastError(0);
@@ -730,7 +741,7 @@ while(*CurrentBufferPosition != 0) {
 		exprtrue=EvaluateCondition(tokens,1,tc);	/* evaluate condition */
 		if(exprtrue == -1) return(-1);
 
-		if(exprtrue == 1) has_executed_block=TRUE;	/* have executing IF/ELSEIF block */
+		if(exprtrue == 1) has_executed_block=TRUE;	/* have executed IF/ELSEIF block */
 	}
 
 	if(*CurrentBufferPosition == 0) {
@@ -1227,10 +1238,13 @@ SetSaveInformationBufferPointer(CurrentBufferPosition);
 do {
 	sigsetjmp(savestate,1);		/* save current context */
 
-	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+	memset(buf,0,LINE_SIZE);		/* clear buffer */
 
+	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 	RemoveNewline(buf);
 
+	if(*buf == 0) break;		/* at end */
+		
 	if(IsValidExpression(condition_tokens,0,condition_tc) == FALSE) {
 		PopSaveInformation();
 
@@ -1239,6 +1253,10 @@ do {
 	}
 
 	exprtrue=EvaluateCondition(condition_tokens,0,condition_tc);			/* do condition */
+	if(exprtrue == FALSE) {		/* exit if condition is false */
+		SetLastError(NO_ERROR);
+		return(0);
+	}
 
 	sigsetjmp(savestate,1);		/* save current context */
 
@@ -1250,20 +1268,21 @@ do {
 	}
 
 	if(strcmpi(tokens[0],"WEND") == 0) {
-		if(exprtrue == 1) {				/* at end of block, go back to start */
+		if(exprtrue == TRUE) {				/* at end of block, go back to start */
 		    	SetCurrentFunctionLine(GetSaveInformationLineCount());
-		
 			CurrentBufferPosition=GetSaveInformationBufferPointer();
 		}
 		else
 		{
-			break;
+			SetLastError(NO_ERROR);
+			return(0);
 		}
 	}
 
 	returnvalue=ExecuteLine(buf);
+	if(returnvalue == -1) {
+		PrintError(GetLastError());
 
-	if(returnvalue != 0) {
 		PopSaveInformation();
 		ClearIsRunningFlag();
 
@@ -1271,11 +1290,91 @@ do {
 	}
 
 	if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
-} while(exprtrue == 1);
+} while(exprtrue == TRUE);
 
 PopSaveInformation();
 
-return(0);			 
+SetLastError(WHILE_WITHOUT_WEND);
+return(-1);			 
+}
+
+/*
+ * Repeat statement
+ *
+ * In: tc Token count
+ * tokens Token array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+int repeat_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *buf[MAX_SIZE];
+int exprtrue;
+
+SetFunctionFlags(REPEAT_STATEMENT);
+
+PushSaveInformation();		/* save do loop state */
+
+SetSaveInformationBufferPointer(CurrentBufferPosition);
+	
+do {
+	sigsetjmp(savestate,1);		/* save current context */
+
+	memset(buf,0,LINE_SIZE);		/* clear buffer */
+
+	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+
+	RemoveNewline(buf);
+	if(*buf == 0) break;		/* at end */
+
+	memset(tokens,0,MAX_SIZE*MAX_SIZE);		/* clear tokens */
+
+	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+	if(tc == -1) {	
+		PopSaveInformation();
+		SetLastError(SYNTAX_ERROR);
+		return(-1);
+	}
+
+
+	if(strcmpi(tokens[0],"UNTIL") != 0) {
+		if(ExecuteLine(buf) == -1) {
+			PopSaveInformation();
+			ClearIsRunningFlag();
+			return(-1);
+		}
+	}
+
+	if(strcmpi(tokens[0],"UNTIL") == 0) {			/* end of loop block */
+		/* Evaluate and test condition */
+
+		if(IsValidExpression(tokens,1,tc) == FALSE) {
+			PopSaveInformation();
+
+			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+			return(-1);
+
+		}
+		exprtrue=EvaluateCondition(tokens,1,tc);			/* do condition */
+		if(exprtrue == FALSE) {		/* exit if condition is false */
+			SetLastError(NO_ERROR);
+			return(0);
+		}
+
+		SetCurrentFunctionLine(GetSaveInformationLineCount());		
+		CurrentBufferPosition=GetSaveInformationBufferPointer();
+
+		sigsetjmp(savestate,1);		/* save current context */
+	}
+
+	if(GetIsRunningFlag() == FALSE) return(NO_ERROR);	/* program ended */
+} while(TRUE);
+
+PopSaveInformation();
+
+SetLastError(REPEAT_WITHOUT_UNTIL);
+return(-1);			 
 }
 
 /*

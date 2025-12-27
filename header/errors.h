@@ -51,4 +51,7 @@
 #define INVALID_ARRAY_SIZE			50
 #define NO_FILE_LOADED				51
 #define IS_CONSTANT				52
+#define REPEAT_WITHOUT_UNTIL			53
+#define UNTIL_WITHOUT_REPEAT			54
+
 

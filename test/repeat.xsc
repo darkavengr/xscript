@@ -1,0 +1,7 @@
+myvar=0
+
+repeat
+	print myvar
+	myvar=myvar+1
+until myvar < 10
+
