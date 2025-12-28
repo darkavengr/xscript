@@ -1958,26 +1958,6 @@ return(0);
 }
 
 /*
- * Help command
- *
- * In: tc Token count
- *	tokens Token array
- *
- * Returns error on error or 0 on success
- *
- */
-int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-char *dirname[MAX_SIZE];
-
-GetExecutableDirectoryName(dirname);
-
-if(DisplayHelp(dirname,tokens[1]) == -1) return(-1);		/* display help */
-
-SetLastError(0);
-return(0);
-}
-
-/*
  * Non-statement keyword as statement
  *
  * In: tc Token count

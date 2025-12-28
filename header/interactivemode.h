@@ -34,6 +34,7 @@ int lbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 void SwitchToInteractiveModeBuffer(void);
 int list_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 
 #ifndef INTERACTIVEMODE_H
 	#define INTERACTIVEMODE_H

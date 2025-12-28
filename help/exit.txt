@@ -1,6 +1,0 @@
-EXIT { FOR | WHILE }
-
-Exit from a FOR or WHILE loop.
-
-See also:  FOR, WHILE.
-

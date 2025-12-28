@@ -1,4 +1,0 @@
-PRINT {expression | string }
-
-Display expression or string.
-

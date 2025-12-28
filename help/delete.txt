@@ -1,6 +1,0 @@
-DELETE variable-name
-
-Delete a variable.
-
-See also: DECLARE, RESIZE
-

@@ -1,7 +1,0 @@
-COMMAND
-
-The COMMAND variables holds the name of the current programs command-line arguments.
-
-See also: PROGRAMNAME
-
-

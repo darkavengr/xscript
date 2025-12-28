@@ -1,3 +1,568 @@
+%TOPIC index
+The following help is avaliable:
+
+DATATYPES	Show information on data types
+DEBUGGING	Show information on debugging
+KEYWORDS	Show keywords
+OPERATORS	Show information on operators
+SYNTAX		Show information on syntax
+
+Type HELP {word} to get help on {word}.
+%ENDTOPIC
+
+%TOPIC keywords
+The following are keywords. Type help {keyword} to get help for {keyword}
+
+AND     AS      BACKTRACE  BOOLEAN    CATCH      CBREAK       CONSTANT  CONTINUE  DECLARE
+DELETE  DOUBLE  ELSE	   ELSEIF     END        ENDFUNCTION  ENDIF     ENDTRY    ENDTYPE
+EXIT    FALSE   FOR        FUNCTION   HELP       IF           IMPORT    INTEGER   ITERATE
+LBREAK  LOAD    LONG       NEXT       NOT        OR           PRINT     QUIT      REPEAT
+RESIZE  RETURN  RUN        SBREAK     SINGLE     STEP         STRING    THEN      TO
+TRACE   TRUE    TRY        TYPE       UNTIL      VARIABLES    WEND      WHILE
+%ENDTOPIC
+
+%TOPIC while
+WHILE condition
+.
+.
+.
+WEND
+
+Execute statements while condition is TRUE.
+
+See also: FOR
+%ENDTOPIC
+
+%TOPIC repeat
+REPEAT
+.
+.
+.
+UNTIL condition
+
+Execute statements until condition is TRUE.
+
+See also: FOR, WHILE
+%ENDTOPIC
+
+%TOPIC for
+FOR variable = [expression] TO [expression] { STEP expression }
+.
+.
+.
+NEXT
+
+Loop a set number of times from expressions [start] to [end],
+optionally modifying the variable by [increment].
+
+See also: WHILE
+%ENDTOPIC
+
+%TOPIC function
+FUNCTION name(parameter AS type, ...) { AS [type] }
+.
+.
+.
+ENDFUNCTION
+
+Declare a function.
+
+A function may be declare with an optional type that may be SINGLE, DOUBLE, INTEGER, STRING or a user-defined type.
+
+Without the optional type, function declarations uses the single-precision data type.
+
+See also: SINGLE DOUBLE INTEGER STRING TYPE ENDTYPE
+%ENDTOPIC
+
+%TOPIC if
+IF [condition] THEN
+.
+.
+.
+ELSEIF [condition]
+.
+.
+.
+ELSE
+.
+.
+.
+ENDIF
+
+Conditionally execute statements if [condition] is true; multiple conditions may be used with IF and ELSEIF.
+%ENDTOPIC
+
+%TOPIC import
+IMPORT name
+
+Import module.
+
+Modules are imported from the standard module directory $XSCRIPT_MODULE_PATH.
+
+See also: INCLUDE
+%ENDTOPIC
+
+%TOPIC datatypes
+Xscript supports the following types:
+
+SINGLE		Single-precision number
+DOUBLE		Double-precision number
+INTEGER		Integer
+LONG		Long integer
+BOOLEAN		Boolean
+STRING		String
+"Data"		String literals
+
+See also: TYPE, DECLARE, TRUE, FALSE
+%ENDTOPIC
+
+%TOPIC boolean
+Boolean values can either be TRUE or FALSE.
+
+XSscript also supports BOOLEAN variable types.
+
+See also: DATATYPES,FALSE, TRUE
+%ENDTOPIC
+
+%TOPIC debugging
+XScript supports debugging.
+
+SBREAK linenumber {function}		Set breakpoint at line number, optionally in {function}.
+
+CBREAK linenumber {function}		Clear breakpoint at line number, optionally in {function}.
+
+TRACE { on | off }			Enable or disable statement tracing.
+
+VARIABLES				Display variables for the current function.
+
+See also: SBREAK, CBREAK, TRACE, VARIABLES
+%ENDTOPIC
+
+%TOPIC continue
+CONTINUE
+
+Continues execution of a halted program.
+%ENDTOPIC
+
+%TOPIC declare
+DECLARE variable-name {AS type}
+
+Declare a variable with optional type; see help on DATATYPES for data types
+
+Without the optional type, variable declarations uses the single-precision data type.
+
+See also: OPERATORS, DATATYPES, TYPE
+
+%ENDTOPIC
+
+%TOPIC command
+COMMAND
+
+The COMMAND variables holds the name of the current programs command-line arguments.
+
+See also: PROGRAMNAME
+%ENDTOPIC
+
+%TOPIC delete
+DELETE variable-name
+
+Delete a variable.
+
+See also: DECLARE, RESIZE
+%ENDTOPIC
+
+%TOPIC iterate
+ITERATE
+
+Go back to start of FOR or WHILE loop.
+
+See also: FOR, WHILE
+%ENDTOPIC
+
+
+%TOPIC libcall
+LIBCALL function(args) IN module RETURNTYPE [ SINGLE | DOUBLE | INTEGER | LONG | STRING | UDT ]
+
+Call function in binary module.
+%ENDTOPIC
+
+%TOPIC load
+LOAD filename
+
+Load program.
+
+Unlike INCLUDE, this statement replaces the current program.
+
+See also: INCLUDE, IMPORT
+%ENDTOPIC
+
+%TOPIC operators
+Xscript supports the following operators:
+
+=		Assignment.
+		
+		variablename = [expression]
+		variablename(x) = [expression]
+		variablename(x,y) = [expression]
+
+/		Division
+*		Multiplication
++		Addition
+-		Subtraction
+**		Power
+
+Comparisons use the following operators:
+
+=		Equality
+!=		Non-equality
+>		Greater than
+<		Less than
+>=		Greater than or equal
+<=		Less than or equal
+{expression}	Zero or non-zero
+
+Conditional expressions may evaluate multiple conditions:
+
+[condition1] AND [condition2]		True if both [condition1] and [condition2] are true.
+[condition1] OR [condition2]		True if both [condition1] or [condition2] is true or [condition1] is true or [condition2] is true.
+[condition1] XOR [condition2]		True if only [condition1] is true or only [condition2] is true.
+%ENDTOPIC
+
+%TOPIC or
+See also: OPERATORS
+%ENDTOPIC
+
+%TOPIC print
+PRINT {expression | string }
+
+Display expression or string.
+%ENDTOPIC
+
+%TOPIC programname
+PROGRAMNAME
+
+The PROGRAMNAME variables holds the filename of the current program.
+
+See also: COMMAND
+%ENDTOPIC
+
+%TOPIC quit
+Quit the Xscript interpreter.
+
+QUIT
+%ENDTOPIC
+
+%TOPIC return
+RETURN {expression}
+
+Return from function.
+%ENDTOPIC
+
+%TOPIC run
+RUN filename
+
+Load and run file.
+%ENDTOPIC
+
+%TOPIC lbreak
+LBREAK
+
+List breakpoints
+
+See also: CBREAK, SBREAK
+%ENDTOPIC
+
+%TOPIC and
+See also: CONDITIONS.
+%ENDTOPIC
+
+%TOPIC as
+See also: DECLARE.
+%ENDTOPIC
+
+%TOPIC catch
+See also: TRY.
+
+%ENDTOPIC
+
+%TOPIC cbreak
+CBREAK linenumber {function name}
+
+Clear breakpoint at line number, optionally in {function name}.
+
+See also: LBREAK,SBREAK
+%ENDTOPIC
+
+
+%TOPIC double
+See also: DATATYPES
+%ENDTOPIC
+
+%TOPIC elseif
+See also: IF
+
+%ENDTOPIC
+
+%TOPIC else
+See also: IF
+
+%ENDTOPIC
+
+%TOPIC endfunction
+ENDFUNCTION
+
+End a function declaration
+
+See also: FUNCTION
+%ENDTOPIC
+
+%TOPIC endif
+ENDIF,End an IF statement
+
+See also: IF
+%ENDTOPIC
+
+%TOPIC endtry
+See also: TRY.
+
+%ENDTOPIC
+
+%TOPIC end
+END
+
+End program.
+%ENDTOPIC
+
+%TOPIC endtype
+ENDTYPE
+
+End a TYPE statement.
+
+See also: TYPE
+%ENDTOPIC
+
+
+%TOPIC help
+Display help.
+
+HELP {word}
+
+Displays help on {word}.
+%ENDTOPIC
+
+%TOPIC exit
+EXIT { FOR | WHILE }
+
+Exit from a FOR or WHILE loop.
+
+See also:  FOR, WHILE.
+%ENDTOPIC
+
+%TOPIC false
+The symbol FALSE evaluates to 0.
+%ENDTOPIC
+
+%TOPIC include
+INCLUDE filename
+
+Include source file.
+
+See also: IMPORT
+%ENDTOPIC
+
+%TOPIC integer
+See also: DATATYPES
+
+%ENDTOPIC
+
+%TOPIC long
+See also: DATATYPES
+%ENDTOPIC
+
+%TOPIC next
+NEXT
+
+Closes a FOR loop.
+
+See also: FOR
+%ENDTOPIC
+
+%TOPIC not
+See also: OPERATORS
+%ENDTOPIC
+
+%TOPIC sbreak
+SBREAK linenumber {function name}
+
+Set breakpoint at line number, optionally in {function name}.
+
+See also: CBREAK, LBREAK
+
+
+%ENDTOPIC
+
+%TOPIC set
+SET BREAKPOINT linenumber {function name}
+
+Set breakpoint at line number, optionally in {function name}.
+
+See also: CLEAR BREAKPOINT
+%ENDTOPIC
+
+%TOPIC single
+See also: DATATYPES
+
+%ENDTOPIC
+
+%TOPIC sstep
+SSTEP {expression}
+
+Single step through code line by line.
+
+See also: SET BREAKPOINT, CLEAR BREAKPOINT
+%ENDTOPIC
+
+%TOPIC stacktrace
+STACKTRACE
+
+Prints the function call stack.
+%ENDTOPIC
+
+%TOPIC step
+See also: FOR
+%ENDTOPIC
+
+%TOPIC string
+See also: DATATYPES
+%ENDTOPIC
+
+%TOPIC syntax
+ KEYWORDS               Items in capital letters are keywords. Keywords
+                        are a required part of the statement syntax.
+
+ placeholders           Items in lowercase are placeholders for information you must supply in the statement.
+
+ [optional item]        Items inside square brackets are optional.
+
+ {choice1 | choice2}    Braces and a vertical bar indicate a choice between
+                        two or more items. You must use one of the items in
+                        the statement unless the braces are enclosed in
+                        square brackets.
+
+ item, item, ...        A horizontal three-dot ellipsis means more of the
+                        preceding items can be used in a single-line
+                        statement.
+
+ Beginning keyword      A vertical three-dot ellipsis is used to describe
+ .                      multiline statements (or block-structured
+ .                      statements). It means that other statements can be
+ .                      used between the beginning and the end of the block.
+ Ending keyword
+
+%ENDTOPIC
+
+%TOPIC then
+See also: IF
+%ENDTOPIC
+
+%TOPIC to
+See also: FOR
+%ENDTOPIC
+
+%TOPIC trace
+TRACE { ON | OFF }
+
+Displays statements as they are executed.
+
+The TRACE statement by itself shows if tracing is ON or OFF.
+%ENDTOPIC
+
+%TOPIC true
+The symbol TRUE evaluates to 1.
+%ENDTOPIC
+
+%TOPIC try
+TRY
+
+{statements}
+
+CATCH
+
+{error handler}
+
+ENDTRY
+
+Handle errors.
+
+%ENDTOPIC
+
+%TOPIC type
+TYPE [typename]
+name1 {AS type}
+name2 {AS type}
+.
+.
+.
+END TYPE
+
+Declare a user-defined type.
+
+See also: DATATYPES, DECLARE
+%ENDTOPIC
+
+%TOPIC variables
+VARIABLES
+
+List variables for the current function.
+%ENDTOPIC
+
+%TOPIC warranty
+ 15. Disclaimer of Warranty.
+
+  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
+IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+  16. Limitation of Liability.
+
+  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
+THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
+GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
+USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
+DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
+PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
+EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES.
+
+  17. Interpretation of Sections 15 and 16.
+
+  If the disclaimer of warranty and limitation of liability provided
+above cannot be given local legal effect according to their terms,
+reviewing courts shall apply local law that most closely approximates
+an absolute waiver of all civil liability in connection with the
+Program, unless a warranty or assumption of liability accompanies a
+copy of the Program in return for a fee.
+%ENDTOPIC
+
+%TOPIC wend
+See also: WHILE
+%ENDTOPIC
+
+%TOPIC xor
+See also: OPERATORS
+%ENDTOPIC
+
+%TOPIC wend
+See also: WHILE
+%ENDTOPIC
+
+%TOPIC copying
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -672,3 +1237,5 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
+%ENDTOPIC
+

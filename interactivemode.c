@@ -550,3 +550,19 @@ while(stack != NULL) {
 
 }
 
+/*
+ * Help command
+ *
+ * In: tc Token count
+ *	tokens Token array
+ *
+ * Returns error on error or 0 on success
+ *
+ */
+int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+if(DisplayHelp(tokens[1]) == -1) return(-1);		/* display help */
+
+SetLastError(0);
+return(0);
+}
+

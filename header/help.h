@@ -19,4 +19,7 @@
 
 #define HELP_LINE_COUNT 20
 
+int DisplayHelp(char *topic);
+int DisplayHelpTopic(char *helpfile,char *topic);
+
 

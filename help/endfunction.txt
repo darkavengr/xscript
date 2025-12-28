@@ -1,6 +1,0 @@
-ENDFUNCTION
-
-End a function declaration
-
-See also: FUNCTION
-

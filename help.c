@@ -20,51 +20,57 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include "size.h"
 #include "errors.h"
 #include "help.h"
-/* display help */
 
-int DisplayHelp(char *helpdir,char *topic) {
-char *HelpFilename[MAX_SIZE];
-char *b;
-int linecount=0;
+int DisplayHelp(char *topic) {
+char *HelpFilename="xscript.help";
+
+if(!*topic) return(DisplayHelpTopic(HelpFilename,"index"));                      /* display index */
+
+return(DisplayHelpTopic(HelpFilename,topic));
+}
+
+int DisplayHelpTopic(char *helpfile,char *topic) {
 FILE *handle;
-char *dirname[MAX_SIZE];
-char *dptr;
-char *aptr;
+char *LineBuffer[MAX_SIZE];
+bool FoundTopic=FALSE;
+char *LineTokens[MAX_SIZE][MAX_SIZE];
 
-if(!*topic) {		                      /* get help file */
-	sprintf(HelpFilename,"%s/help/index.txt",helpdir);
-}
-else
-{
-	sprintf(HelpFilename,"%s/help/%s.txt",helpdir,topic);
-}
-
-handle=fopen(HelpFilename,"r");
-if(handle == NULL) {                 /* can't open file */
-	SetLastError(HELP_TOPIC_DOES_NOT_EXIST);
+handle=fopen(helpfile,"r");		/* open help file */
+if(!handle) {				/* can't open file */
+	SetLastError(FILE_NOT_FOUND);
 	return(-1);
 }
 
-do {
-	fgets(HelpFilename,MAX_SIZE,handle);
+while(!feof(handle)) {
+	fgets(LineBuffer,MAX_SIZE,handle);			/* get data */
 
-	printf("%s",HelpFilename);
+	RemoveNewline(LineBuffer);				/* remove newline character */
 
-	if(linecount++ == HELP_LINE_COUNT) {		/* end of paragraph */
-		printf("-- Press any key to continue -- or type q to quit:");
-		
-		if(getc(stdin) == 'q') break;		/* quit help */
-	
-		linecount=0;
+	TokenizeLine(LineBuffer,LineTokens," ");			/* tokenize line */
+
+	if((strcmpi(LineTokens[0],"%TOPIC") == 0) &&  (strcmpi(LineTokens[1],topic) == 0)) FoundTopic=TRUE; /* found topic */
+
+	if(FoundTopic == TRUE) {		/* display topic */
+		if(strcmpi(LineTokens[0],"%ENDTOPIC") == 0) {	/* end of topic */
+			FoundTopic=FALSE;	
+			
+			fclose(handle);
+			
+			SetLastError(NO_ERROR);
+			return(0);
+		}
+
+		if(strcmpi(LineTokens[0],"%TOPIC") != 0) printf("%s\n",LineBuffer);
 	}
-
-} while(!feof(handle));               /* display text until end of file */
+}
 
 fclose(handle);
 
-return(0);
+SetLastError(HELP_TOPIC_DOES_NOT_EXIST);
+return(-1);
 }
 

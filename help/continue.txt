@@ -1,4 +1,0 @@
-CONTINUE
-
-Continues execution of a halted program.
-

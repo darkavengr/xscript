@@ -1,7 +1,0 @@
-Boolean values can either be TRUE or FALSE.
-
-XSscript also supports BOOLEAN variable types.
-
-See also: DATATYPES,FALSE, TRUE
-
-

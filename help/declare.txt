@@ -1,9 +1,0 @@
-DECLARE variable-name {AS type}
-
-Declare a variable with optional type; see help on DATATYPES for data types
-
-Without the optional type, variable declarations uses the single-precision data type.
-
-See also: OPERATORS, DATATYPES, TYPE
-
-

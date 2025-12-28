@@ -1,4 +1,0 @@
-VARIABLES
-
-List variables for the current function.
-
