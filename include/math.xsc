@@ -1,0 +1,103 @@
+#  XScript runtime library Version 0.0.1
+#   (C) Matthew Boote 2026
+#
+#   This file is part of XScript.
+#
+#   XScript is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   XScript is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with XScript.  If not, see <https://www.gnu.org/Licenses/>.
+#
+
+declare pi as constant double = 3.14159265359
+declare e as constant double = 2.71828
+
+#
+# Mathematical functions
+#
+
+function abs(num as integer) as integer
+declare result as double
+
+libcall xlib_abs(num) in "xlib" to result
+return result
+end function
+
+function arctab(num as double) as double
+declare result as double
+
+libcall xlib_arctan(num) in "xlib" to result
+return result
+end function
+
+function cos(num as double) as double
+declare result as double
+
+libcall xlib_cos(num) in "xlib" to result
+return result
+end function
+
+function sin(num as double) as double
+declare result as double
+
+libcall xlib_sin(num) in "xlib" to result
+return result
+end function
+
+function log(num as double) as double
+declare result as double
+
+libcall xlib_log(num) in "xlib" to result
+return result
+end function
+
+function log2(num as double) as double
+declare result as double
+
+libcall xlib_log2(num) in "xlib" to result
+return result
+end function
+
+function log10(num as double) as double
+declare result as double
+
+libcall xlib_log10(num) in "xlib" to result
+return result
+end function
+
+function exp(num as double) as double
+declare result as double
+
+libcall xlib_exp(num) in "xlib" to result
+return result
+end function
+
+function sqr(num as double) as double
+declare result as double
+
+libcall xlib_sqr(num) in "xlib" to result
+return result
+end function
+
+function cubrt(num as double) as double
+declare result as double
+
+libcall xlib_cubrt(num) in "xlib" to result
+return result
+end function
+
+function rand(startnum as integer,endnum as integer) as integer
+declare result as double
+
+libcall xlib_rand(startnum,endnum) in "xlib" to result
+return result
+end function
+

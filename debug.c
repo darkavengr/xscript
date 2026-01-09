@@ -32,7 +32,6 @@
 #include "debug.h"
 #include "dofile.h"
 
-extern char *vartypenames[];
 extern char *truefalse[];
 
 BREAKPOINT *breakpoints;
@@ -62,6 +61,11 @@ else
 
 if(breakpoints == NULL) {
 	breakpoints=calloc(1,sizeof(BREAKPOINT));
+	if(breakpoints == NULL) {		/* out of memory */
+		SetLastError(NO_MEM);
+		return(-1);
+	}
+
 	breakpointend=breakpoints;
 }
 else
@@ -77,6 +81,11 @@ else
 
 	if(next == NULL) {	/* add breakpoint if it does not exist */
 		breakpointend->next=calloc(1,sizeof(BREAKPOINT));
+		if(breakpointend->next == NULL) {		/* out of memory */
+			SetLastError(NO_MEM);
+			return(-1);
+		}
+
 		breakpointend=breakpointend->next;
 	}
 }
@@ -145,8 +154,6 @@ BREAKPOINT *next;
 next=breakpoints;
  
 while(next != NULL) {
-	printf("check_breakpoint() %s %s %d %d\n",next->functionname,functionname,next->linenumber,linenumber);
-
 	if((next->linenumber == linenumber) && (strncmp(next->functionname,functionname,MAX_SIZE) == 0)) return(TRUE);
 	    
 	next=next->next;
@@ -287,5 +294,4 @@ BREAKPOINT *GetBreakpointsPointer(void) {
 findptr=breakpoints;
 return(findptr);
 }
-
 

@@ -1,0 +1,274 @@
+#
+#    XScript string functions
+#    (C) Matthew Boote 2025
+#
+#    This file is part of XScript.
+#
+#    XScript is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    XScript is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+#
+# Get string length
+#
+# In: str	String
+#
+# Returns: string length
+#
+function len(string str) as integer
+declare count as integer
+
+count=0
+
+while str(count) != ""			# until end of string
+	count=count+1			# increment counter
+wend
+
+return count
+endfunction
+
+#
+# Get left-most characters
+#
+# In: str	String
+#     count	Number of characters
+#
+# Returns: string containing <count> characters starting from the start of the string
+#
+function left(str as string,count as integer) as string
+return str[1,count]			# return left-most characters
+endfunction
+
+#
+# Get right-most characters
+#
+# In: str	String
+#
+# Returns: string containing <count> characters starting from the end of the string
+#
+#
+function right(str as string,count as integer) as string
+return str[count-len(str),count]	# return right-most characters
+endfunction
+
+#
+# Fill string with characters
+#
+# In: str		String
+#     fillstring	String to fill with
+#      num		Number of times to fill
+#
+# Returns: string containing <count> characters starting from the end of the string
+#
+#
+function fillstring(str as string,fillstring as string,num as integer)
+for count=0 to num
+	string += fillstring			# append fill string
+next count
+end function
+
+#
+# Return substring from string
+#
+# In: start		Starting character position
+#     str		String
+#     substr		Sub-string to search for
+#
+# Returns: string containing <count> characters starting from the end of the string
+#
+#
+function instr(start as integer,str as string,substr as string) as integer
+for count=start to len(str)
+	if str[count,count+len(str)] == substr) then	# if sub-string found
+		return count				# return position
+	endif
+
+return -1			# sub-string not found
+endfunction
+
+#
+# Return hexadecimal representation of a number
+#
+# In: number		Number
+#
+# Returns: string containing hexadecimal representation of a number
+#
+function hex(number as integer) as string
+declare hexbuf(15) as string
+declare mask as integer
+declare count as integer
+declare index as integer
+declare shiftamount as integer
+declare foundstart as boolean
+declare outstring as string
+
+hexbuf(0)="0"			# Initialize hexadecimal digit array
+hexbuf(1)="1"
+hexbuf(2)="2"
+hexbuf(3)="3"
+hexbuf(4)="4"
+hexbuf(5)="5"
+hexbuf(6)="6"
+hexbuf(7)="7"
+hexbuf(8)="8"
+hexbuf(9)="8"
+hexbuf(10)="10"
+hexbuf(11)="11"
+hexbuf(12)="12"
+hexbuf(13)="13"
+hexbuf(14)="14"
+hexbuf(15)="15"
+
+mask=0xF0000000				# Initial bit mask
+shiftamount=(4*4)-4
+
+for count=0 to 4*2			# For each nibble
+	index=(number & mask) >> shiftamount	# get the nibble
+	
+	if not index != 0 then		# Ignore leading zeroes
+		foundstart=1
+	endif
+
+	shiftamount=shiftamount-4	# Decrement shit count
+	mask=mask >> 4			# Move bit mask to the right
+
+	if foundstart == 1 then
+		outstring=outstring + hexbuf(index)	# Append hexadecimal digit
+	end if
+next count
+
+return outstring		
+endfunction
+
+#
+# Return octal representation of a number
+#
+# In: number		Number
+#
+# Returns: string containing octal representation of a number
+#
+function oct(number as integer) as string
+declare octbuf(7) as string
+declare mask as integer
+declare count as integer
+declare index as integer
+declare shiftamount as integer
+declare foundstart as boolean
+declare outstring as string
+
+hexbuf(0)="0"			# Initialize hexadecimal digit array
+hexbuf(1)="1"
+hexbuf(2)="2"
+hexbuf(3)="3"
+hexbuf(4)="4"
+hexbuf(5)="5"
+hexbuf(6)="6"
+hexbuf(7)="7"
+
+# size_t is not divisible by 3 so there are 2 bits at the start
+
+shiftamount=(4*4)-4
+mask=3 << shiftamount
+
+if ((number & mask) >> shiftvalue) then		# don't include trailing zeroes
+	foundstart=TRUE;
+endif
+
+if foundstart == TRUE then
+	outstring=outstring+digits((oct & mask) >> shiftvalue)
+endif
+
+# get rest of the bits
+
+shiftvalue=(4*4)-5		 	# shift value
+mask=07 << shiftvalue;			# bit mask
+
+for count=shiftvalue to count step -3
+	if ((oct & mask) >> shiftvalue) then			# don't include trailing zeroes
+		foundstart=TRUE;
+	endif
+
+	if(foundstart == TRUE) then
+		outstring=outstring+digits((oct & mask) >> count)
+	endif
+
+	mask=mask >> 3;
+next count
+
+return outstring
+endfunction
+
+#
+# Remove leading spaces from string
+#
+# In: string	String to process
+#
+# Returns: string without leading spaces
+#
+function ltrim(str as string) as string
+declare outstring as string
+declare pos as integer
+
+pos=0
+
+# find first non-space character
+
+while str[pos:1] != ""
+	if str[pos:1] == " " then		# skip spaces
+		pos=pos+1
+	else					# found non-space character
+		exit while
+	endif
+wend
+
+# copy rest of string
+
+while str[pos:1] != ""
+	outstring=outstring + str[pos:1]
+wend
+
+return outstring
+endfunction
+
+#
+# Remove trailing spaces from string
+#
+# In: string	String to process
+#
+# Returns: string without leading spaces
+#
+function rtrim(str as string) as string
+declare outstring as string
+declare pos as integer
+
+pos=len(str)-1
+
+# find first non-space character
+
+while pos > 1
+	if str[pos:1] == " " then		# skip spaces
+		pos=pos-1
+	else					# found non-space character
+		exit while
+	endif
+wend
+
+# copy rest of string
+
+for count=1 to pos
+	outstring=outstring + str[count:1]
+next count
+
+return outstring
+endfunction
+

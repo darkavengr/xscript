@@ -1,0 +1,58 @@
+#  XScript runtime library Version 0.0.1
+#   (C) Matthew Boote 2026
+#
+#   This file is part of XScript.
+#
+#   XScript is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   XScript is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with XScript.  If not, see <https://www.gnu.org/Licenses/>.
+#
+#
+
+# Adapted from /usr/include/bits/signum-generic.h
+
+declare SIGINT as constant integer = 2	# Interactive attention signal
+declare SIGILL as constant integer = 4	# Illegal instruction
+declare SIGABRT as constant integer = 6	# Abnormal termination
+declare SIGFPE as constant integer = 8	# Erroneous arithmetic operation
+declare SIGSEGV as constant integer = 11	# Invalid access to storage
+declare SIGTERM as constant integer = 15	# Termination request
+declare SIGHUP as constant integer = 1	# Hangup
+declare SIGQUIT as constant integer = 3	# Quit
+declare SIGTRAP as constant integer = 5	# Trace/breakpoint trap
+declare SIGKILL as constant integer = 9	# Killed
+#define SIGBUS as constant integer = 10	# Bus error
+declare SIGSYS as constant integer = 12	# Bad system call
+declare SIGPIPE as constant integer = 13	# Broken pipe
+declare SIGALRM as constant integer = 14	# Alarm clock
+
+declare SIGURG as constant integer = 16	# Urgent data is available at a socket
+declare SIGSTOP as constant integer = 17	# Stop, unblockable
+declare SIGTSTP as constant integer = 18	# Keyboard stop
+declare SIGCONT as constant integer = 19	# Continue
+declare SIGCHLD as constant integer = 20	# Child terminated or stopped
+declare SIGTTIN as constant integer = 21	# Background read from control terminal
+declare SIGTTOU as constant integer = 22	# Background write to control terminal
+declare SIGPOLL as constant integer = 23	# Pollable event occurred (System V)
+declare SIGXCPU as constant integer = 24	# CPU time limit exceeded
+declare SIGXFSZ as constant integer = 25	# File size limit exceeded
+declare SIGVTALRM as constant integer = 26	# Virtual timer expired
+declare SIGPROF as constant integer = 27	# Profiling timer expired
+declare SIGUSR1 as constant integer = 30	# User-defined signal 1
+declare SIGUSR2 as constant integer = 31	# User-defined signal 2
+
+declare SIGWINCH as constant integer = 28	# Window size change (4.3 BSD, Sun)
+
+declare SIGIO as constant integer = SIGPOLL	# I/O now possible (4.2 BSD)
+declare SIGIOT as constant integer = SIGABRT	# IOT instruction, abort() on a PDP-11
+declare SIGCLD as constant integer = SIGCHLD	# Old System V name
+

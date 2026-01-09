@@ -1,4 +1,2 @@
-declare teststr as constant string = "Testing"
-teststr="Hello"
+declare testvar(1) as integer
 
-print teststr

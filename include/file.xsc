@@ -1,0 +1,169 @@
+#
+#    XScript string functions
+#    (C) Matthew Boote 2025
+#
+#    This file is part of XScript.
+#
+#    XScript is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    XScript is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+
+#
+# File I/O
+#
+
+type FindResult
+	name as string
+	size as long
+	uid as integer
+	gid as integer
+	permissions as integer
+	type as integer
+	createtime_hours as integer
+	createtime_minutes as integer
+	createtime_seconds as integer
+	createdate_day as integer
+	createdate_month as integer
+	createdate_year as integer
+	accesstime_hours as integer
+	accesstime_minutes as integer
+	accesstime_seconds as integer
+	accessdate_day as integer
+	accessdate_month as integer
+	accessdate_year as integer
+	modifytime_hours as integer
+	modifytime_minutes as integer
+	modifytime_seconds as integer
+	modifydate_day as integer
+	modifydate_month as integer
+	modifydate_year as integer
+endtype
+
+function open(filename as string,mode as integer) as integer
+declare handle as integer
+
+libcall xlib_open(filename,mode) in "xlib" to handle
+return(handle);
+endfunction
+
+function close(handle as integer) as integer
+declare result as integer
+
+libcall xlib_close(handle) in "xlib" to result
+return(result);
+endfunction
+
+function read(handle as integer,buffer as string,size as integer) as integer
+declare result as integer
+
+libcall xlib_read(handle,buffer,size) in "xlib" to result
+return(result);
+endfunction
+
+function write(handle as integer,buffer as string,size as integer) as integer
+declare result as integer
+
+libcall xlib_write(handle,buffer,size) in "xlib" to result
+return(result);
+endfunction
+
+function seek(handle as integer,position as long,whence as integer) as long
+declare result as long
+
+libcall xlib_seek(handle,buffer,size) in "xlib" to result
+return(result);
+endfunction
+
+function tell(handle as integer) as long
+declare result as long
+
+libcall xlib_tell(handle,buffer,size) in "xlib" to result
+return(result);
+endfunction
+
+function chmod(filename as string,attribs as integer) as integer
+declare result as integer
+
+libcall xlib_chmod(handle,buffer,size) in "xlib" to result
+return(result);
+endfunction
+
+function create(filename as string) as integer
+declare result as integer
+
+libcall xlib_create(filename) in "xlib" to result
+return(result);
+endfunction
+
+function create(filename as string) as integer
+declare result as integer
+
+libcall xlib_create(filename) in "xlib" to result
+return(result);
+endfunction
+
+function delete(filename as string) as integer
+declare result as integer
+
+libcall xlib_delete(filename) in "xlib" to result
+return(result);
+endfunction
+
+function mkdir(dirname as string) as integer
+declare result as integer
+
+libcall xlib_mkdir(dirname) in "xlib" to result
+return(result);
+endfunction
+
+function rmdir(dirname as string) as integer
+declare result as integer
+
+libcall xlib_rmdir(dirname) in "xlib" to result
+return(result);
+endfunction
+
+function rename(oldname as string,newname as string) as integer
+declare result as integer
+
+libcall xlib_rename(oldname,newname) in "xlib" to result
+return(result);
+endfunction
+
+function getcwd() as string
+declare currentdirectory as string
+
+libcall xlib_getcwd() in "xlib" to currentdirectory
+return(currentdirectory)
+endfunction
+
+function touch(filename as string,attributes as integer) as integer
+declare result as integer
+
+libcall xlib_touch(filename,attributes) in "xlib" to result
+return(result);
+endfunction
+	
+function findfirst(filespec as string,FindBuf as FindResult) as integer
+declare result as integer
+
+libcall xlib_findfirst(filespec,FindBuf) in "xlib" to result
+return(result);
+endfunction
+	
+function findnext(filespec as string,FindBuf as FindResult) as integer
+declare result as integer
+
+libcall xlib_findnext(filespec,FindBuf) in "xlib" to result
+return(result);
+endfunction
+

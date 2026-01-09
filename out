@@ -1,0 +1,37 @@
+dofile.c:1578:1: error: expected identifier or ‘(’ before ‘if’
+ if(split.x == 0) {
+ ^~
+dofile.c:1581:1: error: expected identifier or ‘(’ before ‘else’
+ else
+ ^~~~
+dofile.c:1586:1: error: expected identifier or ‘(’ before ‘if’
+ if(split.y == 0) {
+ ^~
+dofile.c:1589:1: error: expected identifier or ‘(’ before ‘else’
+ else
+ ^~~~
+dofile.c:1596:1: error: expected identifier or ‘(’ before ‘for’
+ for(assigncount=1;assigncount < tc;assigncount++) {
+ ^~~
+dofile.c:1596:31: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘<’ token
+ for(assigncount=1;assigncount < tc;assigncount++) {
+                               ^
+dofile.c:1596:47: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘++’ token
+ for(assigncount=1;assigncount < tc;assigncount++) {
+                                               ^~
+dofile.c:1614:1: error: expected identifier or ‘(’ before ‘if’
+ if(CreateVariable(split.name,vartypeptr,xsize,ysize) == -1) return(-1);
+ ^~
+dofile.c:1616:1: error: expected identifier or ‘(’ before ‘if’
+ if(HaveValue == TRUE) {  /* set value */
+ ^~
+dofile.c:1649:14: error: expected declaration specifiers or ‘...’ before numeric constant
+ SetLastError(0);
+              ^
+dofile.c:1650:1: error: expected identifier or ‘(’ before ‘return’
+ return(0);
+ ^~~~~~
+dofile.c:1651:1: error: expected identifier or ‘(’ before ‘}’ token
+ }
+ ^
+make: *** [dofile.o] Error 1

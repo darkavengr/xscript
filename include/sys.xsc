@@ -1,0 +1,95 @@
+#  XScript runtime library Version 0.0.1
+#   (C) Matthew Boote 2026
+#
+#   This file is part of XScript.
+#
+#   XScript is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   XScript is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with XScript.  If not, see <https://www.gnu.org/Licenses/>.
+#
+#
+# System functions
+#
+declare stdin as constant integer = 0
+declare stdout as constant integer = 1
+declare stderr as constant integer = 2
+
+function exec(filename as string,args as string) as integer
+declare result as double
+
+libcall xlib_exec(filename,args) in "xlib" to result
+return result
+end function
+
+function exit(exitvalue as integer) as integer
+declare result as double
+
+libcall xlib_exit(exitvalue) in "xlib" to result
+return result
+end function
+
+function sleep(sleeptime as integer) as integer
+declare result as double
+
+libcall xlib_sleep(sleeptime) in "xlib" to result
+return result
+end function
+
+function dup(handle as integer) as integer
+declare result as integer
+
+libcall xlib_dup(handle) in "xlib" to result
+return(result);
+endfunction
+
+function dup2(handle as integer,newhandle as integer) as integer
+declare result as integer
+
+libcall xlib_dup2(handle,newhandle) in "xlib" to result
+return(result);
+endfunction
+
+function chdir(dirname as string) as integer
+declare result as integer
+
+libcall xlib_chdir(dirname) in "xlib" to result
+return(result);
+endfunction
+
+function getpid() as integer
+declare result as integer
+
+libcall xlib_getpid() in "xlib" to result
+return(result);
+endfunction
+
+function getenv(name as string,outbuf as string) as integer
+declare result as integer
+
+libcall xlib_getenv(name,outbuf) in "xlib" to result
+return(result);
+endfunction
+
+function kill(process as integer,signal as integer) as integer
+declare result as integer
+
+libcall xlib_kill(process,signal) in "xlib" to result
+return(result);
+endfunction
+
+function fncntl(handle as integer,action as integer,param as integer) as integer
+declare result as integer
+
+libcall xlib_fnctl(handle,action,param) in "xlib" to result
+return(result);
+endfunction
+

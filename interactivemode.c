@@ -322,6 +322,7 @@ int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int count;
 char *filename[MAX_SIZE];
 int retval;
+
 if(GetInteractiveModeFlag() == FALSE) {	/* not in interactive mode */
 	SetLastError(NOT_IN_INTERACTIVE_MODE);
 	return(-1);
@@ -514,7 +515,7 @@ while(stack != NULL) {
 	/* display initial parameters with values */
 
 	varnext=stack->initialparameters;	/* point to parameters */
-
+	
 	while(varnext != NULL) {
 		if(varnext->val != NULL) {
 			if(varnext->type_int == VAR_NUMBER) {				/* double precision */

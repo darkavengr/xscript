@@ -76,3 +76,5 @@ int xlib_unlink(char *filename) {
 return(unlink(filename));
 }
 
+int xlib_findfirst(char *filespec,struct stat *outbuf) {
+}

@@ -43,7 +43,7 @@ FUNCTIONCALLSTACK *functioncallstack=NULL;
 FUNCTIONCALLSTACK *FunctionCallStackTop=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
 UserDefinedType *udt=NULL;
-char *vartypenames[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG","BOOLEAN",NULL };
+char *BuiltInVariableTypes[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG","BOOLEAN",NULL };
 char *truefalse[] = { "False","True" };
 functionreturnvalue retval;
 vars_t *findvar;
@@ -52,9 +52,10 @@ int callpos=0;
 /*
  * Intialize main function
  * 
- *  In: args	command-line arguments
+ * In: 	progname	Script filename
+ *	args		command-line arguments
  * 
- *  Returns: Nothing
+ *  Returns: 0 on success, -1 on failure
  * 
  */
 int InitializeMainFunction(char *progname,char *args) {
@@ -71,8 +72,10 @@ NumberOfDeclareTokens=0;
 strncpy(tokens[0],"main",MAX_SIZE);
 strncpy(tokens[1],"(",MAX_SIZE);
 strncpy(tokens[2],")",MAX_SIZE);
+strncpy(tokens[3],"as",MAX_SIZE);
+strncpy(tokens[4],"integer",MAX_SIZE);
 
-if(DeclareFunction(tokens,3) == -1) return(-1);			/* declare main function */
+if(DeclareFunction(tokens,5) == -1) return(-1);			/* declare main function */
 
 /* push main function onto call stack */
 strncpy(newfunc.name,"main",MAX_SIZE);
@@ -87,7 +90,7 @@ newfunc.vars_end=NULL;
 newfunc.stat=0;
 newfunc.moduleptr=GetCurrentModuleInformationFromBufferAddress(GetCurrentBufferAddress());
 
-strncpy(newfunc.returntype,vartypenames[DEFAULT_TYPE_INT],MAX_SIZE);
+strncpy(newfunc.returntype,BuiltInVariableTypes[VAR_INTEGER],MAX_SIZE);
 
 newfunc.type_int=DEFAULT_TYPE_INT;
 newfunc.lastlooptype=0;
@@ -110,6 +113,10 @@ void DeclareBuiltInVariables(char *progname,char *args) {
 varval cmdargs;
 
 cmdargs.s=calloc(1,MAX_SIZE);
+if(cmdargs.s == NULL) {
+	SetLastError(NO_MEM);
+	return(-1);
+}
 
 /* add built-in variables */
 
@@ -216,7 +223,7 @@ else
 
 /* add to end */
 
-count=IsValidVariableType(type);		/* get built-in variable type */
+count=IsBuiltInVariableType(type);		/* get built-in variable type */
 
 if(count != -1) {				/* is built-in variable type */
 	currentfunction->vars_end->val=calloc(1,xsize*ysize*sizeof(varval));
@@ -336,6 +343,8 @@ if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) {		/* outside array */
 }
 
 if(next->IsConstant == TRUE) {			/* if constant variable */
+	printf("SET CONSTANT=%d\n",IS_CONSTANT);
+
 	SetLastError(IS_CONSTANT);
 	return(-1);
 }
@@ -652,7 +661,7 @@ int fieldstart=0;
 int fieldend;
 int subscriptstart;
 int subscriptend;
-int commafound=FALSE;
+int commacount;
 char ParseEndChar;
 char *evaltokens[MAX_SIZE][MAX_SIZE];
 int evaltc;
@@ -689,7 +698,7 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	}
 
 	/* find array x and y values */
-	commafound=FALSE;
+	commacount=0;
 
 	for(count=start+1;count<end;count++) {
 
@@ -711,25 +720,24 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 				}
 			}
 
-			if(strcmp(tokens[count],",") == 0) {		 /* 3D array */
-				/* invalid expression */
-				if((IsValidExpression(tokens,subscriptstart+1,count-1) == FALSE) || (IsValidExpression(tokens,count+1,subscriptend-1) == FALSE)) {
-					SetLastError(INVALID_EXPRESSION);
+			if(strcmp(tokens[count],",") == 0) {
+				if((strcmp(tokens[count-1],"(") == 0) || (strcmp(tokens[count+1],")") == 0)) {	/* no expression before or after
+														   comma found */
+					SetLastError(SYNTAX_ERROR);
 					return(-1);
 				}
-	
-				evaltc=SubstituteVariables(subscriptstart,count,tokens,evaltokens);
-				split->x=EvaluateExpression(evaltokens,0,evaltc);
 
-				evaltc=SubstituteVariables(count+1,subscriptend,tokens,evaltokens);
-				split->y=EvaluateExpression(evaltokens,0,evaltc);
+				if(commacount == 0) subscriptstart=count;	/* save comma position */
 
-				commafound=TRUE;
-			 	break;
+				commacount++;		 /* comma found */
 			}
 	}
 
-	if(commafound == FALSE) {			/* 2d array */
+	if(commacount > 1) {			/* invalid number of commas */
+		SetLastError(SYNTAX_ERROR);
+		return(-1);
+	}
+	else if(commacount == 0) {			/* 2d array */
 		if(IsValidExpression(tokens,subscriptstart+1,subscriptend-1) == FALSE) return(-1);	/* invalid expression */
 
 		evaltc=SubstituteVariables(subscriptstart,subscriptend,tokens,evaltokens);
@@ -737,6 +745,21 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 		split->x=EvaluateExpression(evaltokens,0,evaltc);
 	 	split->y=1;
 	}
+	else
+	{
+		/* invalid expression */
+		if((IsValidExpression(tokens,subscriptstart+1,count-1) == FALSE) || (IsValidExpression(tokens,count+1,subscriptend-1) == FALSE)) {
+			SetLastError(INVALID_EXPRESSION);
+			return(-1);
+		}
+	
+		evaltc=SubstituteVariables(subscriptstart,count,tokens,evaltokens);
+		split->x=EvaluateExpression(evaltokens,0,evaltc);
+
+		evaltc=SubstituteVariables(count+1,subscriptend,tokens,evaltokens);
+		split->y=EvaluateExpression(evaltokens,0,evaltc);
+	}
+
 	
 }
 
@@ -813,7 +836,7 @@ if(val != NULL) free(val);		/* free entry */
 /*
  *  Remove variable
  * 
- *  In: char *name	Variable name
+ *  In: name	Variable name
  * 
  *  Returns -1 on failure or 0 on success
  * 
@@ -913,8 +936,8 @@ return(-1);
 /*
  *  Declare function
  * 
- *  In: char *tokens[MAX_SIZE][MAX_SIZE] function name and args
-	      int funcargcount			number of tokens
+ *  In: tokens[MAX_SIZE][MAX_SIZE] function name and args
+	funcargcount		   number of tokens
  * 
  *  Returns -1 on failure or 0 on success
  * 
@@ -932,6 +955,9 @@ char *vartype[MAX_SIZE];
 UserDefinedType *udtptr;
 UserDefinedTypeField *udtfieldptr;
 int NumberOfParameters=0;
+int vartoken;
+bool ParameterIsConstant=FALSE;
+int paramtype;
 
 if((currentfunction != NULL) && ((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT)) {
 	SetLastError(NESTED_FUNCTION);
@@ -981,34 +1007,42 @@ else
 
 /* skip ( and go to end */
 
-for(count=2;count < end;count++) {
-	if(strcmpi(tokens[count],")") == 0) break;		/* at end */
-	
-	if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
+count=2;
 
-		/* check if declaring variable with type */
-		typecount=0;
+while(count < end) {
+	ParameterIsConstant=FALSE;
 
-		while(vartypenames[typecount] != NULL) {
-			if(strcmpi(vartypenames[typecount],tokens[count+2]) == 0) { 		/* found type */
-				strncpy(vartype,vartypenames[typecount],MAX_SIZE);
-				break;
-			}
+	if(strcmpi(tokens[count],")") == 0) break;		/* function declaration without parameters */
 
-			typecount++;
-		 }
-	 	if(vartypenames[typecount] == NULL) {		/* user-defined type */
-			udtptr=GetUDT(tokens[typecount]);
-			if(udtptr == NULL) {
-				SetLastError(INVALID_VARIABLE_TYPE);
-				return(-1);
-			}
+	if(strcmpi(tokens[count+1], "AS") != 0) {		/* type */
+		SetLastError(SYNTAX_ERROR);
+		return(-1);
+	}
 
-			strncpy(vartype,tokens[count+2],MAX_SIZE);
+	vartoken=count;
+
+	if(strcmpi(tokens[count+2], "CONSTANT") == 0) {		/* constant variable declaration */
+		ParameterIsConstant=TRUE;
+		count++;		/* skip constant keyword */
+	}
+
+	/* check variable type */
+
+	paramtype=IsBuiltInVariableType(tokens[count+2]);
+	if(paramtype == -1) {		/* not built-in type */
+		udtptr=GetUDT(tokens[count+2]);
+		if(udtptr == NULL) {	/* not user-defined type */
+			SetLastError(INVALID_VARIABLE_TYPE);
+			return(-1);
 		}
 
+		strncpy(vartype,udtptr->name,MAX_SIZE);
 	}
-	  
+ 	else
+	{
+		strncpy(vartype,tokens[count+2],MAX_SIZE);
+	}
+
 /* add parameter */
 
 	if(funcs_end->parameters == NULL) {
@@ -1023,37 +1057,29 @@ for(count=2;count < end;count++) {
 
 	/* add function parameters */
 
-	if(vartypenames[typecount] !=NULL) {			/* built-in type */
+	if(BuiltInVariableTypes[paramtype] != NULL) {			/* built-in type */
 		funcs_end->parameters_end->type_int=typecount;
 	}
-	else
+		else
 	{
 		funcs_end->parameters_end->type_int=VAR_UDT;
-		strncpy(funcs_end->parameters_end->udt_type,tokens[count+2],MAX_SIZE);	/* user-defined type */
+		strncpy(funcs_end->parameters_end->udt_type,tokens[count],MAX_SIZE);	/* user-defined type */
 	}
 
-	strncpy(funcs_end->parameters_end->varname,tokens[count],MAX_SIZE);
+	strncpy(funcs_end->parameters_end->varname,tokens[vartoken],MAX_SIZE);
 
 	funcs_end->parameters_end->xsize=0;
 	funcs_end->parameters_end->ysize=0;
 	funcs_end->parameters_end->val=NULL;
-
+	funcs_end->parameters_end->FunctionParameterIsConstant=ParameterIsConstant;	/* parameter is constant */
 	NumberOfParameters++;
 
-	if(strcmpi(tokens[count+1], "AS") == 0) {
-		if(strcmp(tokens[count+3], ")") == 0) {
-			count += 2;
-		}
-		else
-		{
-			count += 3;		/* skip "AS", type and "," */
-		}
-	}
-	else
-	{
-		count++;		/* skip , */
-	}
+	if(strcmp(tokens[count+3],")") == 0) break;	
+
+	count += 4;		/* skip "AS" and type */
 }
+
+count++;		/* point to AS type */
 
 funcs_end->funcargcount=NumberOfParameters;
 
@@ -1061,30 +1087,33 @@ if(GetInteractiveModeFlag()) funcs_end->WasDeclaredInInteractiveMode=TRUE;	/* fu
 
 /* get function return type */
 
+if(strcmpi(tokens[count], "AS") != 0) {
+	SetLastError(SYNTAX_ERROR);
+	return(-1);
+}
+
+vartoken=count;
+
+if(strcmpi(tokens[count+1], "CONSTANT") == 0) count++;		/* skip CONSTANT keyword */
+
 typecount=0;	
 
-if(strcmpi(tokens[count+1], "AS") == 0) {		/* type */
-	while(vartypenames[typecount] != NULL) {
-		if(strcmpi(vartypenames[typecount],tokens[count+2]) == 0) break;	/* found type */
+while(BuiltInVariableTypes[typecount] != NULL) {
+	if(strcmpi(BuiltInVariableTypes[typecount],tokens[count+1]) == 0) break;
 
-		typecount++;
-	}
+	typecount++;
+}
 
-	if(vartypenames[typecount] == NULL) {		/* possible user-defined type */
-		udtptr=GetUDT(tokens[count+2]);
-		if(udtptr == NULL) {			/* not user-defined type */
-			SetLastError(TYPE_DOES_NOT_EXIST);
-			return(-1);
-		}
-	}
-	else
-	{
-		strncpy(funcs_end->returntype,vartypenames[typecount],MAX_SIZE);	
+if(BuiltInVariableTypes[typecount] == NULL) {
+	udtptr=GetUDT(tokens[count+2]);
+	if(udtptr == NULL) {	
+		SetLastError(TYPE_DOES_NOT_EXIST);
+		return(-1);
 	}
 }
 else
 {
-	strncpy(funcs_end->returntype,vartypenames[DEFAULT_TYPE_INT],MAX_SIZE);
+	strncpy(funcs_end->returntype,BuiltInVariableTypes[typecount],MAX_SIZE);	
 }
 
 funcs_end->type_int=typecount;		/* copy function type */
@@ -1183,12 +1212,13 @@ int NumberOfArguments=0;
 varval paramval;
 vars_t *parameters=NULL;
 vars_t *initialparameters=NULL;
+vars_t *var;
 
 retval.has_returned_value=FALSE;			/* clear has returned value flag */
 
-next=funcs;						/* point to variables */
 /* find function name */
 
+next=funcs;						/* point to variables */
 while(next != NULL) {
 	if(strcmpi(next->name,tokens[start]) == 0) break;		/* found name */   
 
@@ -1203,7 +1233,7 @@ if(next == NULL) {
 returnvalue=SubstituteVariables(start+2,end,tokens,evaltokens);			/* substitute variables */
 if(returnvalue == -1) return(-1);
 
-/* save information about the calling function. The calling function is already on the stack */
+/* save information about the called function. The caller function is already on the stack */
 
 currentfunction->callptr=GetCurrentBufferPosition();
 
@@ -1235,7 +1265,7 @@ parameters=next->parameters;
 
 /* add variables from parameters */
 
-for(count=0;count<returnvalue;count += 2) {
+for(count=0;count < returnvalue;count += 2) {
 	if(parameters->type_int == VAR_NUMBER) {
 		paramval.d=atof(evaltokens[count]);
 	}
@@ -1263,14 +1293,28 @@ for(count=0;count<returnvalue;count += 2) {
 	}
 
 	if(parameters->type_int == VAR_UDT) {			/* user defined type */
-		CreateVariable(parameters->varname,parameters->udt_type,split.x,split.y);
+		if(CreateVariable(parameters->varname,parameters->udt_type,split.x,split.y) == -1) {
+			ReturnFromFunction();			/* set script's function return value */
+			return(-1);
+		}
 	}
 	else							/* built-in type */
 	{
-		CreateVariable(parameters->varname,vartypenames[parameters->type_int],1,1);
+		if(CreateVariable(parameters->varname,BuiltInVariableTypes[parameters->type_int],1,1) == -1) {
+			ReturnFromFunction();			/* set script's function return value */
+			return(-1);
+		}
 	}
 
-	UpdateVariable(parameters->varname,NULL,&paramval,split.x,split.y,split.fieldx,split.fieldy);
+	/* Set parameter value */
+	if(UpdateVariable(parameters->varname,NULL,&paramval,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
+
+	/* set parameters->IsConstant after calling UpdateVariable() to make sure it will only be updated only once */
+
+	var=GetVariablePointer(parameters->varname);		/* Get pointer to variable entry */
+	if(var == NULL) return(-1);
+
+	if(parameters->FunctionParameterIsConstant == TRUE) var->IsConstant=parameters->FunctionParameterIsConstant;
 
 	NumberOfArguments++;
 
@@ -1296,7 +1340,13 @@ for(count=0;count<returnvalue;count += 2) {
 		initialparameters=initialparameters->next;
 	}
 
-	memcpy(initialparameters,parameters,sizeof(struct vartype));
+	var=GetVariablePointer(parameters->varname);
+	if(var == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
+
+	memcpy(initialparameters,var,sizeof(struct vartype));
 
 	parameters=parameters->next;
 	if(parameters == NULL) break;
@@ -1610,7 +1660,6 @@ for(count=start;count<end;count++) {
 		}
 		else if(type == VAR_SINGLE) {   
 		    sprintf(temp[outcount++],"%f",val.f);
-
 	       	}
 		else if(type == VAR_LONG) {   
 		    sprintf(temp[outcount++],"%ld",val.l);
@@ -2157,7 +2206,7 @@ return(-1);
 }	
 
 /*
-*  Check if valid variable type
+*  Check if built-in variable type
 * 
 *  In: type	variable type name
 * 
@@ -2165,12 +2214,12 @@ return(-1);
 * 
 */
 
-int IsValidVariableType(char *type) {
+int IsBuiltInVariableType(char *type) {
 int count=0;
 
-while(vartypenames[count] != NULL) {
+while(BuiltInVariableTypes[count] != NULL) {
 
-	if(strcmpi(vartypenames[count],type) == 0) return(count);
+	if(strcmpi(BuiltInVariableTypes[count],type) == 0) return(count);
 	count++;
 }
 

@@ -65,6 +65,7 @@
 		char *udt_type[MAX_SIZE];
 		int type_int;
 		bool IsConstant;
+		bool FunctionParameterIsConstant;
 		struct vartype *next;
 	} vars_t;
 
@@ -137,7 +138,6 @@ void ReturnFromFunction(void);
 int atoi_base(char *hex,int base);
 int SubstituteVariables(int start,int end,char *tokens[][MAX_SIZE],char *out[][MAX_SIZE]);
 int ConatecateStrings(int start,int end,char *tokens[][MAX_SIZE],varval *val);
-int CheckVariableType(char *typename);
 int IsVariable(char *varname);
 int PushFunctionCallInformation(FUNCTIONCALLSTACK *func);
 int PopFunctionCallInformation(void);
@@ -149,7 +149,7 @@ int AddUserDefinedType(UserDefinedType *newudt);
 int CopyUDT(UserDefinedType *source,UserDefinedType *dest);
 vars_t *GetVariablePointer(char *name);
 int GetFieldValueFromUserDefinedType(char *varname,char *fieldname,varval *val,int fieldx,int fieldy);
-int IsValidVariableType(char *type);
+int IsBuiltInVariableType(char *type);
 int GetFieldTypeFromUserDefinedType(char *varname,char *fieldname);
 char *GetCurrentFunctionName(void);
 int GetCurrentFunctionLine(void);

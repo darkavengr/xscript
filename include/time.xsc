@@ -1,0 +1,61 @@
+#  XScript runtime library Version 0.0.1
+#   (C) Matthew Boote 2026
+#
+#   This file is part of XScript.
+#
+#   XScript is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   XScript is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with XScript.  If not, see <https://www.gnu.org/Licenses/>.
+#
+#
+# Time and date functions
+#
+type time
+	Hour as integer
+	Minute as integer
+	Second as integer
+endtype
+
+type date
+	Day as integer
+	Month as integer
+	Year as integer
+endtype
+
+function GetTime(TimeBuffer as time) as integer
+declare result as double
+
+libcall xlib_get_time(TimeBuffer) in "xlib" to result
+return result
+end function
+
+function SetTime(TimeBuffer as time) as integer
+declare result as double
+
+libcall xlib_set_time(TimeBuffer) in "xlib" to result
+return result
+end function
+
+function GetDate(DateBuffer as time) as integer
+declare result as double
+
+libcall xlib_get_date(DateBuffer) in "xlib" to result
+return result
+end function
+
+function SetTime(DateBuffer as time) as integer
+declare result as double
+
+libcall xlib_set_date(DateBuffer) in "xlib" to result
+return result
+end function
+

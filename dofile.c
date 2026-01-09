@@ -39,7 +39,6 @@
 #include "debugmacro.h"
 
 extern jmp_buf savestate;
-extern char *vartypenames[];
 extern char *truefalse[];
 
 int saveexprtrue=0;
@@ -182,10 +181,6 @@ do {
 	SetCurrentFileBufferPosition(CurrentBufferPosition);
 
 	if(ExecuteLine(linebuf) == -1) {			/* run statement */
-
-		strcpy(progname.s,"");				/* update program name */
-		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
-
 		ClearIsRunningFlag();
 
 		free(progname.s);
@@ -193,9 +188,6 @@ do {
 	}
 
 	if(GetIsRunningFlag() == FALSE) {
-		strcpy(progname.s,"");				/* update program name */
-		UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
-
 		CurrentBufferPosition=saveCurrentBufferPosition;
 
 		free(progname.s);
@@ -318,7 +310,11 @@ for(count=1;count<tc;count++) {
  		if(returnvalue == -1) return(-1);
 
 	 	if(strlen(split.fieldname) == 0) {			/* use variable name */
+			printf("split.name=%s\n",split.name);
+
 	 		vartype=GetVariableType(split.name);
+
+			printf("vartype=%d\n",vartype);
 		}
 		else
 		{
@@ -417,10 +413,10 @@ for(count=1;count<tc;count++) {
 			return(0);
 		 }
 
-		 if(UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
+		if(UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
 
-		 SetLastError(0);
-		 return(0);		 
+		SetLastError(0);
+		return(0);		 
 	 }
 
 }
@@ -1534,8 +1530,6 @@ return(0);
 int declare_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 varsplit split;
 int count;
-char *vartypeptr=NULL;
-char *savevartypeptr=NULL;
 int assigncount;
 bool HaveValue=FALSE;
 varval declareval;
@@ -1543,32 +1537,33 @@ int xsize;
 int ysize;
 bool IsConstant=FALSE;
 vars_t *varptr;
-
-/* if there is a type in the declare statement */
+int vartype;
+char *vartypeptr;
 
 for(count=1;count < tc;count++) {
 
-	if(strcmpi(tokens[count],"AS") == 0) {
-		if(ParseVariableName(tokens,1,count-1,&split) == -1) return(-1);	/* parse variable name */
+	if(strcmpi(tokens[count+1],"AS") == 0) {		/* found "AS" */
+		if(ParseVariableName(tokens,1,count,&split) == -1) return(-1);	/* parse variable name */
 
-		if(strcmpi(tokens[count+1],"CONSTANT") == 0) {	/* constant variable */
-			vartypeptr=tokens[count+2];
+		if(strcmpi(tokens[count+2],"CONSTANT") == 0) {	/* constant variable */
+			count++;
 			IsConstant=TRUE;
 		}
-		else
-		{
-			vartypeptr=tokens[count+1];
+	
+		if(IsBuiltInVariableType(tokens[count+2]) == -1) {		/* not built-in type */
+			if(GetUDT(tokens[count+2]) == NULL) {	/* not user-defined type */
+				SetLastError(INVALID_VARIABLE_TYPE);
+				return(-1);
+			}
 		}
 
-		savevartypeptr=vartypeptr;
 		break;
 	}
 }
 
-if(vartypeptr == NULL) {			/* use default type */
-	if(ParseVariableName(tokens,1,tc,&split) == -1) return(-1);	/* parse variable name */
-
-	vartypeptr=vartypenames[DEFAULT_TYPE_INT];
+if(count == tc) {				/* no "AS" found */
+	SetLastError(SYNTAX_ERROR);
+	return(-1);
 }
 
 /* get x and y size for CreateVariable() */
@@ -1599,7 +1594,7 @@ for(assigncount=1;assigncount < tc;assigncount++) {
 			return(-1);
 		}
 
-		if(savevartypeptr == NULL) {		/* can't assign to UDT variables */
+		if(GetVariableType(split.name) == VAR_UDT) {		/* can't assign to UDT variables */
 			SetLastError(TYPE_ERROR);
 			return(-1);
 		}
@@ -1609,7 +1604,7 @@ for(assigncount=1;assigncount < tc;assigncount++) {
 	}
 }
 
-if(CreateVariable(split.name,vartypeptr,xsize,ysize) == -1) return(-1);
+if(CreateVariable(split.name,tokens[count+2],xsize,ysize) == -1) return(-1);
 
 if(HaveValue == TRUE) {		/* set value */
 	switch(GetVariableType(split.name)) {
@@ -1769,7 +1764,7 @@ do {
 	fieldptr->xsize=split.x;				/* get x size of field variable */
 	fieldptr->ysize=split.y;				/* get y size of field variable */
 
-	fieldptr->type=IsValidVariableType(typetokens[2]);
+	fieldptr->type=GetVariableType(typetokens[2]);
 
 /* get type of field variable */
 
