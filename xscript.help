@@ -17,8 +17,8 @@ AND     AS      BACKTRACE  BOOLEAN    CATCH      CBREAK       CONSTANT  CONTINUE
 DELETE  DOUBLE  ELSE	   ELSEIF     END        ENDFUNCTION  ENDIF     ENDTRY    ENDTYPE
 EXIT    FALSE   FOR        FUNCTION   HELP       IF           IMPORT    INTEGER   ITERATE
 LBREAK  LOAD    LONG       NEXT       NOT        OR           PRINT     QUIT      REPEAT
-RESIZE  RETURN  RUN        SBREAK     SINGLE     STEP         STRING    THEN      TO
-TRACE   TRUE    TRY        TYPE       UNTIL      VARIABLES    WEND      WHILE
+RESIZE  RETURN  RUN        S          SBREAK     SINGLE       STEP      STRING    THEN
+TO      TRUE    TRY        TYPE       UNTIL      VARIABLES    WEND      WHILE
 %ENDTOPIC
 
 %TOPIC while
@@ -30,7 +30,7 @@ WEND
 
 Execute statements while condition is TRUE.
 
-See also: FOR
+See also: FOR, REPEAT
 %ENDTOPIC
 
 %TOPIC repeat
@@ -55,7 +55,7 @@ NEXT
 Loop a set number of times from expressions [start] to [end],
 optionally modifying the variable by [increment].
 
-See also: WHILE
+See also: WHILE, FOR, REPEAT
 %ENDTOPIC
 
 %TOPIC function
@@ -119,8 +119,6 @@ See also: TYPE, DECLARE, TRUE, FALSE
 %TOPIC boolean
 Boolean values can either be TRUE or FALSE.
 
-XSscript also supports BOOLEAN variable types.
-
 See also: DATATYPES,FALSE, TRUE
 %ENDTOPIC
 
@@ -131,11 +129,11 @@ SBREAK linenumber {function}		Set breakpoint at line number, optionally in {func
 
 CBREAK linenumber {function}		Clear breakpoint at line number, optionally in {function}.
 
-TRACE { on | off }			Enable or disable statement tracing.
+S [into]				Single-step through lines
 
 VARIABLES				Display variables for the current function.
 
-See also: SBREAK, CBREAK, TRACE, VARIABLES
+See also: SBREAK, CBREAK, VARIABLES
 %ENDTOPIC
 
 %TOPIC continue
@@ -174,7 +172,7 @@ See also: DECLARE, RESIZE
 %TOPIC iterate
 ITERATE
 
-Go back to start of FOR or WHILE loop.
+Go back to start of FOR, WHILE or REPEAT loop.
 
 See also: FOR, WHILE
 %ENDTOPIC
@@ -225,7 +223,6 @@ Conditional expressions may evaluate multiple conditions:
 
 [condition1] AND [condition2]		True if both [condition1] and [condition2] are true.
 [condition1] OR [condition2]		True if both [condition1] or [condition2] is true or [condition1] is true or [condition2] is true.
-[condition1] XOR [condition2]		True if only [condition1] is true or only [condition2] is true.
 %ENDTOPIC
 
 %TOPIC or
@@ -422,8 +419,8 @@ Single step through code line by line.
 See also: SET BREAKPOINT, CLEAR BREAKPOINT
 %ENDTOPIC
 
-%TOPIC stacktrace
-STACKTRACE
+%TOPIC backtrace
+BACKTRACE
 
 Prints the function call stack.
 %ENDTOPIC
@@ -467,18 +464,6 @@ See also: IF
 
 %TOPIC to
 See also: FOR
-%ENDTOPIC
-
-%TOPIC trace
-TRACE { ON | OFF }
-
-Displays statements as they are executed.
-
-The TRACE statement by itself shows if tracing is ON or OFF.
-%ENDTOPIC
-
-%TOPIC true
-The symbol TRUE evaluates to 1.
 %ENDTOPIC
 
 %TOPIC try

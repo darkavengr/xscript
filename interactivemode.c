@@ -261,7 +261,7 @@ while(1) {
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns 0 on success or -1 on failure
  *
  */
 int quit_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -302,7 +302,7 @@ siglongjmp(savestate,0);
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns 0 on success or -1 on failure
  *
  */
 int variables_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -315,7 +315,7 @@ list_variables(tokens[1]);
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns 0 on success or -1 on failure
  *
  */
 int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -349,7 +349,7 @@ return(LoadFile(filename));
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns 0 on success or -1 on failure
  *
  */
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -371,50 +371,12 @@ return(ExecuteFile(currentfile,""));	/* run file */
 }
 
 /*
- * Trace statement
- *
- * In: tc Token count
- * tokens Tokens array
- *
- * Returns: nothing
- *
- */
-
-int trace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-if(tc < 2) {			/* Display trace status */
-	if(GetTraceFlag() == TRUE) {
-		printf("Trace is ON\n");
-	}
-	else
-	{
-		printf("Trace is OFF\n");
-	}
-
-	return(0);
-}
-
-if(strcmpi(tokens[1],"ON") == 0) {		/* enable trace */
-	SetTraceFlag();
-}
-else if(strcmpi(tokens[1],"OFF") == 0) {		/* disable trace */
-	ClearTraceFlag();
-}
-else
-{
-	SetLastError(INVALID_VALUE);
-	return(-1);
-}
-
-return(0);
-}
-
-/*
  * Set breakpoint
  *
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns 0 on success or -1 on failure
  *
  */
 void sbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -436,7 +398,7 @@ return(0);
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns 0 on success or -1 on failure
  *
  */
 int cbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -469,7 +431,7 @@ SetCurrentBufferPosition(InteractiveModeBuffer);
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns 0 on success or -1 on failure
  *
  */
 int backtrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -483,7 +445,7 @@ return(0);
  * In: tc Token count
  * tokens Tokens array
  *
- * Returns error number on error or 0 on success
+ * Returns 0 on success or -1 on failure
  *
  */
 int lbreak_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
@@ -502,12 +464,23 @@ while(next != NULL) {
 return(0);
 }
 
+/*
+ * Print function call stack
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns -1 error or 0 on success
+ *
+ */
 void PrintBackTrace(void) {
 FUNCTIONCALLSTACK *stack;
 int callstackcount=0;
 vars_t *varnext;
 
-stack=GetFunctionCallStackTop();
+stack=GetFunctionCallStackTop();		/* get pointer to top of function call stack */
+
+/* loop through stack and print contents */
 
 while(stack != NULL) {
 	printf("#%d	%s(",callstackcount++,stack->name);
@@ -564,6 +537,49 @@ int help_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 if(DisplayHelp(tokens[1]) == -1) return(-1);		/* display help */
 
 SetLastError(0);
+return(0);
+}
+
+/*
+ * s statement
+ *
+ * In: tc Token count
+ * tokens Tokens array
+ *
+ * Returns: 0 on sucess, -1 on failure
+ *
+ */
+int singlestep_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *linebuf[MAX_SIZE];
+char *filename[MAX_SIZE];
+char *bufptr=GetCurrentFileBufferPosition();
+
+if(GetIsFileLoadedFlag() == FALSE) {	/* no file loaded */
+	SetLastError(NO_FILE_LOADED);
+	return(-1);
+}
+	
+if((char) *bufptr == 0) {	/* no more lines */
+	SetLastError(AT_END_OF_PROGRAM);
+	return(-1);
+}
+
+GetCurrentFile(filename);	/* get name of current file */
+
+SetCurrentFileBufferPosition(ReadLineFromBuffer(GetCurrentFileBufferPosition(),linebuf,LINE_SIZE));	/* read line from buffer */
+
+if(((char) *bufptr == '\n') || ((char) *bufptr == '#')) {	/* skip newlines and comments */
+	SetLastError(NO_ERROR);
+	return(0);
+}
+
+printf("***** Executing line %d in function %s: %s\n",GetCurrentFunctionLine(),filename,linebuf);
+
+if(ExecuteLine(linebuf) == -1) return(-1);			/* run statement */
+
+SetCurrentFunctionLine(GetCurrentFunctionLine()+1);
+
+SetLastError(NO_ERROR);
 return(0);
 }
 

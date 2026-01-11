@@ -1,2 +1,4 @@
-print 2+2
-
+a=2
+b=33
+c=34
+print a+b+c

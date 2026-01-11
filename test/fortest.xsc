@@ -1,6 +1,6 @@
 for x=1 to 10
 	if x = 8 then
-		exit for
+		iterate
 	endif
 
 	print x

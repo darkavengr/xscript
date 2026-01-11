@@ -84,8 +84,8 @@ statement statements[] = {
 	     { "CBREAK",NULL,&cbreak_command,FALSE},\
 	     { "LBREAK",NULL,&lbreak_command,FALSE},\
 	     { "HELP",NULL,&help_command,FALSE},\
-	     { "TRACE",NULL,&trace_command,FALSE},\
 	     { "BACKTRACE",NULL,&backtrace_command,FALSE},\
+	     { "S",NULL,&singlestep_command,FALSE},\
 	     { NULL,NULL,NULL } };
 
 /*

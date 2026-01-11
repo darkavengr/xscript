@@ -37,6 +37,7 @@
 #include "variablesandfunctions.h"
 #include "dofile.h"
 #include "debugmacro.h"
+#include "statements.h"
 
 extern jmp_buf savestate;
 extern char *truefalse[];
@@ -154,6 +155,8 @@ if(filename != NULL) {
 	}
 
 	strncpy(progname.s,filename,strlen(filename)+1);				/* update program name */
+
+	CreateVariable("PROGRAMNAME","STRING",1,1);
 	UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
 
 	SetCurrentFileBufferPosition(FileBuffer);
@@ -161,17 +164,16 @@ if(filename != NULL) {
 	SetIsFileLoadedFlag();
 }
 
+
 InitializeMainFunction(filename,args);
 
 SetIsRunningFlag();
 SwitchToFileBuffer();			/* switch to file buffer */
 
-SetCurrentFunctionLine(1);
-
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
 
+SetCurrentFunctionLine(1);
 SetFunctionCallPtr(saveCurrentBufferPosition);		/* set start of current function to buffer start */
-
 SetCurrentFile(filename);			/* set current executing file */
 
 do {
@@ -240,11 +242,10 @@ int end;
 int IsValid=FALSE;
 char *functionname[MAX_SIZE];
 
-GetCurrentFile(filename);	/* get name of current file */
+//printf("ExecuteLine() CurrentBufferPosition=%lX\n",CurrentBufferPosition);
+//printf("lbuf=%lX\n",lbuf);
 
-if(GetTraceFlag()) {		/* print statement if trace is enabled */
-	printf("***** Tracing line %d in function %s: %s\n",GetCurrentFunctionLine(),filename,lbuf);
-}
+GetCurrentFile(filename);	/* get name of current file */
 
 RemoveNewline(lbuf);		/* remove newline from line */
 
@@ -310,11 +311,7 @@ for(count=1;count<tc;count++) {
  		if(returnvalue == -1) return(-1);
 
 	 	if(strlen(split.fieldname) == 0) {			/* use variable name */
-			printf("split.name=%s\n",split.name);
-
 	 		vartype=GetVariableType(split.name);
-
-			printf("vartype=%d\n",vartype);
 		}
 		else
 		{
@@ -555,9 +552,9 @@ for(count=1;count < tc;count++) {
 				   (strcmp(tokens[exprpos],"<") == 0)) {
 
 					retval.val.type=0;
-		     			retval.val.d=EvaluateCondition(tokens,count,endtoken);
+		     			retval.val.i=EvaluateCondition(tokens,count,endtoken);
 	
-		     			retval.val.d == 1 ? printf("True ") : printf("False ");
+		     			printf("%s ",truefalse[retval.val.i]);
 
 					count=endtoken+1;
 					IsCondition=TRUE;
@@ -633,7 +630,7 @@ if(modpath == NULL) {				/* no module path */
 
 pathtc=TokenizeLine(modpath,module_directories,":");			/* tokenize line */
 
-for(count=0;count<pathtc;count++) {			/* loop through path array */
+for(count=0;count < pathtc;count++) {			/* loop through path array */
 
 	/* try source file first, then binary module */
 
@@ -1000,12 +997,12 @@ else
 
 SetFunctionFlags(FOR_STATEMENT);
 
-SetSaveInformationBufferPointer(CurrentBufferPosition);
+SetSaveInformationBufferPointer(GetCurrentBufferPosition());
 
 while(1) {
 	sigsetjmp(savestate,1);		/* save current context */
 
-	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */	
+	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),buf,LINE_SIZE));			/* get data */	
 
 	if( (((char) *buf) == '\r') || (((char) *buf) == '\n') || (((char) *buf) == 0)) continue; 	/* skip blank line */
 
@@ -1057,7 +1054,7 @@ while(1) {
 	        ((vartype == VAR_SINGLE) && (ifexpr == 0) && (loopcount.f > exprtwo))
        		) break;
 	
-		CurrentBufferPosition=GetSaveInformationBufferPointer();			/* get pointer to start of for statement */
+		SetCurrentBufferPosition(GetSaveInformationBufferPointer());			/* get pointer to start of for statement */
     	} 
 
 	sigsetjmp(savestate,1);		/* save current context */
@@ -1482,6 +1479,12 @@ else if(strcmpi(tokens[1],"WHILE") == 0) {
 		return(-1);
 	}
 }
+else if(strcmpi(tokens[1],"REPEAT") == 0) {
+	if((GetFunctionFlags() & REPEAT_STATEMENT) == 0)	{
+		SetLastError(EXIT_REPEAT_WITHOUT_REPEAT);
+		return(-1);
+	}
+}
 else
 {
 	SetLastError(SYNTAX_ERROR);
@@ -1654,7 +1657,6 @@ return(0);
  */
 
 int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
-char *CurrentBufferPosition;
 char *SavePosition;
 char *buf[MAX_SIZE];
 
@@ -1668,25 +1670,24 @@ while(*CurrentBufferPosition != 0) {
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
-	printf("iterate buf=%s\n",buf);
-
 	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
 	if(tc == -1) {
 		SetLastError(SYNTAX_ERROR);
 		return(-1);
 	}
 
-	printf("tokens[0]=%s\n",tokens[0]);
+	if( ((GetFunctionFlags() & FOR_STATEMENT) && (strcmpi(tokens[0],"NEXT") == 0)) || \
+	   ((GetFunctionFlags() & WHILE_STATEMENT) && (strcmpi(tokens[0],"WEND") == 0)) || \
+     	   ((GetFunctionFlags() & REPEAT_STATEMENT) && (strcmpi(tokens[0],"UNTIL") == 0))) {
+		/* go to line before NEXT, WEND or UNTIL statement so the FOR, WHILE or REPEAT loop is handled properly */
+		SetCurrentBufferPosition(SavePosition);
+		
+		printf("FOUND NEXT, WEND OR UNTIL\n");
+		printf("CurrentBufferPosition=%lX\n",CurrentBufferPosition);
 
-	if((GetFunctionFlags() & FOR_STATEMENT) && (strcmpi(tokens[0],"NEXT") == 0) ||
-	   (GetFunctionFlags() & WHILE_STATEMENT) && (strcmpi(tokens[0],"WEND") == 0)) {
-		printf("FOUND NEXT OR WEND\n");
-		printf("SavePosition=%lX\n",SavePosition);
 		asm("int $3");
 
 		SetFunctionFlags(WAS_ITERATED);
-
-		SetCurrentBufferPosition(SavePosition);	/* go to line before NEXT/WEND statement so the FOR/WHILE loop is handled properly */
 		return(0);
 	}
 
@@ -2323,18 +2324,6 @@ FileBufferPosition=pos;
 
 char *GetCurrentBufferPosition(void) {
 return(CurrentBufferPosition);
-}
-
-void SetTraceFlag(void) {
-Flags |= TRACE_FLAG;
-}	
-
-void ClearTraceFlag(void) {
-Flags &= ~TRACE_FLAG;
-}	
-
-int GetTraceFlag(void) {
-return((Flags & TRACE_FLAG) >> 3);
 }
 
 void GetTokenCharacters(char *tbuf) {

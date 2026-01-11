@@ -1,14 +1,6 @@
 #include <stdbool.h>
 #include "module.h"
 
-#define FOR_STATEMENT			1
-#define IF_STATEMENT			2
-#define WHILE_STATEMENT			4
-#define FUNCTION_STATEMENT		8
-#define FUNCTION_INTERACTIVE_MODE	16
-#define WAS_ITERATED			32
-#define REPEAT_STATEMENT		64
-
 #define VAR_NUMBER  0
 #define VAR_STRING  1
 #define VAR_INTEGER 2
@@ -166,7 +158,6 @@ int PopSaveInformation(void);
 int GetVariableXSize(char *name);
 int GetVariableYSize(char *name);
 int IsFunction(char *name);
-SAVEINFORMATION *GetSaveInformation(void);
 int InitializeMainFunction(char *progname,char *args);
 void DeclareBuiltInVariables(char *progname,char *args);
 void FreeFunctionsAndVariables(void);

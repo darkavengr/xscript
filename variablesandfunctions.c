@@ -34,6 +34,7 @@
 #include "evaluate.h"
 #include "debugmacro.h"
 #include "version.h"
+#include "statements.h"
 
 extern char *TokenCharacters;
 
@@ -2494,21 +2495,6 @@ else
 }
 
 return(0);
-}
-
-/*
- *  Get pointer to top of save information stack
- * 
- *  In: Nothing
- * 
- *  Returns: pointer to top of save information stack on success or NULL on failure
- * 
- */
-
-SAVEINFORMATION *GetSaveInformation(void) {
-if(currentfunction == NULL) return(NULL);
-
-return(currentfunction->saveinformation_top);
 }
 
 /*

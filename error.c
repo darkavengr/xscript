@@ -82,6 +82,8 @@ char *errs[] = { "No error",\
 		"Variable is constant",\
 		"REPEAT without UNTIL",\
 		"UNTIL without REPEAT",\
+		"Reached end of program",\
+		"EXIT REPEAT outside of REPEAT loop",\
 };
 
 /*
