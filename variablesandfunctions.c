@@ -2359,7 +2359,7 @@ currentfunction->stat &= ~flags;
 * 
 */
 int GetFunctionFlags(void) {
-if(currentfunction == NULL) return(-1);
+if(currentfunction == NULL) return(0);
 
 return(currentfunction->stat);
 }

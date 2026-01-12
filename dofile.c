@@ -242,9 +242,6 @@ int end;
 int IsValid=FALSE;
 char *functionname[MAX_SIZE];
 
-//printf("ExecuteLine() CurrentBufferPosition=%lX\n",CurrentBufferPosition);
-//printf("lbuf=%lX\n",lbuf);
-
 GetCurrentFile(filename);	/* get name of current file */
 
 RemoveNewline(lbuf);		/* remove newline from line */
@@ -728,6 +725,11 @@ if(tc < 2) {
 SetFunctionFlags(IF_STATEMENT);
 
 while(*CurrentBufferPosition != 0) {
+	if(GetFunctionFlags() & WAS_ITERATED) {		/* Skip statements if iterated */	
+		ClearFunctionFlags(WAS_ITERATED);
+		return(0);
+	}
+
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
 		sigsetjmp(savestate,1);		/* save current context */
 
@@ -756,7 +758,7 @@ while(*CurrentBufferPosition != 0) {
 		return(-1);
 	}
 
-	if(strcmpi(tokens[0],"ENDIF") == 0) {
+	if(strcmpi(tokens[0],"ENDIF") == 0) {			/* at end of if block */
 		ClearFunctionFlags(IF_STATEMENT);
 
 		SetLastError(0);
@@ -780,7 +782,7 @@ while(*CurrentBufferPosition != 0) {
 				return(-1);
 			}
 
-			if(strcmpi(tokens[0],"ENDIF") == 0) {
+			if(strcmpi(tokens[0],"ENDIF") == 0) {			/* at end of if block */
 				ClearFunctionFlags(IF_STATEMENT);
 				SetLastError(0);
 				return(0);
@@ -791,12 +793,7 @@ while(*CurrentBufferPosition != 0) {
 
 }
 
-if(GetFunctionFlags() & WAS_ITERATED) {		/* ENDIF was skipped over by ITERATE statement */
-	ClearFunctionFlags(WAS_ITERATED);
-
-	SetLastError(0);
-	return(0);
-}
+/* no ENDIF statement found */
 
 SetLastError(IF_WITHOUT_ENDIF);
 return(-1);
@@ -1660,8 +1657,6 @@ int iterate_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *SavePosition;
 char *buf[MAX_SIZE];
 
-printf("Iterate, maaaaaaaaaaaan!\n");
-
 /* find end of loop */
 CurrentBufferPosition=GetCurrentBufferPosition();
 
@@ -1681,11 +1676,6 @@ while(*CurrentBufferPosition != 0) {
      	   ((GetFunctionFlags() & REPEAT_STATEMENT) && (strcmpi(tokens[0],"UNTIL") == 0))) {
 		/* go to line before NEXT, WEND or UNTIL statement so the FOR, WHILE or REPEAT loop is handled properly */
 		SetCurrentBufferPosition(SavePosition);
-		
-		printf("FOUND NEXT, WEND OR UNTIL\n");
-		printf("CurrentBufferPosition=%lX\n",CurrentBufferPosition);
-
-		asm("int $3");
 
 		SetFunctionFlags(WAS_ITERATED);
 		return(0);
