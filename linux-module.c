@@ -34,11 +34,7 @@
 void *LoadModule(char *filename) {
 void *dlhandle;
 
-printf("LoadModule() filename=%s\n",filename);
-
 dlhandle=dlopen(filename,RTLD_LAZY);			/* open library */
-
-printf("LoadModule() dlhandle=%lX\n",dlhandle);
 if(dlhandle == NULL) {
 	SetLastError(MISSING_LIBSYM);
 	return(NULL);
@@ -57,8 +53,6 @@ return(dlhandle);
  * Returns: module handle or NULL on error
  */
 void *GetLibraryFunctionAddress(void *handle,char *name) {
-printf("libfunc=%lX %s\n",handle,name);
-
 return(dlsym(handle,name));
 }
 

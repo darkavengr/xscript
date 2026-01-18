@@ -36,10 +36,6 @@ int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int backtrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
-int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split);
-int IsSeperator(char *token,char *sep);
-int CheckSyntax(char *tokens[MAX_SIZE][MAX_SIZE],char *separators,int start,int end);
-void touppercase(char *token);
 char *ReadLineFromBuffer(char *buf,char *linebuf,int size);
 int strcmpi(char *source,char *dest);
 char *GetCurrentBufferAddress(void);
@@ -68,7 +64,6 @@ int IncludeFile(char *filename);
 void SetBreakFlag(void);
 void ClearBreakFlag(void);
 int GetBreakFlag(void);
-void StripQuotesFromString(char *str,char *buf);
 
 #ifndef DOFILE_H
 	#define DOFILE_H

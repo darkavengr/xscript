@@ -18,6 +18,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "errors.h"
 #include "size.h"
 #include "module.h"
@@ -200,224 +201,130 @@ return(NULL);
  * In:  functionname	Function name
 	modulename	Module name
  *	paramcount	Number of parameters
- *	result		Result variable
  *	parameters	Function parameters
+ *	result		Result variable
  *
  * Returns: 0 on success or -1 on error
  *
  */
-int CallModule(char *functionname,char *modulename,int paramcount,varsplit *result,char *parameters[MAX_SIZE][MAX_SIZE]) {
-int count;
-int vartype;
-void *varptrs[MAX_SIZE];
-int (*callptr_integer)(void *,void *,void *,void *,void *,void *,void *,void *);
-double (*callptr_double)(void *,void *,void *,void *,void *,void *,void *,void *);
-float (*callptr_single)(void *,void *,void *,void *,void *,void *,void *,void *);
-long (*callptr_long)(void *,void *,void *,void *,void *,void *,void *,void *);
-char *(*callptr_string)(void *,void *,void *,void *,void *,void *,void *,void *);
-bool (*callptr_boolean)(void *,void *,void *,void *,void *,void *,void *,void *);
-UserDefinedType *(*callptr_udt)(void *,void *,void *,void *,void *,void *,void *,void *);
+int CallModule(char *functionname,char *modulename,int paramcount,char *parameters[MAX_SIZE][MAX_SIZE],libraryreturnvalue *result) {
+int count;	
+void (*callptr)(int,vars_t *,libraryreturnvalue *result);
 FUNCTIONCALLSTACK modulefunctioncall;
-varval resultvar;
-UserDefinedType *resultudt;
-int result_type=GetVariableType(result->name);
-double tempdouble[MAX_SIZE];
-int tempint[MAX_SIZE];
-float tempsingle[MAX_SIZE];
-long int templong[MAX_SIZE];
-char *tempstring[MAX_SIZE];
-char *stodarg;
+UserDefinedType *udtptr;
+vars_t *paramvars=NULL;
+int paramstc;
 char *parameters_subst[MAX_SIZE][MAX_SIZE];
-int doublecount;
-int singlecount;
-int integercount;
-int stringcount;
-int longcount;
-vars_t *paramvar;
+char *stodarg;
+bool HasReturnedError=FALSE;
+int unwindcount;
+char *strbuf[MAX_SIZE];
 
-AddModule(modulename);		/* add module */
+if(AddModule(modulename) == -1) return(-1);		/* add module */
 
-SubstituteVariables(0,paramcount,parameters,parameters_subst);	/* substitute values */
+paramstc=SubstituteVariables(0,paramcount,parameters,parameters_subst);	/* substitute values */
+
+paramvars=calloc(paramcount,sizeof(vars_t));	/* allocate parameters */
+if(paramvars == NULL) {
+	SetLastError(NO_MEM);
+	return(-1);
+}
 
 /* get variable values */
 
-for(count=0;count<paramcount;count++) {
-	vartype=GetVariableType(parameters[count]);		/* get variable type */
+for(count=0;count < paramstc;count++) {
+	paramvars[count].type_int=GetVariableType(parameters[count]);		/* get variable type */
 
-	if(vartype == VAR_SINGLE) {
-		varptrs[count]=calloc(1,sizeof(float));				/* allocate parameter */
-		if(varptrs[count] == NULL) {
-			SetLastError(NO_MEM);
-			return(-1);
-		}
-
-		tempsingle[singlecount]=atof(parameters_subst[count]);
-		varptrs[count]=&tempsingle[singlecount];
+	paramvars[count].val=calloc(1,sizeof(vars_t));		/* allocate value */
+	if(paramvars[count].val == NULL) {
+		HasReturnedError=TRUE;
+		break;
 	}
-	else if(vartype == VAR_NUMBER) {
-		varptrs[count]=calloc(1,sizeof(double));		/* allocate parameter */
-		if(varptrs[count] == NULL) {
-			SetLastError(NO_MEM);
-			return(-1);
-		}
 
-		tempdouble[doublecount]=strtod(parameters_subst[count],&stodarg);
-		varptrs[count]=&tempdouble[doublecount];
+	if(paramvars[count].type_int == VAR_SINGLE) {
+		paramvars[count].val->f=atof(parameters_subst[count]);
 	}
-	else if(vartype == VAR_INTEGER) {
-		varptrs[count]=calloc(1,sizeof(int));				/* allocate parameter */
-		if(varptrs[count] == NULL) {
-			SetLastError(NO_MEM);
-			return(-1);
-		}
-
-
-		tempint[integercount]=atoi(parameters_subst[count]);
-		varptrs[count]=&tempint[integercount];
+	else if(paramvars[count].type_int == VAR_NUMBER) {
+		paramvars[count].val->d=strtod(parameters_subst[count],&stodarg);
 	}
-	else if(vartype == VAR_LONG) {
-		varptrs[count]=calloc(1,sizeof(long));				/* allocate parameter */
-		if(varptrs[count] == NULL) {
-			SetLastError(NO_MEM);
-			return(-1);
-		}
-
-		templong[longcount]=atol(parameters_subst[count]);
-		varptrs[count]=&templong[longcount];
+	else if(paramvars[count].type_int == VAR_INTEGER) {
+		paramvars[count].val->i=atoi(parameters_subst[count]);
 	}
-	else if(vartype == VAR_BOOLEAN) {
-		varptrs[count]=calloc(1,sizeof(bool));				/* allocate parameter */
-		if(varptrs[count] == NULL) {
-			SetLastError(NO_MEM);
-			return(-1);
-		}
-
-		templong[longcount]=atol(parameters_subst[count]);
-		varptrs[count]=&templong[longcount];
+	else if(paramvars[count].type_int == VAR_LONG) {
+		paramvars[count].val->l=atol(parameters_subst[count]);
 	}
-	else if(vartype == VAR_STRING) {
-		varptrs[count]=calloc(1,strlen(parameters[count]));
-		if(varptrs[count] == NULL) {
-			SetLastError(NO_MEM);
-			return(-1);
-		}
-
-		StripQuotesFromString(parameters[count],varptrs[count]);	/* remove quotes from string parameter */	
+	else if(paramvars[count].type_int == VAR_BOOLEAN) {
+		paramvars[count].val->b=atoi(parameters_subst[count]);
 	}
-	else if(vartype == VAR_UDT) {
-		varptrs[count]=calloc(1,sizeof(UserDefinedType));				/* allocate parameter */
-		if(varptrs[count] == NULL) {
-			SetLastError(NO_MEM);
-			return(-1);
+	else if(paramvars[count].type_int == VAR_STRING) {
+		paramvars[count].val->s=calloc(1,strlen(parameters_subst[count]));				/* allocate parameter */
+		if(paramvars[count].val->s == NULL) {
+			HasReturnedError=TRUE;
+			break;
 		}
 
-		paramvar=GetVariablePointer(parameters[count]);		/* Get variable pointer */
-		if(paramvar == NULL) {
+		StripQuotesFromString(parameters[count],paramvars[count].val->s);	/* remove quotes from string parameter */
+	}
+	else if(paramvars[count].type_int == VAR_UDT) {
+		udtptr=GetVariablePointer(parameters[count]);		/* Get variable pointer */
+		if(udtptr == NULL) {
 			SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-			return(-1);
+
+			HasReturnedError=TRUE;
+			break;
 		}
 
-		memcpy(varptrs[count],paramvar->udt,sizeof(UserDefinedType));
+		paramvars[count].udt=udtptr;		/* point to UDT */
 	}
 }
 
 /* call binary function and return a value */
 
-resultvar.type=result_type;		/* set result type */
-
-if(result_type == VAR_SINGLE) {
-	callptr_single=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
-	if(callptr_single == NULL) {
+if(HasReturnedError == FALSE) {
+	callptr=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);		/* get pointer to library function */
+	if(callptr == NULL) {
 		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
+
+		HasReturnedError=TRUE;
 	}
 
-	resultvar.f=callptr_single(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]);
-}
-else if(result_type == VAR_NUMBER) {
-	callptr_double=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
-	if(callptr_double == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
+	callptr(paramcount,paramvars,result);		/* call library function */
 
-	resultvar.d=callptr_double(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]);
-}
-else if(result_type == VAR_INTEGER) {	
-	callptr_integer=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
-	if(callptr_integer == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
-
-	resultvar.i=callptr_integer(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]);
-}
-else if(result_type == VAR_LONG) {
-	callptr_long=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
-	if(callptr_long == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
-
-	resultvar.l=callptr_long(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]);
-}
-else if(result_type == VAR_BOOLEAN) {
-	callptr_boolean=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
-	if(callptr_boolean == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
-
-	resultvar.b=callptr_boolean(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]);
-}
-else if(result_type == VAR_STRING) {
-	callptr_string=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
-	if(callptr_string == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
-
-	resultvar.s=calloc(1,MAX_SIZE);
-	if(resultvar.s == NULL) {
-		SetLastError(NO_MEM);
-		return(-1);
-	}
-
-	strcpy(resultvar.s,callptr_string(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]));
-}
-else if(result_type == VAR_UDT) {
-	callptr_udt=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);
-	if(callptr_udt == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
-
-	paramvar=GetVariablePointer(result->name);		/* Get variable pointer */
-	if(paramvar == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
-
+	/* place string in quotes */
 	
-	if(paramvar->udt == NULL) {	/* allocate UDT */
-		paramvar->udt=calloc(1,sizeof(UserDefinedType));
-		if(paramvar->udt == NULL) {
-			SetLastError(NO_MEM);
-			return(-1);
+	if(GetVariableType(result->name) == VAR_STRING) {
+		snprintf(strbuf,MAX_SIZE,"\"%s\"",result->val.s);
+		strncpy(result->val.s,strbuf,MAX_SIZE);
+	}
+
+	/* update result variable */
+	if(UpdateVariable(result->name,result->fieldname,&result->val,result->x,result->y,result->fieldx,result->fieldy) == -1) {
+		HasReturnedError=TRUE;
+	}
+
+	result->systemerrornumber=errno;	/* system error code */
+}
+
+/* free values */
+
+for(unwindcount=0;unwindcount < count;unwindcount++) {
+	if(paramvars[unwindcount].val != NULL) {		/* has value */
+		if((paramvars[unwindcount].val != NULL) && (paramvars[unwindcount].type_int == VAR_STRING)) { /* is string */
+			free(paramvars[unwindcount].val->s);	/* free */
 		}
-
-		memcpy(paramvar->udt,callptr_udt(varptrs[0],varptrs[1],varptrs[2],varptrs[3],varptrs[4],varptrs[5],varptrs[6],varptrs[7]),sizeof(UserDefinedType));
-
-		SetLastError(NO_ERROR);
-		return(0);
+	
+		free(paramvars[unwindcount].val);	/* free value */
 	}
 }
 
-/* update result variable */
-if(UpdateVariable(result->name,result->fieldname,&resultvar,result->x,result->y,result->fieldx,result->fieldy) == -1) return(-1);
+free(paramvars);			/* free parameters */
 
-SetLastError(NO_ERROR);
-return(0);
+if(HasReturnedError == FALSE) {
+	SetLastError(NO_ERROR);
+	return(0);
+}
+
+return(-1);
 }
 
 void InitalizeModules(void) {

@@ -21,14 +21,15 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include "console.h"
+#include "variablesandfunctions.h"
 
 /* IMPORTANT: XScript passed ALL parameters as POINTERS (see module.c) */
 
-int xlib_readline(char *buffer) {
-return(gets(buffer));
-}
+int xlib_readline(int paramcount,vars_t *params,libraryreturnvalue *result) {
+result=NULL;
 
-int xlib_readkey(void) {
-return(getch());
+gets(params[0]->val->s;
+return(0);
 }
 

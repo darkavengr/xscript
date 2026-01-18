@@ -663,6 +663,7 @@ int returntype;
 UserDefinedType *udtptr;
 char *modname[MAX_SIZE];
 varsplit split;
+libraryreturnvalue result;
 
 if(strcmp(tokens[2],"(") != 0) {
 	SetLastError(SYNTAX_ERROR);
@@ -671,7 +672,7 @@ if(strcmp(tokens[2],"(") != 0) {
 
 /* get parameters*/
 
-for(paramendpos=3;paramendpos<tc;paramendpos++) {		/* find ) */
+for(paramendpos=3;paramendpos < tc;paramendpos++) {		/* find ) */
 	if(strcmpi(tokens[paramendpos],")") == 0) break;
 
 	if(strcmpi(tokens[paramendpos],",") == 0) continue; /* skip , */
@@ -690,11 +691,11 @@ StripQuotesFromString(tokens[paramendpos+2],modname);	/* remove quotes from modu
 
 /* call binary module function */
 
-//int CallModule(char *functionname,char *modulename,int paramcount,varsplit *result,char *parameters[MAX_SIZE][MAX_SIZE]) {
-
 ParseVariableName(tokens,paramendpos+4,tc,&split);		/* split variable name */
 
-return(CallModule(tokens[1],modname,paramcount,&split,parameters));
+strncpy(result.name,tokens[paramendpos+4],MAX_SIZE);	/* get result variable name */
+
+return(CallModule(tokens[1],modname,paramcount,parameters,&result));	/* call binary module */
 }
 
 /*
@@ -2146,51 +2147,6 @@ return(tc);
 }
 
 /*
- * Check if seperator
- *
- * In: token		Token to check
-       sep		Seperator characters to check against
- *
- * Returns TRUE or FALSE
- *
- */
-int IsSeperator(char *token,char *sep) {
-char *SepPtr;
-
-if(*token == 0) return(TRUE);
-	
-SepPtr=sep;
-
-while(*SepPtr != 0) {
-	if((char) *SepPtr++ == (char) *token) return(TRUE);
-}
-
-if(IsStatement(token) == TRUE) return(TRUE);
-
-return(FALSE);
-}
-	 
-/*
- * Convert to uppercase
- *
- * In: char *token	String to convert
- *
- * Returns: nothing
- *
- */
-
-void ToUpperCase(char *token) {
-	char *tokenptr;
-	
-	tokenptr=token;
-
-	while(*tokenptr != 0) { 	/* until end */
-		if(((char) *tokenptr >= 'a') &&  ((char) *tokenptr <= 'z')) *tokenptr -= 32;	/* convert to lower case if upper case */
-	  	tokenptr++;
-	}
-}
-
-/*
  * Read line from buffer
  *
  * In:	buf		Buffer to read from
@@ -2223,33 +2179,6 @@ do {
 } while(((char) *buf++) != 0);		/* until end of line */
 
 return(++buf);			/* return new position */
-}
-
-/*
- * Compare string case insensitively
- *
- * In: source		First string
-       dest		Second string
- *
- * Returns: 0 if matches, positive or negative number otherwise
- *
- */
-int strcmpi(char *source,char *dest) {
-char *sourcetemp[MAX_SIZE];
-char *desttemp[MAX_SIZE];
-
-/* create copies of the string and convert them to uppercase */
-
-memset(sourcetemp,0,MAX_SIZE);
-memset(desttemp,0,MAX_SIZE);
-
-strncpy(sourcetemp,source,MAX_SIZE);
-strncpy(desttemp,dest,MAX_SIZE);
-
-ToUpperCase(sourcetemp);
-ToUpperCase(desttemp);
-
-return(strncmp(sourcetemp,desttemp,MAX_SIZE));		/* return result of string comparison */
 }
 
 char *GetCurrentBufferAddress(void) {
@@ -2398,47 +2327,5 @@ CurrentBufferPosition=saveCurrentBufferPosition;	/* restore current pointer */
 SetCurrentFileBufferPosition(CurrentBufferPosition);
 
 return(0);
-}
-
-int IsValidString(char *str) {
-char *s;
-
-if(*str != '"') return(FALSE);
-
-s=(str+strlen(str))-1;		/* point to end */
-
-if(*s != '"') return(FALSE);
-
-return(TRUE);
-}
-
-void StripQuotesFromString(char *str,char *buf) {
-char *strptr=str;
-char *bufptr=buf;
-
-if(IsValidString(str) == FALSE) return;		/* not valid string */
-
-/* copy filename without quotes */
-
-strptr++;
-
-while((char) *strptr != 0) {
-	if((char) *strptr == '"') break;
-
-	*bufptr++=*strptr++;	/* copy character */
-}
-
-return;
-}
-
-void RemoveNewline(char *line) {
-char *b;
-
-if(strlen(line) > 1) {
-	b=(line+strlen(line))-1;
-	if((*b == '\n') || (*b == '\r')) *b=0;
-}
-
-return;
 }
 

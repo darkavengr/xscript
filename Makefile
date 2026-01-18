@@ -1,72 +1,29 @@
 CC = gcc
-OBJFILES = debug.o module.o variablesandfunctions.o dofile.o evaluate.o itoa.o xscript.o error.o statements.o interactivemode.o help.o
 OUTFILE  = xscript
 FLAGS    = -lm
 CCFLAGS = -c -w -I header -fstack-protector-all
+FILES=debug.c module.c variablesandfunctions.c dofile.c evaluate.c itoa.c xscript.c error.c statements.c interactivemode.c help.c support.c
+OBJFILES=$(addsuffix .o,$(basename $(FILES)))
+
 
 ifeq ($(OS),Windows_NT)
 	OUTFILE += ".exe"
-	OBJFILES += winmodule.o
+	FILES += winmodule.c
 else
-	OBJFILES += linux-module.o
+	FILES += linux-module.c
 	FLAGS += -ldl
 endif
 
 all: $(OBJFILES)
+	echo $(OBJFILES)
 	$(CC) $(OBJFILES) -o $(OUTFILE) $(FLAGS)
 
 debug: $(OBJFILES)
 	$(CC) $(OBJFILES) -o $(OUTFILE) $(FLAGS) -fsanitize=address
 
-debug:
-
-statements.o:
-	$(CC) $(CCFLAGS) statements.c
-
-variablesandfunctions.o:
-	$(CC) $(CCFLAGS) variablesandfunctions.c
-
-dofile.o:
-	$(CC) $(CCFLAGS) dofile.c
-
-evaluate.o:
-	$(CC) $(CCFLAGS) evaluate.c
-
-itoa.o:
-	$(CC) $(CCFLAGS) itoa.c
-
-module.o:
-	$(CC) $(CCFLAGS) module.c
-
-xscript.o:
-	$(CC) $(CCFLAGS) xscript.c
-
-debug.o:
-	$(CC) $(CCFLAGS) debug.c
-
-error.o:
-	$(CC) $(CCFLAGS) error.c
-
-interactivemode.o:
-	$(CC) $(CCFLAGS) interactivemode.c
-
-help.o:
-	$(CC) $(CCFLAGS) help.c
-
-ifeq ($(OS),Windows_NT)
-winmodule.o:
-	$(CC) $(CCFLAGS) winmodule.c
-
-else
-linux-module.o:
-	$(CC) $(CCFLAGS) linux-module.c
-endif
-
 clean:
 	rm *.o
-ifeq ($(OS),Windows_NT)
-	rm xscript.exe
-else
-	rm xscript
-endif
+
+$(OBJFILES): %.o: %.c
+	$(CC) $(CCFLAGS) $< -o $@
 

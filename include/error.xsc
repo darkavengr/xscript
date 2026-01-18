@@ -53,5 +53,7 @@ declare ERROR_NO_FILE_LOADED as constant integer = 51
 declare ERROR_IS_CONSTANT as constant integer = 52
 declare ERROR_REPEAT_WITHOUT_UNTIL as constant integer = 53
 declare ERROR_UNTIL_WITHOUT_REPEAT as constant integer = 54
+declare ERROR_AT_END_OF_PROGRAM as constant integer = 55
+declare ERROR_EXIT_REPEAT_WITHOUT_REPEAT as constant integer = 56
 
 

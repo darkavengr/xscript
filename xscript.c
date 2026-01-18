@@ -86,21 +86,12 @@ InitalizeModules();		/* initalize modules */
 
 /* get executable directory name from argv[0] */
 
-memset(dirname,0,MAX_SIZE);
-
-aptr=argv[0];
-dptr=dirname;
-
-while(aptr != strrchr(argv[0],'/')) {		/* from first character to last / in filename */
-	*dptr++=*aptr++;
-}
-
 /* get script's absolute path */
 
 memset(fullpath,0,MAX_SIZE);
 
 if(argc > 1) {
-	if(*argv[1] != '/') {			/* if is relative path */
+	if(*argv[1] != '/') {			/* if it's a relative path */
 		snprintf(fullpath,MAX_SIZE,"%s/%s",getcwd(cwd,MAX_SIZE),argv[1]);	/* prepend current directory to relative path */
 	}
 	else
@@ -194,10 +185,6 @@ if(sig == SIGINT) {			/* ctrl-c */
 }
 
 printf("xscript: Signal %d received\n",sig);
-}
-
-void GetExecutableDirectoryName(char *name) {
-strncpy(name,dirname,MAX_SIZE);
 }
 
 void cleanup(void) {

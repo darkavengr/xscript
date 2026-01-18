@@ -21,68 +21,83 @@
 
 #include <math.h>
 #include <time.h>
+#include "math.h"
+#include "variablesandfunctions.h"
 
-/* IMPORTANT: XScript passed ALL parameters as POINTERS (see module.c) */
-
-int xlib_abs(int *num) {
-return(abs(*num));
+void xlib_abs(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+params[0]->i=abs(params[0]->i);
+return;
 }
 
-double xlib_arctan(double *num) {
-return(atan(*num));
+void xlib_arctan(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=artan(params[0]->d);
+return;
 }
 
-double xlib_cos(double *num) {
-return(cos(*num));
+void xlib_cos(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=cos(params[0]->d);
+return;
 }
 
-double xlib_tan(double *num) {
-return(tan(*num));
+void xlib_sin(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=sin(params[0]->d);
+return;
 }
 
-double xlib_sin(double *num) {
-return(sin(*num));
+void xlib_tan(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=tan(params[0]->d);
+return;
 }
 
-double xlib_log(double *num) {
-return(log(*num));
+void xlib_log(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=log(params[0]->d);
+return;
 }
 
-double xlib_log2(double *num) {
-return(log2(*num));
+void xlib_log2(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=log(params[0]->d);
+return;
 }
 
-double xlib_log10(double *num) {
-return(log10(*num));
+void xlib_log10(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=log10(params[0]->d);
+return;
 }
 
-double xlib_exp(double *num) {
-return(exp(*num));
+void xlib_exp(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=sin(params[0]->d);
+return;
 }
 
-double xlib_sqr(double *num) {
-return(sqr(*num));
+void xlib_sqr(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=sqr(params[0]->d);
+return;
 }
 
-double xlib_cubrt(double *num) {
-return(cbrt(*num));
+void xlib_cbrt(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=cbrt(params[0]->d);
+return;
 }
 
-double xlib_pow(double *num) {
-return(pow(*num));
+void xlib_pow(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=pow(params[0]->d,params[1]->d);
+return;
 }
 
-double xlib_ceil(double *num) {
-return(ceil(*num));
+void xlib_ceil(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=ceil(params[0]->d);
+return;
 }
 
-double xlib_floor(double *num) {
-return(floor(*num));
+void xlib_floor(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.d=floor(params[0]->d);
+return;
 }
 
-int xlib_rand(int startnum,int endnum) {
+void xlib_rand(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 srand(time(NULL));		/* seed randomizer */
 
-return(rand() % endnum+startnum);
+returnval.d=rand(params[0]->i,params[1]->i);
+return;
 }
 

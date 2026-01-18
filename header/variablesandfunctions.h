@@ -113,6 +113,19 @@
 		UserDefinedType *udt;
 		bool has_returned_value;
 	} functionreturnvalue;
+
+	typedef struct {
+		char *name[MAX_SIZE];
+		int x;
+		int y;
+		char *fieldname[MAX_SIZE];
+		int fieldx;
+		int fieldy;
+		int systemerrornumber;
+		int returnvalue;
+		int type;
+		varval val;
+	} libraryreturnvalue;
 #endif
 
 void FreeFunctions(void);

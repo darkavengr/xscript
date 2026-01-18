@@ -1,17 +1,19 @@
-type Person
-	id as integer
-	firstname as string
-	lastname as string
-	address as string
-	city as string
-	postcode as string
-	country as string
-	phonenumber as string
-	dob as string
-endtype
+declare result as double
+declare returnedmessage as string
+declare a as double
+declare b as integer
+declare c as single
+declare d as long
 
-declare result as Person
-declare testrecord as Person
+a=123
+b=2
+c=3
+d=4
 
-libcall udt_test(testrecord) in "./modtest.so" to result
+libcall testfunc(a,b,c,d) in "./modtest.so" to result
+print result
+
+libcall testfunc_string("Hello") in "./modtest.so" to returnedmessage
+print returnedmessage
+
 

@@ -48,6 +48,11 @@ type FindResult
 	modifydate_year as integer
 endtype
 
+declare MAX_PATH as constant integer = 255
+declare O_RDONLY as constant integer = 1
+declare O_WRONLY as constant integer = 1
+declare O_RDWR as constant integer = O_RDONLY | O_WRONLY
+
 function open(filename as string,mode as integer) as integer
 declare handle as integer
 

@@ -2673,28 +2673,6 @@ return;
 }
 
 /*
-*  Determine if string is numeric or not
-* 
-*  In: string
-* 
-*  Returns: TRUE or FALSE
-*
-*/
-int IsNumber(char *token) {
-char *tokenptr=token;
-
-while((char) *tokenptr != 0) {
-	if( ((char ) *tokenptr < '0') || ((char ) *tokenptr > '9')) {
-		if((char) *tokenptr != '.') return(FALSE);
-	}
-
-	tokenptr++;
-}
-
-return(TRUE);
-}
-
-/*
 *  Get pointer to function list entry
 * 
 *  In: Function name

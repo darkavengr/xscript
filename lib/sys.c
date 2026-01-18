@@ -22,60 +22,107 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "sys.h"
+#include "variablesandfunctions.h"
 
-/* IMPORTANT: XScript passes ALL parameters as POINTERS (see module.c) */
+//params[0]=filename (string)
+//params[1]=arguments (string)
 
-int xlib_exec(char *filename,char *args) {
+void xlib_exec(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 int returnvalue=fork();		/* fork process */
 
 if(returnvalue == 0) {		/* child process */
-	return(execlp(filename,args));	/* execute process */
+	returnval.i=execlp(params[0]->val->s,params[1]->val->s);	/* execute process */
+
+	if(returnval.i == -1) {
+		returnval.systemerrorcode=errno;
+		return;
+	}
 }
-else if(returnvalue == 0) {		/* child process */
-	return(-1);
+else if(returnvalue == -1) {		/* child process */
+		returnval.systemerrorcode=errno;
+		return;
+	}
 }
 
 return(0);
 }
 
-int xlib_exit(int *returncode) {
-return(exit(*returncode));
+// params[0]=exit value
+
+void xlib_exit(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.i=exit(params[0]->val->i);
+if(returnval.i == -1) returnval.systemerrorcode=errno;
+
+return;
 }
 
-int xlib_sleep(int *sleeptime) {
-return(sleep(*sleeptime));
+// params[0]=number of seconds to sleep
+
+void xlib_sleep(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.i=sleep(params[0]->val->i);
+
+if(returnval.i == -1) returnval.systemerrorcode=errno;
+return;
 }
 
-int xlib_dup(int *handle) {
-return(dup(*handle));
+// params[0]=handle
+
+void xlib_dup(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.i=dup(params[0]->val->i);
+
+if(returnval.i == -1) returnval.systemerrorcode=errno;
+return;
 }
 
-int xlib_dup2(int *handle,int *newhandle) {
-return(dup2(*handle,*newhandle));
+// params[0]=old handle
+// params[1]=new handle
+
+void xlib_dup2(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.i=dup2(params[0]->val->i,params[1]->val->i);
 }
 
-int xlib_chdir(char *dirname) {
-return(chdir(dirname));
+// params[0]=directory name
+
+void xlib_chdir(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.i=chdir(params[0]->val->s);
+
+if(returnval.i == -1) returnval.systemerrorcode=errno;
+return;
 }
 
-int xlib_getpid(void) {
-return(getpid());
+void xlib_getpid(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.i=getpid();
+
+if(returnval.i == -1) returnval.systemerrorcode=errno;
+return;
 }
 
-int xlib_getenv(char *name,char *outbuf) {
-char *envptr=getenv(name);		/* get enviroment variable */
+// params[0]=enviroment variable name
 
-if(envptr == NULL) return(-1);	/* not found */
+void xlib_getenv(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.s=getenv(params[0]->val->s);
 
-strcpy(outbuf,envptr);
-return(0);
+if(returnval.s == NULL) returnval.systemerrorcode=errno;
+return;
 }
 
-int xlib_wait(int *status) {
-return(wait(*stataus));
+// params[0]=process to wait on
+
+void xlib_wait(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.i=getpid(params[0]->val->i);
+
+if(returnval.i == -1) returnval.systemerrorcode=errno;
+return;
 }
 
-int xlib_kill(int *pid,int *signal) {
-return(kill(*pid,*signal));
+
+// params[0]=process to send signal to
+
+void xlib_kill(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval.i=kill(params[0]->val->i);
+
+if(returnval.i == -1) returnval.systemerrorcode=errno;
+return;
 }
- 
+
