@@ -33,6 +33,7 @@
 	#include <winsock2.h>
 #endif
 
+#include <errno.h>
 #include "variablesandfunctions.h"
 
 // params[0]=domain (integer)
@@ -40,9 +41,9 @@
 // params[0]=protocol (integer)
 
 void xlib_socket(int paramcount,vars_t *params,libraryreturnvalue *returnvalue) {
-returnvalue.i=socket(params[0]->val.i,params[1]->val.i,params[2]->val.i));
+returnvalue->val.i=socket(params[0].val->i,params[1].val->i,params[2].val->i);
 
-if(returnvalue.i == -1) returnvalue.systemerrorcode=errno;
+if(returnvalue->val.i == -1) returnvalue->systemerrornumber=errno;
 
 return;
 }
@@ -55,13 +56,13 @@ return;
 void xlib_connect(int paramcount,vars_t *params,libraryreturnvalue *returnvalue) {
 struct sockaddr_in service;
 
-service.sin_family=params[2]->val.i;
-service.sin_addr.s_addr=inet_addr(params[1]->val.s);
-service.sin_port=htons(params[2]->val.i);
+service.sin_family=params[2].val->i;
+service.sin_addr.s_addr=inet_addr(params[1].val->s);
+service.sin_port=htons(params[2].val->i);
 
-returnvalue.i=connect(params[0]->val.i,&service,sizeof(service)));
+returnvalue->val.i=connect(params[0].val->i,&service,sizeof(service));
 
-if(returnvalue.i == -1) returnvalue.systemerrorcode=errno;
+if(returnvalue->val.i == -1) returnvalue->systemerrornumber=errno;
 return;
 }
 
@@ -70,9 +71,9 @@ return;
 // params[0]=size (integer)
 
 void xlib_recv(int paramcount,vars_t *params,libraryreturnvalue *returnvalue) {
-returnvalue.i=recv(params[0]->val.i,params[1]->val.s,params[2]->val.i);
+returnvalue->val.i=recv(params[0].val->i,params[1].val->s,params[2].val->i,0);
 
-if(returnvalue.i == -1) returnvalue.systemerrorcode=errno;
+if(returnvalue->val.i == -1) returnvalue->systemerrornumber=errno;
 return;
 }
 
@@ -81,9 +82,9 @@ return;
 // params[0]=size (integer)
 
 void xlib_send(int paramcount,vars_t *params,libraryreturnvalue *returnvalue) {
-returnvalue.i=send(params[0]->val.i,params[1]->val.s,params[2]->val.i);
+returnvalue->val.i=send(params[0].val->i,params[1].val->s,params[2].val->i,0);
 
-if(returnvalue.i == -1) returnvalue.systemerrorcode=errno;
+if(returnvalue->val.i == -1) returnvalue->systemerrornumber=errno;
 return;
 }
 
@@ -92,9 +93,9 @@ return;
 // params[2]=flags (integer)
 
 void xlib_accept(int paramcount,vars_t *params,libraryreturnvalue *returnvalue) {
-returnvalue.i=accept(params[0]->val.i,params[1]->val.udt,params[2]->val.i);
+returnvalue->val.i=accept(params[0].val->i,params[1].udt,params[2].val->i);
 
-if(returnvalue.i == -1) returnvalue.systemerrorcode=errno;
+if(returnvalue->val.i == -1) returnvalue->systemerrornumber=errno;
 return;
 }
 

@@ -9,23 +9,6 @@
 
 /* support functions */
 
-int GetDirectoryFromPath(char *path,char *dirbuf) {
-char *aptr;
-char *dptr;
-
-if(strpbrk(path,"/") == NULL) return(-1);	/* no directory */
-
-aptr=path;
-dptr=dirbuf;
-
-while(aptr != strrchr(path,'/')) {		/* from first character to last / in filename */
-	*dptr++=*aptr++;
-}
-
-*dptr++=0;
-return(0);
-}
-
 int IsValidString(char *str) {
 char *s;
 
@@ -94,31 +77,6 @@ ToUpperCase(sourcetemp);
 ToUpperCase(desttemp);
 
 return(strncmp(sourcetemp,desttemp,MAX_SIZE));		/* return result of string comparison */
-}
-
-/*
- * Check if seperator
- *
- * In: token		Token to check
-       sep		Seperator characters to check against
- *
- * Returns TRUE or FALSE
- *
- */
-int IsSeperator(char *token,char *sep) {
-char *SepPtr;
-
-if(*token == 0) return(TRUE);
-	
-SepPtr=sep;
-
-while(*SepPtr != 0) {
-	if((char) *SepPtr++ == (char) *token) return(TRUE);
-}
-
-if(IsStatement(token) == TRUE) return(TRUE);
-
-return(FALSE);
 }
 	 
 /*

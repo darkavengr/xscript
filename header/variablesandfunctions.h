@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include "size.h"
 #include "module.h"
 
 #define VAR_NUMBER  0

@@ -2692,3 +2692,28 @@ while(funcnext != NULL) {
 return(NULL);
 }
 
+/*
+ * Check if seperator
+ *
+ * In: token		Token to check
+       sep		Seperator characters to check against
+ *
+ * Returns TRUE or FALSE
+ *
+ */
+int IsSeperator(char *token,char *sep) {
+char *SepPtr;
+
+if(*token == 0) return(TRUE);
+	
+SepPtr=sep;
+
+while(*SepPtr != 0) {
+	if((char) *SepPtr++ == (char) *token) return(TRUE);
+}
+
+if(IsStatement(token) == TRUE) return(TRUE);
+
+return(FALSE);
+}
+

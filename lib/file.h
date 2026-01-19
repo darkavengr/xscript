@@ -3,11 +3,11 @@
 
 #define MAX_PATH 255
 
-#ifdef FILE_H
+#ifndef FILE_H
 	#define FILE_H
 
-	typedef stuct {
-		char *name[MAX_PATH];
+	typedef struct {
+		char *filename[MAX_PATH];
 		long size;
 		int uid;
 		int gid;
@@ -44,8 +44,9 @@ void xlib_rmdir(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 void xlib_chdir(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 void xlib_dup2(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 void xlib_unlink(int paramcount,vars_t *params,libraryreturnvalue *returnval);
-int find(bool IsFirst,char *filespec,FINDRESULT *outbuf);
+int find(DIR *findptr,char *filespec,FINDRESULT *outbuf);
 void xlib_findfirst(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 void xlib_findnext(int paramcount,vars_t *params,libraryreturnvalue *returnval);
+int GetDirectoryFromPath(char *path,char *dirbuf);
 
 
