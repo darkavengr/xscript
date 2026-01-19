@@ -8,7 +8,8 @@
 #define VAR_SINGLE  3
 #define VAR_LONG    4
 #define VAR_BOOLEAN 5
-#define VAR_UDT     6
+#define VAR_ANY     6	
+#define VAR_UDT     7
 
 #define ARRAY_SUBSCRIPT 1
 #define ARRAY_SLICE	2
@@ -31,6 +32,7 @@
 	float f;
 	long int l;
 	bool b;
+	void *a;
 	int type;
 	} varval;
 

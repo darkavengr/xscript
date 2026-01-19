@@ -141,10 +141,6 @@ if(findptr == NULL) {
 	if(GetDirectoryFromPath(filespec,dirname) == -1) {		/* path has no directory */
 		findptr=opendir(".");
 	}
-	else
-	{
-		findptr=opendir(dirname);
-	}
 }
 
 if(findptr == NULL) return(-1);				/* can't open directory */
@@ -195,21 +191,22 @@ outbuf->modifydate_year=temptime->tm_year;
 return(0);
 }
 
-//params[0]=0
-//params[1]=filename (string)
-//params[2]=output (FINDRESULT *);
-
+//params[0]=filename (string)
+//params[1]=output (FINDRESULT *);
 
 void xlib_findfirst(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
-returnval->val.i=find(params[1].val->i,params[1].val->s,params[2].udt);
+returnval->val.i=find(NULL,params[1].val->s,params[2].udt);
 
 if(returnval->val.i == -1) returnval->systemerrornumber=errno;
 return;
-
 }
 
+//params[0]=find handle (DIR *)
+//params[0]=filename (string)
+//params[1]=output (FINDRESULT *);
+
 void xlib_findnext(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
-returnval->val.i=find(params[1].val->i,params[0].val->s,params[1].udt);
+returnval->val.i=find(params[0].val->a,params[1].val->s,params[2].udt);
 
 if(returnval->val.i == -1) returnval->systemerrornumber=errno;
 return;

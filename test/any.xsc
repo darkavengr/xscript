@@ -1,0 +1,4 @@
+declare myvar as any
+myvar=1234
+print myvar
+

@@ -13,7 +13,7 @@ Type HELP {word} to get help on {word}.
 %TOPIC keywords
 The following are keywords. Type help {keyword} to get help for {keyword}
 
-AND     AS      BACKTRACE  BOOLEAN    CATCH      CBREAK       CONSTANT  CONTINUE  DECLARE
+AND     ANY     AS         BACKTRACE  BOOLEAN    CATCH        CBREAK       CONSTANT  CONTINUE  DECLARE
 DELETE  DOUBLE  ELSE	   ELSEIF     END        ENDFUNCTION  ENDIF     ENDTRY    ENDTYPE
 EXIT    FALSE   FOR        FUNCTION   HELP       IF           IMPORT    INTEGER   ITERATE
 LBREAK  LOAD    LONG       NEXT       NOT        OR           PRINT     QUIT      REPEAT
@@ -67,11 +67,11 @@ ENDFUNCTION
 
 Declare a function.
 
-A function may be declare with an optional type that may be SINGLE, DOUBLE, INTEGER, STRING or a user-defined type.
+A function may be declare with a type that may be SINGLE, DOUBLE, INTEGER, STRING, LONG, BOOLEAN, ANY or a user-defined type.
 
 Without the optional type, function declarations uses the single-precision data type.
 
-See also: SINGLE DOUBLE INTEGER STRING TYPE ENDTYPE
+See also: SINGLE DOUBLE INTEGER STRING LONG BOOLEAN ANY TYPE ENDTYPE
 %ENDTOPIC
 
 %TOPIC if
@@ -111,6 +111,7 @@ INTEGER		Integer
 LONG		Long integer
 BOOLEAN		Boolean
 STRING		String
+ANY		Top type. Can be any type.
 "Data"		String literals
 
 See also: TYPE, DECLARE, TRUE, FALSE
@@ -373,6 +374,10 @@ See also: DATATYPES
 %ENDTOPIC
 
 %TOPIC long
+See also: DATATYPES
+%ENDTOPIC
+
+%TOPIC any
 See also: DATATYPES
 %ENDTOPIC
 

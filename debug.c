@@ -227,6 +227,11 @@ for(ycount=0;ycount != ysize;ycount++) {
 			  case VAR_BOOLEAN:				/* boolean */
 				printf("%s",truefalse[var->val[xcount*ycount].b]);
 			        break;
+
+			  case VAR_ANY:				/* top type */	     
+				printf("[0x%X]",var->val[(xcount*xsize)+ycount].a);
+			        break;
+
   		}
 	
 		  if(xcount < (xsize-1)) printf(",");	

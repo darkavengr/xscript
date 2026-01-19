@@ -509,6 +509,9 @@ while(stack != NULL) {
 			else if(varnext->type_int == VAR_BOOLEAN) {				/* boolean */  
 				printf("%s=%s",truefalse[varnext->varname,varnext->val->b]);
 			}
+			else if(varnext->type_int == VAR_ANY) {				/* top type */
+				printf("%s=0x%X",varnext->varname,varnext->val->a);
+			}
 
 			if((varnext != NULL) && (varnext->next != NULL)) printf(", ");
 		}

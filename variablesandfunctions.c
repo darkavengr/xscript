@@ -44,7 +44,7 @@ FUNCTIONCALLSTACK *functioncallstack=NULL;
 FUNCTIONCALLSTACK *FunctionCallStackTop=NULL;
 FUNCTIONCALLSTACK *currentfunction=NULL;
 UserDefinedType *udt=NULL;
-char *BuiltInVariableTypes[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG","BOOLEAN",NULL };
+char *BuiltInVariableTypes[] = { "DOUBLE","STRING","INTEGER","SINGLE","LONG","BOOLEAN","ANY",NULL };
 char *truefalse[] = { "False","True" };
 functionreturnvalue retval;
 vars_t *findvar;
@@ -385,6 +385,10 @@ else if(next->type_int == VAR_BOOLEAN) {	/* boolean */
 	next->val[x*y].b=val->b;
 	return(0);
 }
+else if(next->type_int == VAR_ANY) {	/* top type */
+	next->val[x*y].a=val->a;
+	return(0);
+}
 else {					/* user-defined type */	
 	udtfield=next->udt->field;
 
@@ -421,6 +425,18 @@ else {					/* user-defined type */
 			        udtfield->fieldval[x*y].f=val->f;
 				return(0);
 			 }
+			else if(next->type_int == VAR_LONG) {	/* long */
+				udtfield->fieldval[x*y].l=val->l;
+				return(0);
+			}
+			else if(next->type_int == VAR_BOOLEAN) {	/* boolean */
+				udtfield->fieldval[x*y].b=val->b;
+				return(0);
+			}
+			else if(next->type_int == VAR_ANY) {	/* top type */
+				udtfield->fieldval[x*y].a=val->a;
+				return(0);
+			}
 			 else {
 				PrintError(INVALID_VARIABLE_TYPE);
 				return(-1);
@@ -495,6 +511,7 @@ return(0);
 int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy) {
 vars_t *next;
 UserDefinedTypeField *udtfield;
+unsigned int any;
 
 if(name == NULL) {
 	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
@@ -503,32 +520,36 @@ if(name == NULL) {
 
 if(((char) *name >= '0') && ((char) *name <= '9')) {
 	  switch(GetVariableType(name)) {
-	     case VAR_NUMBER:				/* Double precision */
-	       	val->d=atof(name);
-		break;
+	  	case VAR_NUMBER:				/* Double precision */
+	  	     	val->d=atof(name);
+			break;
 
-	      case VAR_INTEGER:			/* Integer */
-	      	val->i=atoi(name);
-		break;
+	  	case VAR_INTEGER:			/* Integer */
+	      		val->i=atoi(name);
+			break;
 
-	      case VAR_SINGLE:				/* Single precision */
-		val->f=atof(name);
-		break;
+		case VAR_SINGLE:				/* Single precision */
+			val->f=atof(name);
+			break;
 
-	      case VAR_LONG:				/* long */
-	      	val->l=atol(name);
-		break;
+		case VAR_LONG:				/* long */
+	      		val->l=atol(name);
+			break;
 
-	      case VAR_BOOLEAN:
-		if(atoi(name) > 1) {		/* Invalid boolean value */
-			SetLastError(TYPE_ERROR);
-			return(-1);
-		}
+		case VAR_BOOLEAN:
+			if(atoi(name) > 1) {		/* Invalid boolean value */
+				SetLastError(TYPE_ERROR);
+				return(-1);
+			}
 
-	      default:
-	      	val->d=atof(name);
-		break;
-	   }
+		case VAR_ANY:			/* top type */
+			val->a=(unsigned int) atoi(name);
+			break;
+
+		default:
+	      		val->d=atof(name);
+			break;
+	}
 
 	SetLastError(0);
 }
@@ -596,6 +617,10 @@ else if(next->type_int == VAR_LONG) {
 }
 else if(next->type_int == VAR_BOOLEAN) {	/* boolean */
 	val->b=next->val[x*y].b;
+	return(0);
+}
+else if(next->type_int == VAR_ANY) {	/* top type */
+	val->a=next->val[x*y].a;
 	return(0);
 }
 else {					/* User-defined type */
@@ -1292,6 +1317,9 @@ for(count=0;count < returnvalue;count += 2) {
 
 		paramval.b=atoi(evaltokens[count]);
 	}
+	else if(parameters->type_int == VAR_ANY) {
+		paramval.a=(unsigned int) atoi(evaltokens[count]);
+	}
 
 	if(parameters->type_int == VAR_UDT) {			/* user defined type */
 		if(CreateVariable(parameters->varname,parameters->udt_type,split.x,split.y) == -1) {
@@ -1574,6 +1602,9 @@ for(count=start;count<end;count++) {
 			else if(subst_returnvalue.type == VAR_BOOLEAN) {			/* returning boolean */
 				sprintf(temp[outcount++],"%d",retval.val.b);
 		  	}
+			else if(subst_returnvalue.type == VAR_ANY) {			/* returning top type */
+				sprintf(temp[outcount++],"%d",retval.val.a);
+		  	}
 	    }
 
 	    count=countx+1;
@@ -1667,6 +1698,9 @@ for(count=start;count<end;count++) {
 	       	}
 		else if(type == VAR_BOOLEAN) {   
 		    sprintf(temp[outcount++],"%d",val.b);
+	       	}
+		else if(type == VAR_ANY) {   
+		    sprintf(temp[outcount++],"%d",val.a);
 	       	}
 	 }
 	else if (((char) *tokens[count] == '"') || IsSeperator(tokens[count],TokenCharacters) || IsNumber(tokens[count])) {
@@ -2192,8 +2226,13 @@ while(udtfield != NULL) {
 		        val->b=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].b;
 		        SetLastError(0);
 			return(0);
-		 }
-		 else {
+		}
+		else if(udtfield->type == VAR_ANY) {
+		        val->a=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].a;
+		        SetLastError(0);
+			return(0);
+		}
+		else {
 		        SetLastError(0);
 			return(0);
 		}	

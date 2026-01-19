@@ -165,10 +165,10 @@ libcall xlib_findfirst(filespec,FindBuf) in "xlib" to result
 return(result);
 endfunction
 	
-function findnext(filespec as string,FindBuf as FindResult) as integer
+function findnext(findhandle as ANY,FindBuf as FindResult) as integer
 declare result as integer
 
-libcall xlib_findnext(filespec,FindBuf) in "xlib" to result
+libcall xlib_findnext(findhandle,"",FindBuf) in "xlib" to result
 return(result);
 endfunction
 

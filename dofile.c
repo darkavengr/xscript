@@ -376,6 +376,14 @@ for(count=1;count<tc;count++) {
 				return(-1);
 			}
 	 	}
+		else if(vartype == VAR_ANY) {
+			if((tc-(count+1)) > 1) {	/* can't assign expressions to ANY type */
+				SetLastError(TYPE_ERROR);
+				return(-1);
+			}
+
+			val.a=(unsigned int) atoi(tokens[count+1]);
+	 	}
 	 	else if(vartype == VAR_UDT) {			/* user-defined type */	 
 			if(ParseVariableName(tokens,count+1,tc,&assignsplit) == -1) return(-1);		/* split variable */
 
@@ -968,7 +976,7 @@ if(vartype == -1) {
 	loopcount.d=exprone;
 	vartype=VAR_NUMBER;
 }
-else if((vartype == VAR_STRING) || (vartype == VAR_BOOLEAN)) {
+else if((vartype == VAR_STRING) || (vartype == VAR_BOOLEAN) || (vartype == VAR_ANY)	) {
 	SetLastError(TYPE_ERROR);
 	return(-1);
 }
@@ -1154,6 +1162,14 @@ else {
 	}
 	else if(GetFunctionReturnType() == VAR_BOOLEAN) {		/* returning boolean */
 		retval.val.b=EvaluateExpression(outtokens,0,substreturnvalue);	
+	}
+	else if(GetFunctionReturnType() == VAR_ANY) {		/* returning top type */
+		if(tc > 1) {	/* can't assign expressions to ANY type */
+			SetLastError(TYPE_ERROR);
+			return(-1);
+		}
+
+		retval.val.a=(unsigned int) atoi(tokens[count+1]);
 	}
 }
 
@@ -1633,6 +1649,9 @@ if(HaveValue == TRUE) {		/* set value */
 			declareval.b=EvaluateExpression(tokens,assigncount+1,tc);		/* evaluate expression */
 			break;
 
+		case VAR_ANY:
+			declareval.a=(unsigned int) EvaluateExpression(tokens,assigncount+1,tc);		/* evaluate expression */
+			break;
 	}
 
 	if(UpdateVariable(split.name,NULL,&declareval,split.x,split.y,0,0) == -1) return(-1);

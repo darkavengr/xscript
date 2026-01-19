@@ -265,6 +265,9 @@ for(count=0;count < paramstc;count++) {
 
 		StripQuotesFromString(parameters[count],paramvars[count].val->s);	/* remove quotes from string parameter */
 	}
+	else if(paramvars[count].type_int == VAR_ANY) {
+		paramvars[count].val->a=(void *) atoi(parameters_subst[count]);
+	}
 	else if(paramvars[count].type_int == VAR_UDT) {
 		udtptr=GetVariablePointer(parameters[count]);		/* Get variable pointer */
 		if(udtptr == NULL) {
