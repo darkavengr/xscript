@@ -1,0 +1,61 @@
+#
+#    XScript library
+#    (C) Matthew Boote 2026
+#
+#    This file is part of XScript.
+#
+#    XScript is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    XScript is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+
+type LIST
+	ListStart as any			# Pointer to list start
+	ListEnd as any				# Pointer to list end
+	NumberOfEntries as integer		# Number of entries
+	DataType as integer			# List data type
+endtype
+
+function list_push_back(DataList as LIST,NewEntry as any) as integer
+declare result as integer
+
+libcall xlib_list_append(DataList,NewEntry) in "xscript-stdlib-1.0.0" to result
+return(result);
+endfunction
+
+function list_push_front(DataList as LIST,NewEntry as any) as integer
+declare result as integer
+
+libcall xlib_list_prepend(DataList,NewEntry) in "xscript-stdlib-1.0.0" to result
+return(result);
+endfunction
+
+function list_insert(DataList as LIST,EntryNumber as integer,NewEntry as any) as integer
+declare result as integer
+
+libcall xlib_list_prepend(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
+return(result);
+endfunction
+
+function list_delete(DataList as LIST,EntryNumber as integer) as integer
+declare result as integer
+
+libcall xlib_list_delete(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
+return(result);
+endfunction
+
+function list_get(DataList as LIST,EntryNumber as integer) as any
+declare result as int
+
+libcall xlib_list_delete(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
+return(result);
+endfunction
+

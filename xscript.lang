@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<language id="xscript" _name="XScript" version="2.0" _section="Source">
+  <metadata>
+    <property name="mimetypes">text/x-xscript</property>
+    <property name="globs">*.xsc</property>
+    <property name="line-comment-start">#</property>
+  </metadata>
+
+  <styles>
+    <style id="comment" _name="Comment" map-to="def:comment"/>
+    <style id="floating-point" _name="Floating Point" map-to="def:floating-point"/>
+    <style id="keyword" _name="Keyword" map-to="def:keyword"/>
+    <style id="datatypes" _name="Data Type" map-to="def:type"/>
+    <style id="decimal" _name="Decimal" map-to="def:decimal"/>
+    <style id="binary" _name="Binary" map-to="def:base-n-integer"/>
+    <style id="hexadecimal" _name="Hexadecimal" map-to="def:base-n-integer"/>
+    <style id="octal" _name="Octal" map-to="def:base-n-integer"/>
+  </styles>
+
+  <default-regex-options case-sensitive="false"/>
+
+  <definitions>
+
+    <context id="line-comment" style-ref="comment" end-at-line-end="true"
+      class="comment" class-disabled="no-spell-check">
+      <start>#</start>
+      <include>
+        <context ref="def:escape"/>
+        <context ref="def:in-line-comment"/>
+      </include>
+    </context>
+
+    <context id="keywords" style-ref="keyword">
+     <keyword>and</keyword>
+     <keyword>as</keyword>
+     <keyword>backtrace</keyword>
+     <keyword>catch</keyword>
+     <keyword>cbreak</keyword>
+     <keyword>continue</keyword>
+     <keyword>declare</keyword>
+     <keyword>delete</keyword>
+     <keyword>else</keyword>
+     <keyword>elseif</keyword>
+     <keyword>end</keyword>
+     <keyword>endfunction</keyword>
+     <keyword>endif</keyword>
+     <keyword>endtry</keyword>
+     <keyword>endtype</keyword>
+     <keyword>exit</keyword>
+     <keyword>false</keyword>
+     <keyword>for</keyword>
+     <keyword>function</keyword>
+     <keyword>help</keyword>
+     <keyword>if</keyword>
+     <keyword>in</keyword>
+     <keyword>import</keyword>
+     <keyword>iterate</keyword>
+     <keyword>lbreak</keyword>
+     <keyword>libcall</keyword>
+     <keyword>load</keyword>
+     <keyword>next</keyword>
+     <keyword>not</keyword>
+     <keyword>or</keyword>
+     <keyword>print</keyword>
+     <keyword>quit</keyword>
+     <keyword>repeat</keyword>
+     <keyword>resize</keyword>
+     <keyword>return</keyword>
+     <keyword>run</keyword>
+     <keyword>s</keyword>
+     <keyword>sbreak</keyword>
+     <keyword>step</keyword>
+     <keyword>then</keyword>
+     <keyword>to</keyword>
+     <keyword>true</keyword>
+     <keyword>try</keyword>
+     <keyword>type</keyword>
+     <keyword>until</keyword>
+     <keyword>variables</keyword>
+     <keyword>wend</keyword>
+     <keyword>while</keyword>
+    </context>
+
+    <context id="datatypes" style-ref="datatypes">
+     <keyword>any</keyword>
+     <keyword>boolean</keyword>
+     <keyword>constant</keyword>
+     <keyword>double</keyword>
+     <keyword>integer</keyword>
+     <keyword>long</keyword>
+     <keyword>single</keyword>
+     <keyword>string</keyword>
+    </context>
+
+    <context id="decimal" style-ref="decimal">
+      <match extended="true">
+        (?&lt;![\w\.])
+        [+-]? ([1-9][0-9]*|0)
+        ([_]([0-9]+|[a-z][\w_]*))?
+        (?![\w\.])
+      </match>
+    </context>
+
+    <context id="hexadecimal" style-ref="hexadecimal">
+      <match extended="true">
+        (?&lt;![\w\.])
+        0[xX][a-fA-F0-9]*
+        (?![\w\.])
+      </match>
+    </context>
+
+    <context id="octal" style-ref="octal">
+      <match extended="true">
+        (?&lt;![\w\.])
+        0[0-7]*
+        (?![\w\.])
+      </match>
+    </context>
+
+    <context id="binary" style-ref="binary">
+      <match extended="true">
+        (?&lt;![\w\.])
+        0[bB][0-1]*
+        (?![\w\.])
+      </match>
+    </context>
+
+   <context id="invalid-hexadecimal" style-ref="def:error">
+      <match extended="true">
+        (?&lt;![\w\.])
+        0[xX][a-fA-F0-9]*[g-zG-Z][a-zA-Z0-9]*
+        (?![\w\.])
+      </match>
+    </context>
+
+    <context id="invalid-octal" style-ref="def:error">
+      <match extended="true">
+        (?&lt;![\w\.])
+		0[0-7]*[89a-zA-Z][0-9]*
+        (?![\w\.])
+      </match>
+    </context>
+
+	 <context id="invalid-binary" style-ref="def:error">
+      <match extended="true">
+        (?&lt;![\w\.])
+		0[bB][0-1]*[23456789a-zA-Z]*
+        (?![\w\.])
+      </match>
+    </context>
+
+    <context id="xscript" class="no-spell-check">
+      <include>
+        <context ref="decimal"/>
+        <context ref="def:hexadecimal"/>
+        <context ref="def:octal"/>
+        <context ref="binary"/>
+        <context ref="def:string"/>
+        <context ref="line-comment"/>
+        <context ref="keywords"/>
+        <context ref="datatypes"/>
+	<context ref="invalid-hexadecimal"/>
+        <context ref="invalid-octal"/>
+      </include>
+    </context>
+
+  </definitions>
+</language>

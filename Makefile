@@ -14,19 +14,19 @@ else
 	FLAGS += -ldl
 endif
 
-all: interpreter runtime
+all: interpreter stdlib
 
 interpreter: $(OBJFILES)
 	$(CC) $(OBJFILES) -o $(OUTFILE) $(FLAGS)
 
-runtime:
+stdlib:
 	make -C lib
 
 debug: $(OBJFILES)
 	$(CC) $(OBJFILES) -o $(OUTFILE) $(FLAGS) -fsanitize=address
 
 clean:
-	rm *.o lib/*.o $(OUTFILE) xrun100.so
+	rm *.o lib/*.o $(OUTFILE) xscript-stdlib-1.0.0.so
 
 $(OBJFILES): %.o: %.c
 	$(CC) $(CCFLAGS) $< -o $@

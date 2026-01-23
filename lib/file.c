@@ -131,11 +131,12 @@ return;
 
 }
 
-int find(DIR *findptr,char *filespec,FINDRESULT *outbuf) {
+int find(DIR *findptr,char *filespec,UserDefinedType *outbuf) {
 char *dirname[MAX_PATH];
 struct stat statbuf;
 struct dirent *dirptr;
 struct tm *temptime;
+UserDefinedTypeField *usertypefield;
 
 if(findptr == NULL) {
 	if(GetDirectoryFromPath(filespec,dirname) == -1) {		/* path has no directory */
@@ -151,43 +152,42 @@ if(stat(dirptr->d_name,&statbuf) == -1) return(-1);	/* get file information */
 
 /* copy entry information */
 
-strncpy(outbuf->filename,dirptr->d_name,MAX_PATH);		/* filename */
-outbuf->size=statbuf.st_size;				/* file size */
-outbuf->uid=statbuf.st_uid;					/* user ID */
-outbuf->gid=statbuf.st_gid;					/* group ID */
-outbuf->permissions=statbuf.st_mode;				/* permissions */
-outbuf->type=(statbuf.st_mode & S_IFMT);			/* type */
+strncpy(GetUDTFieldPointer(outbuf,"name",0,0)->fieldval->s,dirptr->d_name,MAX_PATH);		/* filename */
+GetUDTFieldPointer(outbuf,"size",0,0)->fieldval->i=statbuf.st_size;				/* file size */
+GetUDTFieldPointer(outbuf,"uid",0,0)->fieldval->i=statbuf.st_uid;					/* user ID */
+GetUDTFieldPointer(outbuf,"gid",0,0)->fieldval->i=statbuf.st_gid;					/* group ID */
+GetUDTFieldPointer(outbuf,"permissions",0,0)->fieldval->i=statbuf.st_mode;				/* permissions */
+GetUDTFieldPointer(outbuf,"type",0,0)->fieldval->i=(statbuf.st_mode & S_IFMT);			/* type */
 
 temptime=gmtime(statbuf.st_ctime);
 
 /* Create time */
-outbuf->createtime_hours=temptime->tm_hour;
-outbuf->createtime_minutes=temptime->tm_min;
-outbuf->createtime_seconds=temptime->tm_sec;
-outbuf->createdate_day=temptime->tm_mday;
-outbuf->createdate_month=temptime->tm_mon;
-outbuf->createdate_year=temptime->tm_year;
+GetUDTFieldPointer(outbuf,"createtime_hour",0,0)->fieldval->i=temptime->tm_hour;
+GetUDTFieldPointer(outbuf,"createtime_minutes",0,0)->fieldval->i=temptime->tm_min;
+GetUDTFieldPointer(outbuf,"createtime_seconds",0,0)->fieldval->i=temptime->tm_sec;
+GetUDTFieldPointer(outbuf,"createdate_day",0,0)->fieldval->i=temptime->tm_mday;
+GetUDTFieldPointer(outbuf,"createdate_month",0,0)->fieldval->i=temptime->tm_mon;
+GetUDTFieldPointer(outbuf,"createdate_year",0,0)->fieldval->i=temptime->tm_year;
 
 temptime=gmtime(statbuf.st_atime);
 
 /* access time */
-outbuf->accesstime_hours=temptime->tm_hour;
-outbuf->accesstime_minutes=temptime->tm_min;
-outbuf->accesstime_seconds=temptime->tm_sec;
-outbuf->accessdate_day=temptime->tm_mday;
-outbuf->accessdate_month=temptime->tm_mon;
-outbuf->accessdate_year=temptime->tm_year;
+GetUDTFieldPointer(outbuf,"accesstime_hour",0,0)->fieldval->i=temptime->tm_hour;
+GetUDTFieldPointer(outbuf,"accesstime_minutes",0,0)->fieldval->i=temptime->tm_min;
+GetUDTFieldPointer(outbuf,"accesstime_seconds",0,0)->fieldval->i=temptime->tm_sec;
+GetUDTFieldPointer(outbuf,"accessdate_day",0,0)->fieldval->i=temptime->tm_mday;
+GetUDTFieldPointer(outbuf,"accessdate_month",0,0)->fieldval->i=temptime->tm_mon;
+GetUDTFieldPointer(outbuf,"accessdate_year",0,0)->fieldval->i=temptime->tm_year;
 
 temptime=gmtime(statbuf.st_mtime);
 
 /* modify time */
-outbuf->modifytime_hours=temptime->tm_hour;
-outbuf->modifytime_minutes=temptime->tm_min;
-outbuf->modifytime_seconds=temptime->tm_sec;
-outbuf->modifydate_day=temptime->tm_mday;
-outbuf->modifydate_month=temptime->tm_mon;
-outbuf->modifydate_year=temptime->tm_year;
-
+GetUDTFieldPointer(outbuf,"modifytime_hour",0,0)->fieldval->i=temptime->tm_hour;
+GetUDTFieldPointer(outbuf,"modifytime_minutes",0,0)->fieldval->i=temptime->tm_min;
+GetUDTFieldPointer(outbuf,"modifytime_seconds",0,0)->fieldval->i=temptime->tm_sec;
+GetUDTFieldPointer(outbuf,"modifydate_day",0,0)->fieldval->i=temptime->tm_mday;
+GetUDTFieldPointer(outbuf,"modifydate_month",0,0)->fieldval->i=temptime->tm_mon;
+GetUDTFieldPointer(outbuf,"modifydate_year",0,0)->fieldval->i=temptime->tm_year;
 return(0);
 }
 

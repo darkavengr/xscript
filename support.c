@@ -122,3 +122,27 @@ while((char) *tokenptr != 0) {
 
 return(TRUE);
 }
+
+/*
+*  Get pointer to UDT field
+* 
+*  In:  udt		User defined type
+	fieldname	Field name
+	fieldx		Field X subscript	
+	fieldy		Field Y subscript	
+* 
+*  Returns: Pointer to field on success or NULL on error
+*
+*/
+UserDefinedTypeField *GetUDTFieldPointer(UserDefinedType *udt,char *fieldname,int fieldx,int fieldy) {
+udtptr=udt->field;
+
+while(udtptr != NULL) {
+	if(strcmp(udtptr->fieldname,fieldname) == 0) return(udtptr);	/* found field */				
+ 
+	udtptr=udtptr->next;
+}
+
+return(NULL);
+}
+

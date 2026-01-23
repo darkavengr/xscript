@@ -44,7 +44,7 @@ void xlib_rmdir(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 void xlib_chdir(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 void xlib_dup2(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 void xlib_unlink(int paramcount,vars_t *params,libraryreturnvalue *returnval);
-int find(DIR *findptr,char *filespec,FINDRESULT *outbuf);
+int find(DIR *findptr,char *filespec,UserDefinedType *outbuf);
 void xlib_findfirst(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 void xlib_findnext(int paramcount,vars_t *params,libraryreturnvalue *returnval);
 int GetDirectoryFromPath(char *path,char *dirbuf);

@@ -26,14 +26,14 @@
 	#define VARIABLESANDFUNCTIONS_H
 
 	typedef struct {
-	double d;
-	char *s;
-	int i;
-	float f;
-	long int l;
-	bool b;
-	void *a;
-	int type;
+		double d;
+		char *s;
+		int i;
+		float f;
+		long int l;
+		bool b;
+		void *a;
+		int type;
 	} varval;
 
 	typedef struct {
@@ -128,6 +128,7 @@
 		int returnvalue;
 		int type;
 		varval val;
+		UserDefinedType *udt;
 	} libraryreturnvalue;
 #endif
 

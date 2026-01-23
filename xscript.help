@@ -13,12 +13,12 @@ Type HELP {word} to get help on {word}.
 %TOPIC keywords
 The following are keywords. Type help {keyword} to get help for {keyword}
 
-AND     ANY     AS         BACKTRACE  BOOLEAN    CATCH        CBREAK       CONSTANT  CONTINUE  DECLARE
-DELETE  DOUBLE  ELSE	   ELSEIF     END        ENDFUNCTION  ENDIF     ENDTRY    ENDTYPE
-EXIT    FALSE   FOR        FUNCTION   HELP       IF           IMPORT    INTEGER   ITERATE
-LBREAK  LOAD    LONG       NEXT       NOT        OR           PRINT     QUIT      REPEAT
-RESIZE  RETURN  RUN        S          SBREAK     SINGLE       STEP      STRING    THEN
-TO      TRUE    TRY        TYPE       UNTIL      VARIABLES    WEND      WHILE
+AND     ANY          AS         BACKTRACE  BOOLEAN    CATCH        CBREAK    CONSTANT  CONTINUE  DECLARE
+DELETE  DOUBLE       ELSE	ELSEIF     END        ENDFUNCTION  ENDIF     ENDTRY    ENDTYPE   EXIT
+FALSE   FOR          FUNCTION   HELP       IF         IMPORT       INTEGER   ITERATE   LBREAK    LOAD
+LONG    NEXT         NOT        OR         PRINT      QUIT         REPEAT    RESIZE    RETURN    RUN
+S       SBREAK       SINGLE     STEP       STRING     THEN         TO        TRUE      TRY       TYPE
+UNTIL   VARIABLES    WEND       WHILE
 %ENDTOPIC
 
 %TOPIC while

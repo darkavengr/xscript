@@ -1,0 +1,14 @@
+void xlib_list_reverse(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+LIST *next=(LIST *) GetUDTFieldPointer(params[0].val->a,"ListEnd",0,0)->fieldval->a; /* get pointer to end of list */
+LIST *newlist=(LIST *) GetUDTFieldPointer(params[1].val->a,"ListStart",0,0)->fieldval->a; /* get pointer to start of new list */
+
+int DataType=GetUDTFieldPointer(params[0].val->a,"DataType",0,0)->fieldval->i;	/* get list data type */
+
+if(next == NULL) {		/* empty list */
+	returnval->val.i=-1;
+	returnval->systemerrornumber=ENOTFOUND;
+	return;
+}
+
+while(next != NULL) {
+			

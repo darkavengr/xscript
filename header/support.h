@@ -6,4 +6,5 @@ void ToUpperCase(char *token);
 void StripQuotesFromString(char *str,char *buf);
 int strcmpi(char *source,char *dest);
 int IsNumber(char *token);
+UserDefinedTypeField *GetUDTFieldPointer(UserDefinedType *udt,char *fieldname,int fieldx,int fieldy);
 

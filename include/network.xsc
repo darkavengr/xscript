@@ -79,70 +79,70 @@ declare AF_SMC as constant integer =  as constant integer = 43 # SMC sockets
 function connect(hostname as string,port as integer,SocketType as integer) as integer
 declare result as integer
 
-libcall xlib_connect(hostname,port,SocketType,timeout) in "xlib" to result
+libcall xlib_connect(hostname,port,SocketType,timeout) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function CloseSocket(SocketHandle as integer) as integer
 declare result as integer
 
-libcall xlib_closesocket(SocketHandle) in "xlib" to result
+libcall xlib_closesocket(SocketHandle) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function recv(SocketHandle as integer,data as string,DataLength as integer) as integer
 declare result as integer
 
-libcall xlib_recv(SocketHandle,data,DataLength) in "xlib" to result
+libcall xlib_recv(SocketHandle,data,DataLength) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function send(SocketHandle as integer,data as string,DataLength as integer) as integer
 declare result as integer
 
-libcall xlib_send(SocketHandle,data,DataLength) in "xlib" to result
+libcall xlib_send(SocketHandle,data,DataLength) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function SetSocketTimeout(SocketHandle as integer,timeout as integer) as integer
 declare result as integer
 
-libcall xlib_set_socket_timeout(SocketHandle,timeout) in "xlib" to result
+libcall xlib_set_socket_timeout(SocketHandle,timeout) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function GetSocketTimeout(SocketHandle as integer) as integer
 declare result as integer
 
-libcall xlib_get_socket_timeout(SocketHandle) in "xlib" to result
+libcall xlib_get_socket_timeout(SocketHandle) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function accept(SocketHandle as integer,bindsocket as Socket) as integer
 declare result as integer
 
-libcall xlib_accept(SocketHandle) in "xlib" to result
+libcall xlib_accept(SocketHandle) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function bind(SocketHandle as integer,bindsocket as Socket) as integer
 declare result as integer
 
-libcall xlib_bind(SocketHandle,bindsocket) in "xlib" to result
+libcall xlib_bind(SocketHandle,bindsocket) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function GetIPAddress(SocketHandle,IPAddress as string) as integer
 declare result as integer
 
-libcall xlib_get_ip_address(SocketHandle,IPAddress) in "xlib" to result
+libcall xlib_get_ip_address(SocketHandle,IPAddress) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
 function GetHostName(SocketHandle,hostname as string) as integer
 declare result as integer
 
-libcall xlib_get_hostname(SocketHandle,hostname) in "xlib" to result
+libcall xlib_get_hostname(SocketHandle,hostname) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 

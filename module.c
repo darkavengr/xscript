@@ -212,6 +212,7 @@ int count;
 void (*callptr)(int,vars_t *,libraryreturnvalue *result);
 FUNCTIONCALLSTACK modulefunctioncall;
 UserDefinedType *udtptr;
+vars_t *varptr;
 vars_t *paramvars=NULL;
 int paramstc;
 char *parameters_subst[MAX_SIZE][MAX_SIZE];
@@ -269,15 +270,15 @@ for(count=0;count < paramstc;count++) {
 		paramvars[count].val->a=(void *) atoi(parameters_subst[count]);
 	}
 	else if(paramvars[count].type_int == VAR_UDT) {
-		udtptr=GetVariablePointer(parameters[count]);		/* Get variable pointer */
-		if(udtptr == NULL) {
+		varptr=GetVariablePointer(parameters[count]);		/* Get variable pointer */	
+		if(varptr == NULL) {
 			SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 
 			HasReturnedError=TRUE;
 			break;
 		}
 
-		paramvars[count].udt=udtptr;		/* point to UDT */
+		paramvars[count].udt=udtptr=varptr->udt;		/* point to UDT */
 	}
 }
 

@@ -1,0 +1,41 @@
+#
+#    XScript library
+#    (C) Matthew Boote 2026
+#
+#    This file is part of XScript.
+#
+#    XScript is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    XScript is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+
+type BTREE
+	FirstLeftBranch as any			# Pointer to first left branch
+	FirstRightBranch as any			# Pointer to first right branch
+	NumberOfEntries as integer		# Number of entries
+	DataType as integer			# List data type
+	BranchNumber as integer			# Branch number
+endtype
+
+function btree_insert(TreeEntry as BTREE,NewEntry as any) as integer
+declare result as integer
+
+libcall xlib_btree_insert(TreeEntry,NewEntry) in "xscript-stdlib-1.0.0" to result
+return(result);
+endfunction
+
+function btree_delete(DataList as list,EntryNumber as integer) as integer
+declare result as integer
+
+libcall xlib_btree_delete(TreeEntry) in "xscript-stdlib-1.0.0" to result
+return(result);
+endfunction
+

@@ -34,28 +34,28 @@ endtype
 function GetTime(TimeBuffer as time) as integer
 declare result as double
 
-libcall xlib_get_time(TimeBuffer) in "xlib" to result
+libcall xlib_get_time(TimeBuffer) in "xscript-stdlib-1.0.0" to result
 return result
 end function
 
 function SetTime(TimeBuffer as time) as integer
 declare result as double
 
-libcall xlib_set_time(TimeBuffer) in "xlib" to result
+libcall xlib_set_time(TimeBuffer) in "xscript-stdlib-1.0.0" to result
 return result
 end function
 
 function GetDate(DateBuffer as time) as integer
 declare result as double
 
-libcall xlib_get_date(DateBuffer) in "xlib" to result
+libcall xlib_get_date(DateBuffer) in "xscript-stdlib-1.0.0" to result
 return result
 end function
 
 function SetTime(DateBuffer as time) as integer
 declare result as double
 
-libcall xlib_set_date(DateBuffer) in "xlib" to result
+libcall xlib_set_date(DateBuffer) in "xscript-stdlib-1.0.0" to result
 return result
 end function
 
