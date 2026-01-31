@@ -1,0 +1,3 @@
+print 3+3
+import "test/print.xsc"
+

@@ -21,7 +21,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>;
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -29,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 #include "errors.h"
 #include "size.h"
 #include "evaluate.h"
@@ -163,7 +163,6 @@ if(filename != NULL) {
 	SetCurrentBufferPosition(FileBuffer);
 	SetIsFileLoadedFlag();
 }
-
 
 InitializeMainFunction(filename,args);
 
@@ -324,12 +323,12 @@ for(count=1;count<tc;count++) {
 			return(-1);
 		}
 
-		if( (((char) *tokens[0]) == '"') && ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
+		if( (((char) *tokens[1]) == '"') || ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
 			if(vartype == -1) {
 				if(CreateVariable(split.name,"STRING",1,1) == -1) return(-1); /* create new string variable */ 
 			}
-		  
-		  	if(ConatecateStrings(count+1,tc,tokens,&val) == -1) return(-1);					/* join all the strings on the line */
+  
+		  	if(ConatecateStrings(0,returnvalue,outtokens,&val) == -1) return(-1);					/* join all the strings on the line */
 
 			/* set variable */
 		  	if(UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
@@ -498,6 +497,7 @@ int IsCondition;
 sigsetjmp(savestate,1);		/* save current context */
 
 for(count=1;count < tc;count++) {
+
 	IsInBracket=FALSE;
 	IsCondition=FALSE;
 
@@ -511,15 +511,15 @@ for(count=1;count < tc;count++) {
 		if((strcmp(tokens[endtoken],"(") == 0) || (strcmp(tokens[endtoken],"[") == 0)) IsInBracket=TRUE;														
 		if((strcmp(tokens[endtoken],")") == 0) || (strcmp(tokens[endtoken],"]") == 0)) IsInBracket=FALSE;														
 
-		if((IsInBracket == FALSE) && (strcmp(tokens[endtoken],",") == 0)) break;		/* found separator not subscript */
+		if((IsInBracket == FALSE) && ((strcmp(tokens[endtoken],",") == 0) || (strcmp(tokens[endtoken],";") == 0))) break;		/* found separator not subscript */
 	}
 
 	sigsetjmp(savestate,1);		/* save current context */
 
 	/* printing string */
 	if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
-		memset(printtokens,0,MAX_SIZE*MAX_SIZE);
-	
+		memset(printtokens,0,MAX_SIZE*MAX_SIZE);	
+
 		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);	
 		if(returnvalue == -1) return(-1);		/* error occurred */
 
@@ -568,17 +568,21 @@ for(count=1;count < tc;count++) {
 			}
 
 			if(IsCondition == FALSE) {	/* Not conditional */
-				if(endtoken <= tc) printf("%.6g ",retval.val.d);
+				if(endtoken <= tc) printf("%.6g",retval.val.d);
 			}
 		}
  
+
+		if(strcmp(tokens[endtoken],",") == 0) printf("\t");	/* print tab if comma seperator */
+		if(strcmp(tokens[endtoken],";") == 0) printf(" ");	/* print space if semicolon seperator */
+
 		count=endtoken;
 	}
 
 	sigsetjmp(savestate,1);		/* save current context */
 }
 
-printf("\n");
+if(strcmp(tokens[tc-1],";") != 0) printf("\n");
 
 SetLastError(0);
 return(0);
@@ -647,7 +651,6 @@ for(count=0;count < pathtc;count++) {			/* loop through path array */
 	}
 }
 
-SetLastError(MODULE_NOT_FOUND);
 return(-1);
 }
 /*
@@ -1136,9 +1139,16 @@ if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
 }
 
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
-	if(ConatecateStrings(1,tc,tokens,&retval.val) == -1) return(-1);	/* get strings */
+	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
+	if(substreturnvalue == -1) {
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+		return(-1);
+	}
+
+	if(ConatecateStrings(0,substreturnvalue,outtokens,&retval.val) == -1) return(-1);	/* get strings */
 }
-else {
+else
+{
 	if(IsValidExpression(tokens,1,tc) == FALSE) {
 		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
 		return(-1);
@@ -2046,7 +2056,6 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 					*/
 
 			    		if((char) *token != ' ') {
-
 						/* handle seperators that are multi-character operators */
 
 						if((char) *token == '*') {		/* ** */
@@ -2115,11 +2124,13 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 							d=tokens[++tc];	
 						}
 						else if((char) *token == '.') {		/* can be either decimal point or member */
-							lastcharptr=token;
-							lastcharptr--;
-
 							nextcharptr=token;
 							nextcharptr++;
+
+							if((char) *nextcharptr == 0) return(tc);
+
+							lastcharptr=token;
+							lastcharptr--;
 
 							if( (((char)  *lastcharptr >= '0') && ((char)  *lastcharptr <= '9')) && 
 							    (((char) *nextcharptr >= '0') && ((char) *nextcharptr <= '9'))) {
@@ -2130,6 +2141,7 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 							else
 							{
 								tc++;
+								token++;
 							}
 						}
 						else if((char) *token == '-') {		/* can be either part of the
@@ -2150,6 +2162,8 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 			    		else
 					{
 						token++;		/* ignore spaces next to tokens */
+
+						if((char) *token == 0) break;
 					}
 	   	}
 
@@ -2280,14 +2294,27 @@ char *bufpos;
 int returnvalue;
 char *saveCurrentBufferPosition;
 char *linebuf[MAX_SIZE];
+MODULES *modptr;
+FUNCTIONCALLSTACK newfunc;
+
+modptr=GetModuleEntry(filename);
+
+if(modptr != NULL) {		/* return if module is loaded */
+	/* return no error to allow for multiple inclusion attempts; nested modules nned this */
+
+	SetLastError(NO_ERROR);
+	return(0);
+}
 
 if(stat(filename,&includestat) == -1) {
 	SetLastError(FILE_NOT_FOUND);
 	return(-1);
 }
 
+
 handle=fopen(filename,"rb");				/* open module file */
 if(!handle) {
+	PopFunctionCallInformation();
 	SetLastError(FILE_NOT_FOUND);
 	return(-1);
 }
@@ -2296,6 +2323,8 @@ if(!handle) {
 
 ModuleEntry.StartInBuffer=calloc(1,includestat.st_size);		/* start adress of module in buffer */
 if(ModuleEntry.StartInBuffer == NULL) {
+	PopFunctionCallInformation();
+
 	fclose(handle);
 
 	SetLastError(NO_MEM);
@@ -2304,6 +2333,8 @@ if(ModuleEntry.StartInBuffer == NULL) {
 
 if(fread(ModuleEntry.StartInBuffer,includestat.st_size,1,handle) != 1) {
 	free(ModuleEntry.StartInBuffer);
+
+	PopFunctionCallInformation();
 	fclose(handle);
 
 	SetLastError(IO_ERROR);
@@ -2317,14 +2348,28 @@ bufpos=(ModuleEntry.StartInBuffer+(includestat.st_size-1));
 
 fclose(handle);
 
+returnvalue=0;
+
 /* add module entry */
 strncpy(ModuleEntry.modulename,filename,MAX_SIZE);	/* module filename */
 ModuleEntry.flags=MODULE_SCRIPT;		/* module type */
 ModuleEntry.EndInBuffer=ModuleEntry.StartInBuffer;			/* end adress of module in buffer */
 ModuleEntry.EndInBuffer += includestat.st_size;
+ModuleEntry.dlhandle=NULL;
 AddToModulesList(&ModuleEntry);
 
-returnvalue=0;
+modptr=GetModuleEntry(filename);
+
+newfunc.callptr=NULL;
+newfunc.startlinenumber=1;
+newfunc.currentlinenumber=1;
+newfunc.stat=0;
+newfunc.moduleptr=modptr;		/* get module information for this function */
+PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
+
+//printf("module=%s\n",GetFunctionCallStackTop()->moduleptr->modulename);
+
+DeclareBuiltInVariables(NULL,NULL);			/* declare built-in variables */
 
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
 SetCurrentFileBufferPosition(ModuleEntry.StartInBuffer);	/* set start */
@@ -2334,9 +2379,14 @@ do {
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,linebuf,LINE_SIZE);	/* read line from buffer */
 
-	if(((char) *CurrentBufferPosition) == 0) break;
+	RemoveNewline(linebuf);		/* remove newline from line */
 
-	if(ExecuteLine(linebuf) == -1) return(-1);		/* run statement */
+	if(ExecuteLine(linebuf) == -1) {
+		// don't call PopCallInformation() here; the call stack information is needed for PrintBackTrace()
+		return(-1);		/* run statement */
+	}
+
+	GetFunctionCallStackTop()->currentlinenumber++;
 
 	memset(linebuf,0,MAX_SIZE);
 
@@ -2345,6 +2395,7 @@ do {
 CurrentBufferPosition=saveCurrentBufferPosition;	/* restore current pointer */
 SetCurrentFileBufferPosition(CurrentBufferPosition);
 
+PopFunctionCallInformation();
 return(0);
 }
 

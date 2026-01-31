@@ -1,2 +1,1 @@
-print "Two plus two=",2+2
-
+print "Hello","Test"

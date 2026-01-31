@@ -24,24 +24,10 @@ type LIST
 	DataType as integer			# List data type
 endtype
 
-function list_push_back(DataList as LIST,NewEntry as any) as integer
-declare result as integer
-
-libcall xlib_list_append(DataList,NewEntry) in "xscript-stdlib-1.0.0" to result
-return(result);
-endfunction
-
-function list_push_front(DataList as LIST,NewEntry as any) as integer
-declare result as integer
-
-libcall xlib_list_prepend(DataList,NewEntry) in "xscript-stdlib-1.0.0" to result
-return(result);
-endfunction
-
 function list_insert(DataList as LIST,EntryNumber as integer,NewEntry as any) as integer
 declare result as integer
 
-libcall xlib_list_prepend(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
+libcall xlib_list_insert(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
 return(result);
 endfunction
 
@@ -55,7 +41,7 @@ endfunction
 function list_get(DataList as LIST,EntryNumber as integer) as any
 declare result as int
 
-libcall xlib_list_delete(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
+libcall xlib_list_get(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
 return(result);
 endfunction
 

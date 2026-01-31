@@ -25,7 +25,7 @@
 #
 # Returns: string length
 #
-function len(string str) as integer
+function len(str as string) as integer
 declare count as integer
 
 count=0
@@ -73,7 +73,7 @@ endfunction
 #
 function fillstring(str as string,fillstring as string,num as integer)
 for count=0 to num
-	string += fillstring			# append fill string
+	str += fillstring			# append fill string
 next count
 end function
 
@@ -135,7 +135,7 @@ shiftamount=(4*4)-4
 for count=0 to 4*2			# For each nibble
 	index=(number & mask) >> shiftamount	# get the nibble
 	
-	if not index != 0 then		# Ignore leading zeroes
+	if index != 0 then		# Ignore leading zeroes
 		foundstart=1
 	endif
 
@@ -166,7 +166,7 @@ declare shiftamount as integer
 declare foundstart as boolean
 declare outstring as string
 
-hexbuf(0)="0"			# Initialize hexadecimal digit array
+hexbuf(0)="0"			# Initialize octal digit array
 hexbuf(1)="1"
 hexbuf(2)="2"
 hexbuf(3)="3"
@@ -198,7 +198,7 @@ for count=shiftvalue to count step -3
 		foundstart=TRUE;
 	endif
 
-	if(foundstart == TRUE) then
+	if foundstart == TRUE then
 		outstring=outstring+digits((oct & mask) >> count)
 	endif
 
@@ -223,18 +223,18 @@ pos=0
 
 # find first non-space character
 
-while str[pos:1] != ""
-	if str[pos:1] == " " then		# skip spaces
+repeat
+	if str[pos,pos+1] == " " then		# skip spaces
 		pos=pos+1
 	else					# found non-space character
 		exit while
 	endif
-wend
+until while str[pos,pos+1] != ""
 
 # copy rest of string
 
-while str[pos:1] != ""
-	outstring=outstring + str[pos:1]
+while str[pos,1] != ""
+	outstring=outstring + str[pos,1]
 wend
 
 return outstring
@@ -256,7 +256,7 @@ pos=len(str)-1
 # find first non-space character
 
 while pos > 1
-	if str[pos:1] == " " then		# skip spaces
+	if str[pos,1] == " " then		# skip spaces
 		pos=pos-1
 	else					# found non-space character
 		exit while
@@ -270,5 +270,101 @@ for count=1 to pos
 next count
 
 return outstring
+endfunction
+
+function reverse(str as string) as string
+declare revstr as string
+declare charpos as integer
+
+charpos=len(str)-1
+
+while charpos > 0
+	revstr=revstr+str[charpos,charpos+1]
+	charpos=charpos-1
+wend
+
+return revstr
+endfunction
+
+#
+# Convert integer into string
+#
+# In: num	number
+#
+# Returns: string representation of the number
+#
+
+function str(num as integer) as string
+declare valdigits(9) as string
+declare outstr as string
+
+valdigits(0)="0"
+valdigits(1)="1"
+valdigits(2)="2"
+valdigits(3)="3"
+valdigits(4)="4"
+valdigits(5)="5"
+valdigits(6)="6"
+valdigits(7)="7"
+valdigits(8)="8"
+valdigits(9)="9"
+
+while num > 0
+	outstr=outstr+valdigits(num % 10)		# Get digit
+	num=num / 10		# remove digit
+wend
+
+# add - sign if it's a negative number
+
+if num < 0 then
+	outstr=outstr+"-"
+endif
+
+return reverse(outstr) # reverse string
+endfunction
+
+#
+# Convert string into integer
+#
+# In: numstr	string to convert
+#
+# Returns: integer representation of the number
+#
+
+function val(numstr as string) as integer
+declare shiftamount as integer
+declare outnum as integer
+declare count as integer
+declare digitcount as integer
+
+valdigits(0)="0"
+valdigits(1)="1"
+valdigits(2)="2"
+valdigits(3)="3"
+valdigits(4)="4"
+valdigits(5)="5"
+valdigits(6)="6"
+valdigits(7)="7"
+valdigits(8)="8"
+valdigits(9)="9"
+
+shiftamount=1
+
+for count=0 to len(numstr)
+	for digitcount=0 to 9
+		if numstr[count,count+1] == valdigits(digitcount) then
+			outnum=outnum+(digitcount*shiftamount)
+			shiftamount=shiftamount * 10			
+			exit for
+		endif
+	next
+next
+
+
+if numstr[0,1] == "-" then
+	outnum=outnum-outnum-outnum
+endif
+
+return outnum
 endfunction
 

@@ -1,0 +1,9 @@
+import console
+
+declare name as string
+
+print "What is your name?";
+name=input()
+
+print "Hello,";name
+

@@ -483,44 +483,52 @@ stack=GetFunctionCallStackTop();		/* get pointer to top of function call stack *
 /* loop through stack and print contents */
 
 while(stack != NULL) {
-	printf("#%d	%s(",callstackcount++,stack->name);
+	printf("#%d",callstackcount++);
 
 	/* display initial parameters with values */
 
-	varnext=stack->initialparameters;	/* point to parameters */
+	if(stack->callptr != NULL) {
+		printf(" %s(",stack->name);
+
+		varnext=stack->initialparameters;	/* point to parameters */
 	
-	while(varnext != NULL) {
-		if(varnext->val != NULL) {
-			if(varnext->type_int == VAR_NUMBER) {				/* double precision */
-				printf("%s=%.6g",varnext->varname,varnext->val->d);
-			}
-			else if(varnext->type_int == VAR_STRING) {			/* string */	
-				printf("%s=\"%s\"",varnext->varname,varnext->val->s);
-			}
-			else if(varnext->type_int == VAR_INTEGER) {			/* integer */
-				printf("%s=%d",varnext->varname,varnext->val->i);
-       			}
-			else if(varnext->type_int == VAR_SINGLE) {				/* single */	     
-				printf("%s=%f",varnext->varname,varnext->val->f);
-			}
-			else if(varnext->type_int == VAR_LONG) {				/* long */ 
-				printf("%s=%f",varnext->varname,varnext->val->l);
-			}
-			else if(varnext->type_int == VAR_BOOLEAN) {				/* boolean */  
-				printf("%s=%s",truefalse[varnext->varname,varnext->val->b]);
-			}
-			else if(varnext->type_int == VAR_ANY) {				/* top type */
-				printf("%s=0x%X",varnext->varname,varnext->val->a);
+		while(varnext != NULL) {
+			if(varnext->val != NULL) {
+				if(varnext->type_int == VAR_NUMBER) {				/* double precision */
+					printf("%s=%.6g",varnext->varname,varnext->val->d);
+				}
+				else if(varnext->type_int == VAR_STRING) {			/* string */	
+					printf("%s=\"%s\"",varnext->varname,varnext->val->s);
+				}
+				else if(varnext->type_int == VAR_INTEGER) {			/* integer */
+					printf("%s=%d",varnext->varname,varnext->val->i);
+	       			}
+				else if(varnext->type_int == VAR_SINGLE) {				/* single */	     
+					printf("%s=%f",varnext->varname,varnext->val->f);
+				}
+				else if(varnext->type_int == VAR_LONG) {				/* long */ 
+					printf("%s=%f",varnext->varname,varnext->val->l);
+				}
+				else if(varnext->type_int == VAR_BOOLEAN) {				/* boolean */  
+					printf("%s=%s",varnext->varname,truefalse[varnext->val->b]);
+				}
+				else if(varnext->type_int == VAR_ANY) {				/* top type */
+					printf("%s=0x%X",varnext->varname,varnext->val->a);
+				}
+
+				if((varnext != NULL) && (varnext->next != NULL)) printf(", ");
 			}
 
-			if((varnext != NULL) && (varnext->next != NULL)) printf(", ");
-		}
+			varnext=varnext->next;
 
-		varnext=varnext->next;
+	  	}	
 
-  	}
-	
-	printf(") : %s (%s:%d)\n",stack->returntype,stack->moduleptr->modulename,stack->currentlinenumber);
+		printf(") : %s (%s:%d)\n",stack->returntype,stack->moduleptr->modulename,stack->currentlinenumber);
+	}
+	else		/* print module name and line number */
+	{
+		printf(" %s:%d\n",stack->moduleptr->modulename,stack->currentlinenumber);
+	}
 
 	stack=stack->next;
 }

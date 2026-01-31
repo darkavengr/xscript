@@ -28,51 +28,51 @@ endtype
 
 declare AF_UNSPEC as constant integer = 0 # Unspecified
 declare AF_LOCAL as constant integer = 1 # Local to host (pipes and file-domain)
-declare AF_UNIX as constant integer =  as constant integer = AF_LOCAL # POSIX name for AF_LOCAL
-declare AF_FILE as constant integer =  as constant integer = AF_LOCAL # Another non-standard name for AF_LOCAL
-declare AF_INET as constant integer =  as constant integer = 2 # IP protocol family
-declare AF_AX25 as constant integer =  as constant integer = 3 # Amateur Radio AX.25
-declare AF_IPX as constant integer =  as constant integer = 4 # Novell Internet Protocol
+declare AF_UNIX as constant integer = AF_LOCAL # POSIX name for AF_LOCAL
+declare AF_FILE as constant integer = AF_LOCAL # Another non-standard name for AF_LOCAL
+declare AF_INET as constant integer = 2 # IP protocol family
+declare AF_AX25 as constant integer = 3 # Amateur Radio AX.25
+declare AF_IPX as constant integer = 4 # Novell Internet Protocol
 declare AF_APPLETALK as constant integer = 5 # Appletalk DDP
 declare AF_NETROM as constant integer = 6 # Amateur radio NetROM
 declare AF_BRIDGE as constant integer = 7 # Multiprotocol bridge
 declare AF_ATMPVC as constant integer = 8 # ATM PVCs
-declare AF_X25 as constant integer =  as constant integer = 9 # Reserved for X.25 project
+declare AF_X25 as constant integer = 9 # Reserved for X.25 project
 declare AF_INET6 as constant integer = 10 # IP version 6
-declare AF_ROSE as constant integer =  as constant integer = 11 # Amateur Radio X.25 PLP
+declare AF_ROSE as constant integer = 11 # Amateur Radio X.25 PLP
 declare AF_DEC net as constant integer = 12 # Reserved for DECnet project
 declare AF_NETBEUI as constant integer = 13 # Reserved for 802.2LLC project
 declare AF_SECURITY as constant integer = 14 # Security callback pseudo AF
-declare AF_KEY as constant integer =  as constant integer = 15 # AF_KEY key management API
+declare AF_KEY as constant integer = 15 # AF_KEY key management API
 declare AF_NETLINK as constant integer = 16
 declare AF_ROUTE as constant integer = AF_NETLINK # Alias to emulate 4.4BSD
 declare AF_PACKET as constant integer = 17 # Packet family
-declare AF_ASH as constant integer =  as constant integer = 18 # Ash
+declare AF_ASH as constant integer = 18 # Ash
 declare AF_ECONET as constant integer = 19 # Acorn Econet
 declare AF_ATMSVC as constant integer = 20 # ATM SVCs
-declare AF_RDS as constant integer =  as constant integer = 21 # RDS sockets
-declare AF_SNA as constant integer =  as constant integer = 22 # Linux SNA Project */
-declare AF_IRDA as constant integer =  as constant integer = 23 # IRDA sockets
+declare AF_RDS as constant integer = 21 # RDS sockets
+declare AF_SNA as constant integer = 22 # Linux SNA Project */
+declare AF_IRDA as constant integer = 23 # IRDA sockets
 declare AF_PPPOX as constant integer = 24 # PPPoX sockets
 declare AF_WANPIPE as constant integer = 25 # Wanpipe API sockets
-declare AF_LLC as constant integer =  as constant integer = 26 # Linux LLC
-declare AF_IB as constant integer =  as constant integer = 27 # Native InfiniBand address
-declare AF_MPLS as constant integer =  as constant integer = 28 # MPLS
-declare AF_CAN as constant integer =  as constant integer = 29 # Controller Area Network
-declare AF_TIPC as constant integer =  as constant integer = 30 # TIPC sockets
+declare AF_LLC as constant integer = 26 # Linux LLC
+declare AF_IB as constant integer = 27 # Native InfiniBand address
+declare AF_MPLS as constant integer = 28 # MPLS
+declare AF_CAN as constant integer = 29 # Controller Area Network
+declare AF_TIPC as constant integer = 30 # TIPC sockets
 declare AF_BLUETOOTH as constant integer = 31 # Bluetooth sockets
-declare AF_IUCV as constant integer =  as constant integer = 32 # IUCV sockets
+declare AF_IUCV as constant integer = 32 # IUCV sockets
 declare AF_RXRPC as constant integer = 33 # RxRPC sockets
-declare AF_ISDN as constant integer =  as constant integer = 34 # mISDN sockets
+declare AF_ISDN as constant integer = 34 # mISDN sockets
 declare AF_PHONET as constant integer = 35 # Phonet sockets
 declare AF_IEEE802154 as constant integer = 36 # IEEE 802.15.4 sockets
-declare AF_CAIF as constant integer =  as constant integer = 37 # CAIF sockets
-declare AF_ALG as constant integer =  as constant integer = 38 # Algorithm sockets
-declare AF_NFC as constant integer =  as constant integer = 39 # NFC sockets
+declare AF_CAIF as constant integer = 37 # CAIF sockets
+declare AF_ALG as constant integer = 38 # Algorithm sockets
+declare AF_NFC as constant integer = 39 # NFC sockets
 declare AF_VSOCK as constant integer = 40 # vSockets
-declare AF_KCM as constant integer =  as constant integer = 41 # Kernel Connection Multiplexor
+declare AF_KCM as constant integer = 41 # Kernel Connection Multiplexor
 declare AF_QIPCRTR as constant integer = 42 # Qualcomm IPC Router
-declare AF_SMC as constant integer =  as constant integer = 43 # SMC sockets
+declare AF_SMC as constant integer = 43 # SMC sockets
 
 # Network functions
 
@@ -121,7 +121,7 @@ endfunction
 function accept(SocketHandle as integer,bindsocket as Socket) as integer
 declare result as integer
 
-libcall xlib_accept(SocketHandle) in "xscript-stdlib-1.0.0" to result
+libcall xlib_accept(SocketHandle,bindsocket) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 

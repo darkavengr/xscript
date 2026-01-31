@@ -145,12 +145,13 @@ if(args != NULL) {
 }
 
 /* XScript version */
-CreateVariable("VERSION","DOUBLE",1,1);
+if(CreateVariable("VERSION","DOUBLE",1,1) == -1) return(-1);
 
 cmdargs.d=(double) XSCRIPT_VERSION_MAJOR+((double) XSCRIPT_VERSION_MINOR/100)+((double) XSCRIPT_VERSION_REVISION/1000);
 UpdateVariable("VERSION","",&cmdargs,0,0,0,0);
 
 GetVariablePointer("VERSION")->IsConstant=TRUE;		/* set variable as constant */
+
 free(cmdargs.s);
 }
 
@@ -984,6 +985,7 @@ int NumberOfParameters=0;
 int vartoken;
 bool ParameterIsConstant=FALSE;
 int paramtype;
+FUNCTIONCALLSTACK newfunc;
 
 if((currentfunction != NULL) && ((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT)) {
 	SetLastError(NESTED_FUNCTION);
@@ -1014,6 +1016,7 @@ else
 		return(-1);
 	}
 
+	newfunc.vars_end=NULL;
 	previous=funcs_end;
 	funcs_end=funcs_end->next;
 
@@ -1132,7 +1135,9 @@ while(BuiltInVariableTypes[typecount] != NULL) {
 
 if(BuiltInVariableTypes[typecount] == NULL) {
 	udtptr=GetUDT(tokens[count+2]);
-	if(udtptr == NULL) {	
+	if(udtptr == NULL) {
+		if(strcmpi(funcs_end->name,"main") != 0) PopFunctionCallInformation();
+
 		SetLastError(TYPE_DOES_NOT_EXIST);
 		return(-1);
 	}
@@ -1176,6 +1181,8 @@ do {
 	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),linebuf,LINE_SIZE));			/* get data */	
 
 	RemoveNewline(linebuf);		/* remove newline */
+
+	GetFunctionCallStackTop()->currentlinenumber++;		/* increment line number */
 
 	TokenizeLine(linebuf,tokens,TokenCharacters);			/* tokenize line */
 
@@ -1275,23 +1282,20 @@ newfunc.currentlinenumber=next->linenumber;
 newfunc.stat |= FUNCTION_STATEMENT;
 newfunc.moduleptr=GetCurrentModuleInformationFromBufferAddress(next->funcstart);		/* get module information for this function */
 newfunc.type_int=next->type_int;
-
 strncpy(newfunc.returntype,next->returntype,MAX_SIZE);
-
 PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
 
 currentfunction=FunctionCallStackTop;			/* point to function */
 currentfunction->initialparameters=NULL;
 currentfunction->saveinformation_top=NULL;
 currentfunction->vars=NULL;
-
 DeclareBuiltInVariables(NULL,NULL);			/* declare built-in variables */
 
 parameters=next->parameters;
 
 /* add variables from parameters */
 
-for(count=0;count < returnvalue;count += 2) {
+for(count=0;count < returnvalue-1;count += 2) {
 	if(parameters->type_int == VAR_NUMBER) {
 		paramval.d=atof(evaltokens[count]);
 	}
@@ -1564,7 +1568,7 @@ for(count=start;count<end;count++) {
 
 }
 
-for(count=start;count<end;count++) {
+for(count=start;count < end;count++) {
 	tokentype=0;
 
 	if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
@@ -1584,8 +1588,8 @@ for(count=start;count<end;count++) {
 		if(retval.has_returned_value == TRUE) {		/* function has returned value */
 		  	get_return_value(&subst_returnvalue);
 
-		  	if(subst_returnvalue.type == VAR_STRING) {		/* returning string */   
-		  		sprintf(temp[outcount++],"%s",retval.val.s);
+		  	if(subst_returnvalue.type == VAR_STRING) {		/* returning string */
+				sprintf(temp[outcount++],"%s",retval.val.s);
 		  	}
 		  	else if(subst_returnvalue.type == VAR_INTEGER) {		/* returning integer */
 				sprintf(temp[outcount++],"%d",retval.val.i);
@@ -1712,9 +1716,9 @@ for(count=start;count<end;count++) {
 		return(-1);
 	}
 
-	count += skiptokens;
+//	count += skiptokens;
 
-	if(count >= end) break;
+//	if(count >= end) break;
 }
 
 /* copy tokens */
@@ -1776,6 +1780,7 @@ for(count=start;count<end;count++) {
 	else if((char) *tokens[count] == '"') {
 		StripQuotesFromString(tokens[count],temp);	/* remove quotes from string */
 		strncat(val->s,temp,strlen(temp));
+
 	}
 	else
 	{
@@ -1909,7 +1914,6 @@ FreeVariablesList(currentfunction->vars);	/* remove variables */
 
 if(FunctionCallStackTop != NULL) {
 	OldTop=FunctionCallStackTop;				/* save current top of stack */
-
 	FunctionCallStackTop=FunctionCallStackTop->next;	/* remove from top of stack */
 
 	free(OldTop);						/* free old top of stack */
@@ -1917,8 +1921,7 @@ if(FunctionCallStackTop != NULL) {
 	currentfunction=FunctionCallStackTop;			/* set current function */
 }
 
-SetCurrentBufferPosition(currentfunction->callptr);
-
+if(currentfunction->callptr != NULL) SetCurrentBufferPosition(currentfunction->callptr);
 return(0);
 }
 

@@ -1,0 +1,80 @@
+#
+#    XScript library
+#    (C) Matthew Boote 2026
+#
+#    This file is part of XScript.
+#
+#    XScript is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    XScript is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+
+type VECTOR
+	DataArray(1) as any
+	NumberOfEntries as integer
+	DataType as integer
+endtype
+
+function vector_insert(DataVector as VECTOR,EntryNumber as integer,NewEntry as any) as integer
+try
+	resize DataVector.DataArray(DataVector.NumberOfEntries+1);		# resize array
+catch
+	return -1
+endtry
+
+DataVector.NumberOfEntries=DataVector.NumberOfEntries+1		# increment number of entries
+
+# Make a space for the new entry
+
+for count=DataVector.NumberOfEntries-1 to EntryNumber step -1
+	DataVector.DataArray(count+1)=DataVector.DataArray(count)
+next count
+
+DataVector.DataArray(EntryNumber)=NewEntry		# set new entry
+
+return 0
+endfunction
+
+function vector_delete(DataVector as VECTOR,EntryNumber as integer) as integer
+
+# remove entry from vector
+
+if EntryNumber < DataVector.NumberOfEntries then
+	for count=DataVector.NumberOfEntries to EntryNumber step -1
+		DataVector.DataArray(count-1))=DataVector.DataArray(count)
+	next count
+endif
+
+DataVector.NumberOfEntries=DataVector.NumberOfEntries-1		# decrement number of entries
+
+try
+	resize DataVector.DataArray(DataVector.NumberOfEntries);		# resize array
+catch
+	return -1
+endtry
+
+return 0
+endfunction
+
+function vector_size(DataVector as VECTOR) as integer
+return DataVector.NumberOfEntries
+endfunction
+
+function vector_clear(DataVector as VECTOR) as integer
+DataVector.NumberOfEntries=0
+resize DataVector(1)
+endfunction
+
+function vector_resize(DataVector as VECTOR,size as integer) as integer
+DataVector.NumberOfEntries=size
+resize DataVector(size)
+endfunction
+

@@ -1,0 +1,55 @@
+#
+#    XScript library
+#    (C) Matthew Boote 2026
+#
+#    This file is part of XScript.
+#
+#    XScript is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    XScript is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+
+#
+# Console I/O
+#
+
+import string
+import error
+
+function inkey() as string
+declare key as string
+
+libcall xlib_inkey() in "xscript-stdlib-1.0.0" to key
+return key
+endfunction
+
+function input() as string
+declare inputstr as string
+
+libcall xlib_input() in "./xscript-stdlib-1.0.0" to inputstr
+
+return inputstr
+endfunction
+
+function color(ForegroundColor as integer,BackgroundColor as integer) as integer
+print chr(0x1b)+"[38;5"+str(ForegroundColor)		# set foreground color
+print chr(0x1b)+"[48;5"+str(BackgroundColor)		# set background color
+endfunction
+
+function locate(x as integer,y as integer) as integer
+if (x < 1) or (y < 1) then
+	err=INVALID_VALUE
+	return -1
+endif
+
+print chr(0x1b)+"["+str(x)+";"+str(y)+"H"		# set cursor position
+endfunction
+

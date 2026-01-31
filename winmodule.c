@@ -32,8 +32,11 @@ int LoadModule(char *filename);
 
 int LoadModule(char *filename) {
 int dlhandle;
+char *modname[MAX_SIZE];
 
-dlhandle=LoadLibrary(filename);			/* open library */
+snprintf(modname,MAX_SIZE,"%s.dll",filename);		/* add extension to filename */
+
+dlhandle=LoadLibrary(modname);			/* open library */
 if(dlhandle == NULL) {
 	SetLastError(MISSING_LIBSYM);
 	return(-1);

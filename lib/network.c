@@ -93,7 +93,7 @@ return;
 // params[2]=flags (integer)
 
 void xlib_accept(int paramcount,vars_t *params,libraryreturnvalue *returnvalue) {
-returnvalue->val.i=accept(params[0].val->i,params[1].udt,params[2].val->i);
+returnvalue->val.i=accept(params[0].val->i,NULL,NULL);
 
 if(returnvalue->val.i == -1) returnvalue->systemerrornumber=errno;
 return;

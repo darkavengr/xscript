@@ -187,6 +187,8 @@ MODULES *next=modules;
 /* search through module list for buffer address */
 
 while(next != NULL) {
+//	printf("%s %lX %lX\n",next->modulename,next->StartInBuffer,next->EndInBuffer);
+
 	if((address >= next->StartInBuffer) && (address <= next->EndInBuffer)) return(next);	/* found entry */
  
 	next=next->next;
@@ -220,8 +222,7 @@ char *stodarg;
 bool HasReturnedError=FALSE;
 int unwindcount;
 char *strbuf[MAX_SIZE];
-
-if(AddModule(modulename) == -1) return(-1);		/* add module */
+void *modhandle;
 
 paramstc=SubstituteVariables(0,paramcount,parameters,parameters_subst);	/* substitute values */
 
@@ -272,8 +273,6 @@ for(count=0;count < paramstc;count++) {
 	else if(paramvars[count].type_int == VAR_UDT) {
 		varptr=GetVariablePointer(parameters[count]);		/* Get variable pointer */	
 		if(varptr == NULL) {
-			SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-
 			HasReturnedError=TRUE;
 			break;
 		}
@@ -285,28 +284,35 @@ for(count=0;count < paramstc;count++) {
 /* call binary function and return a value */
 
 if(HasReturnedError == FALSE) {
-	callptr=GetLibraryFunctionAddress(GetModuleHandle(modulename),functionname);		/* get pointer to library function */
+	modhandle=LoadModule(modulename);		/* open handle */
+	if(modhandle == NULL) {
+		SetLastError(FILE_NOT_FOUND);
+		return(-1);
+	}
+		
+	callptr=GetLibraryFunctionAddress(modhandle,functionname);		/* get pointer to library function */
 	if(callptr == NULL) {
 		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 
 		HasReturnedError=TRUE;
 	}
+	else
+	{
+		callptr(paramcount,paramvars,result);		/* call library function */
 
-	callptr(paramcount,paramvars,result);		/* call library function */
-
-	/* place string in quotes */
+		/* place string in quotes */
 	
-	if(GetVariableType(result->name) == VAR_STRING) {
-		snprintf(strbuf,MAX_SIZE,"\"%s\"",result->val.s);
-		strncpy(result->val.s,strbuf,MAX_SIZE);
-	}
+		if(GetVariableType(result->name) == VAR_STRING) {
+			snprintf(strbuf,MAX_SIZE,"\"%s\"",result->val.s);
+			strncpy(result->val.s,strbuf,MAX_SIZE);
+		}
 
-	/* update result variable */
-	if(UpdateVariable(result->name,result->fieldname,&result->val,result->x,result->y,result->fieldx,result->fieldy) == -1) {
-		HasReturnedError=TRUE;
-	}
+		/* update result variable */
+		if(UpdateVariable(result->name,result->fieldname,&result->val,result->x,result->y,result->fieldx,result->fieldy) == -1) {
+			HasReturnedError=TRUE;
+		}
 
-	result->systemerrornumber=errno;	/* system error code */
+	}
 }
 
 /* free values */

@@ -5,6 +5,7 @@ LDFLAGS = -o $(OUTFILE) -shared
 FILES=console.c file.c math.c network.c sys.c datatypes_list.c
 OBJFILES=$(addsuffix .o,$(basename $(FILES)))
 
+
 ifeq ($(OS),Windows_NT)
 	OUTFILE += $(BASEFILE).dll
 	LDFLAGS += "-s -Wl,--subsystem,windows"
@@ -12,10 +13,13 @@ else
 	OUTFILE=$(BASEFILE).so
 endif
 
-all: $(OBJFILES)
+all: $(OBJFILES) support.o
 	echo $(OUTFILE)
-	$(CC) $(LDFLAGS) $(OBJFILES) -o $(OUTFILE)
+	$(CC) $(LDFLAGS) $(OBJFILES) support.o -o $(OUTFILE)
 
 $(OBJFILES): %.o: %.c
 	$(CC) $(CCFLAGS) $< -o $@
+
+support.o:
+	$(CC) $(CCFLAGS) ../support.c -o support.o
 

@@ -56,119 +56,119 @@ declare O_RDWR as constant integer = O_RDONLY | O_WRONLY
 function open(filename as string,mode as integer) as integer
 declare handle as integer
 
-libcall xscript-stdlib-1.0.0_open(filename,mode) in "xscript-stdlib-1.0.0" to handle
+libcall xlib_open(filename,mode) in "xscript-stdlib-1.0.0" to handle
 return(handle);
 endfunction
 
 function close(handle as integer) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_close(handle) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_close(handle) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function read(handle as integer,buffer as string,size as integer) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_read(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_read(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function write(handle as integer,buffer as string,size as integer) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_write(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_write(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function seek(handle as integer,position as long,whence as integer) as long
 declare result as long
 
-libcall xscript-stdlib-1.0.0_seek(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_seek(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function tell(handle as integer) as long
 declare result as long
 
-libcall xscript-stdlib-1.0.0_tell(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_tell(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function chmod(filename as string,attribs as integer) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_chmod(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_chmod(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function create(filename as string) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_create(filename) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_create(filename) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function create(filename as string) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_create(filename) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_create(filename) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function delete(filename as string) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_delete(filename) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_delete(filename) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function mkdir(dirname as string) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_mkdir(dirname) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_mkdir(dirname) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function rmdir(dirname as string) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_rmdir(dirname) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_rmdir(dirname) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function rename(oldname as string,newname as string) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_rename(oldname,newname) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_rename(oldname,newname) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 
 function getcwd() as string
 declare currentdirectory as string
 
-libcall xscript-stdlib-1.0.0_getcwd() in "xscript-stdlib-1.0.0" to currentdirectory
+libcall xlib_getcwd() in "xscript-stdlib-1.0.0" to currentdirectory
 return(currentdirectory)
 endfunction
 
 function touch(filename as string,attributes as integer) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_touch(filename,attributes) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_touch(filename,attributes) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 	
 function findfirst(filespec as string,FindBuf as FindResult) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_findfirst(filespec,FindBuf) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_findfirst(filespec,FindBuf) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 	
 function findnext(findhandle as ANY,FindBuf as FindResult) as integer
 declare result as integer
 
-libcall xscript-stdlib-1.0.0_findnext(findhandle,"",FindBuf) in "xscript-stdlib-1.0.0" to result
-return(result);
+libcall xlib_findnext(findhandle,"",FindBuf) in "xscript-stdlib-1.0.0" to result
+return result
 endfunction
 

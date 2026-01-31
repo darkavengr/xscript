@@ -26,17 +26,20 @@
 /*
  * Open Linux module
  *
- * In: char *filename	Filename to open
+ * In: char *filename	Filename (without extension) to open
  *
  * Returns NULL on error or module handle
  */
 
 void *LoadModule(char *filename) {
 void *dlhandle;
+char *modname[MAX_SIZE];
 
-dlhandle=dlopen(filename,RTLD_LAZY);			/* open library */
+snprintf(modname,MAX_SIZE,"%s.so",filename);		/* add extension to filename */
+
+dlhandle=dlopen(modname,RTLD_LAZY);			/* open library */
 if(dlhandle == NULL) {
-	SetLastError(MISSING_LIBSYM);
+	SetLastError(FILE_NOT_FOUND);
 	return(NULL);
 }
 

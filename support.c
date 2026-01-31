@@ -135,7 +135,7 @@ return(TRUE);
 *
 */
 UserDefinedTypeField *GetUDTFieldPointer(UserDefinedType *udt,char *fieldname,int fieldx,int fieldy) {
-udtptr=udt->field;
+UserDefinedTypeField *udtptr=udt->field;
 
 while(udtptr != NULL) {
 	if(strcmp(udtptr->fieldname,fieldname) == 0) return(udtptr);	/* found field */				

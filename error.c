@@ -97,7 +97,6 @@ char *errs[] = { "No error",\
 
 void PrintError(int errornumber) {
 char *filename[MAX_SIZE];
-FUNCTIONCALLSTACK *stack;
 
 if(errornumber == 0) return;
 

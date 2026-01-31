@@ -21,14 +21,33 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 #include "variablesandfunctions.h"
 #include "module.h"
 #include "console.h"
+#include "size.h"
+#include "support.h"
 
-int xlib_readline(int paramcount,vars_t *params,libraryreturnvalue *result) {
-result=NULL;
+void xlib_inkey(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval->val.s=calloc(1,MAX_SIZE);	/* allocate return string */
+if(returnval->val.s == NULL) {
+	returnval->systemerrornumber=errno;
+	returnval->returnvalue=-1;
+	return;
+}
 
-gets(params[0].val->s);
-return(0);
+fgets(returnval->val.s,1,stdin);
+}
+
+void xlib_input(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+returnval->val.s=calloc(1,MAX_SIZE);	/* allocate return string */
+if(returnval->val.s == NULL) {
+	returnval->systemerrornumber=errno;
+	returnval->returnvalue=-1;
+	return;
+}
+
+fgets(returnval->val.s,MAX_SIZE,stdin);	/* read line */
+RemoveNewline(returnval->val.s);		/* remove newline */
 }
 
