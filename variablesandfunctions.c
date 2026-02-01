@@ -2430,7 +2430,6 @@ return(currentfunction->saveinformation_top->bufptr);
 */
 void SetSaveInformationBufferPointer(char *ptr) {
 if(currentfunction == NULL) return;
-
 currentfunction->saveinformation_top->bufptr=ptr;
 }
 
@@ -2505,7 +2504,6 @@ else
 
 currentfunction->saveinformation_top->bufptr=GetCurrentBufferPosition();
 currentfunction->saveinformation_top->linenumber=GetCurrentFunctionLine();
-currentfunction->saveinformation_top->next=NULL;
 
 return(0);
 }
@@ -2525,7 +2523,6 @@ SAVEINFORMATION *oldtop;
 if(currentfunction == NULL) return(-1);
 
 oldtop=currentfunction->saveinformation_top;		/* get current topmost entry */
-
 currentfunction->saveinformation_top=currentfunction->saveinformation_top->next;	/* remove from stack */
 
 if(currentfunction->saveinformation_top != NULL) {

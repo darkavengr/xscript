@@ -1,7 +1,5 @@
-for x=1 to 10
-	if x = 4 then
-		iterate
-	endif
+n=10
 
+for x=1 to n - 1
 	print x
 next x

@@ -1,0 +1,27 @@
+declare n as integer
+declare divisor as integer
+declare IsPrime as boolean
+
+IsPrime=True
+
+print 2		# 2 is the only even prime number
+
+for n=3 to 12
+	for divisor=2 to n
+	#	print n,divisor,n % divisor
+
+		if n % divisor == 0 then	# is not prime
+			IsPrime=False
+			exit for
+		endif
+	next divisor
+
+if IsPrime = True then		# is prime
+	print "n=",n
+	IsPrime=False
+endif
+
+next n
+
+
+

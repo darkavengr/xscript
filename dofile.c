@@ -318,12 +318,7 @@ for(count=1;count<tc;count++) {
 			}
 		}
 
-		if((((char) *outtokens[0]) != '"') && (vartype == VAR_STRING)) {
-			SetLastError(TYPE_ERROR);
-			return(-1);
-		}
-
-		if( (((char) *tokens[1]) == '"') || ((vartype == VAR_STRING) || (vartype == -1))) {			/* string */  
+		if( (((char) *tokens[1]) == '"') || (vartype == VAR_STRING)) {			/* string */  
 			if(vartype == -1) {
 				if(CreateVariable(split.name,"STRING",1,1) == -1) return(-1); /* create new string variable */ 
 			}
@@ -866,13 +861,15 @@ SetFunctionFlags(FOR_STATEMENT);
 /* find start of first expression */
 
 for(StartOfFirstExpression=1;StartOfFirstExpression<tc;StartOfFirstExpression++) {
-	if(strcmpi(tokens[StartOfFirstExpression],"=") == 0) {
+	if(strcmpi(tokens[StartOfFirstExpression],"=") == 0) {		
 		StartOfFirstExpression++;
 		break;
 	}
 }
 
 if(StartOfFirstExpression == tc) {		/* no = */
+	PopSaveInformation();
+
 	ClearFunctionFlags(FOR_STATEMENT);
 
 	SetLastError(SYNTAX_ERROR);
@@ -946,7 +943,7 @@ if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression-1) ==
 	return(-1);
 }
 
-if(IsValidExpression(tokens,StartOfSecondExpression,StartOfStepExpression-1) == FALSE) {
+if(IsValidExpression(tokens,StartOfSecondExpression,StartOfStepExpression) == FALSE) {
 	SetLastError(INVALID_EXPRESSION);
 	return(-1);
 }
@@ -1031,6 +1028,8 @@ while(1) {
 	sigsetjmp(savestate,1);		/* save current context */
 
 	if(GetIsRunningFlag() == FALSE) {
+		PopSaveInformation();
+
 		SetLastError(NO_ERROR);	/* program halted */
 		return(0);
 	}
@@ -1527,7 +1526,7 @@ while(*CurrentBufferPosition != 0) {
 	ClearIsRunningFlag();
 
 	if(((strcmpi(tokens[1],"WEND") == 0) && (GetFunctionFlags() & WHILE_STATEMENT)) ||
-	   ((strcmpi(tokens[1],"FOR") == 0) && (GetFunctionFlags() & FOR_STATEMENT))){
+	   ((strcmpi(tokens[1],"FOR") == 0) && (GetFunctionFlags() & FOR_STATEMENT))) {
 	 	ClearFunctionFlags(WHILE_STATEMENT);
 
 		SetCurrentBufferPosition(savebuffer);		/* go back to statement before NEXT or WEND to amke sure they are executed */
@@ -1538,7 +1537,9 @@ while(*CurrentBufferPosition != 0) {
 		return(0);
 	}
 
-   } 
+}
+
+//printf("buf=%s\n",buf);
 
 SetLastError(0);
 return(0);
