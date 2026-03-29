@@ -1,4 +1,2 @@
-a=2
-b=33
-c=34
-print a+b+c
+print 123-2
+

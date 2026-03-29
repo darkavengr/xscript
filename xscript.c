@@ -75,16 +75,20 @@ if(getrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
 	exit(1);
 }
 
-new_rlimit.rlim_max=1024*1024*1024;
+new_rlimit.rlim_cur=(unsigned long) 1 << (sizeof(size_t)-1)*8;
+new_rlimit.rlim_max=(unsigned long) 1 << (sizeof(size_t)-1)*8;
 
 if(setrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
 	perror("xscript:");
 	exit(1);
 }
 
-InitalizeModules();		/* initalize modules */
+if(getrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
+	perror("xscript:");
+	exit(1);
+}
 
-/* get executable directory name from argv[0] */
+InitalizeModules();		/* initialize modules */
 
 /* get script's absolute path */
 

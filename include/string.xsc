@@ -309,6 +309,8 @@ valdigits(7)="7"
 valdigits(8)="8"
 valdigits(9)="9"
 
+print num
+
 while num > 0
 	outstr=outstr+valdigits(num % 10)		# Get digit
 	num=num / 10		# remove digit

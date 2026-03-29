@@ -1,0 +1,28 @@
+import console
+
+declare colornames(16) as string
+
+colornames(0)="Black"
+colornames(1)="Blue"
+colornames(2)="Green"
+colornames(3)="Cyan"
+colornames(4)="Red"
+colornames(5)="Purple"
+colornames(6)="Orange"
+colornames(7)="White"
+colornames(8)="Grey"
+colornames(9)="Light blue"
+colornames(10)="Light green"
+colornames(11)="Light cyan"
+colornames(12)="Light red"
+colornames(13)="Light purple"
+colornames(14)="Yellow"
+colornames(15)="Light white"
+
+for ForegroundColor=0 to 15
+	for BackgroundColor=0 to 15
+#		color(ForegroundColor,BackgroundColor)
+		print colornames(ForegroundColor)#;"on";colornames(BackgroundColor)
+	next
+next
+

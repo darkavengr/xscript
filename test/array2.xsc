@@ -1,11 +1,15 @@
-declare numbers(4)
+declare numbers(4) as integer
 
 numbers(0)=7
 numbers(1)=9
 numbers(2)=11
 numbers(3)=13
 
-for count=0 to 3
-	print numbers(count)
-next count
+count=0
+
+while count < 3
+#	print numbers(count)
+	count=count+1
+wend
+
 

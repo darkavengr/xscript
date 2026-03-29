@@ -326,14 +326,16 @@ int ifexpr=-1;
 int exprtrue=0;
 int exprpos=0;
 int count=0;
-varval firstval,secondval;
+varval firstval;
+varval secondval;
+char *OperatorCharacters="=!<>";
 
 /* check kind of expression */
 
 exprone=0;
 exprtwo=0;
 
-for(exprpos=start;exprpos<end;exprpos++) {
+for(exprpos=start;exprpos < end;exprpos++) {
 
 	if(strcmp(tokens[exprpos],"=") == 0) {
 		ifexpr=EQUAL;
@@ -362,7 +364,6 @@ for(exprpos=start;exprpos<end;exprpos++) {
 }
 
 if(ifexpr == -1) {	/* evaluate non-zero or zero */
-
 	if(GetVariableType(tokens[start]) == VAR_STRING) {		/* comparing string */
 		SetLastError(TYPE_ERROR);
 		return(-1);
@@ -370,12 +371,29 @@ if(ifexpr == -1) {	/* evaluate non-zero or zero */
 
 	return(EvaluateExpression(tokens,start,end));
 }
+else
+{
+	if((strpbrk(tokens[exprpos - 1],OperatorCharacters) != NULL) || (strpbrk(tokens[exprpos + 1],OperatorCharacters) != NULL)) {
+		SetLastError(INVALID_CONDITION);
+		return(-1);
+	}
+}
 
 if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
 	if(ConatecateStrings(start,exprpos-1,tokens,&firstval) == -1) return(-1);		/* join all the strings on the lines */
 	if(ConatecateStrings(exprpos+1,end,tokens,&secondval) == -1) return(-1);
 
 	return(!strncmp(firstval.s,secondval.s,MAX_SIZE));
+}
+
+if(IsValidExpression(tokens,start,exprpos-1) == FALSE) {
+	SetLastError(INVALID_EXPRESSION);
+	return(-1);
+}
+
+if(IsValidExpression(tokens,exprpos+1,end-1) == FALSE) {
+	SetLastError(INVALID_EXPRESSION);
+	return(-1);
 }
 
 exprone=EvaluateExpression(tokens,start,exprpos);				/* evaluate expressions */
@@ -686,4 +704,3 @@ for(count=start;count<end;count++) {
 	
 return(TRUE);
 }
-

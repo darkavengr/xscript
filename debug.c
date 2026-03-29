@@ -178,10 +178,12 @@ int xsize=GetVariableXSize(var->varname);
 int ysize=GetVariableYSize(var->varname);
 char *varprefixname[MAX_SIZE];
 int padlength;
+char *temp[MAX_SIZE];
 
 padlength=strlen(var->varname)+1;	/* get variable name and = to get length */
 
 vartype=GetVariableType(var->varname);
+
 
 for(ycount=0;ycount != ysize;ycount++) {
 
@@ -198,7 +200,6 @@ for(ycount=0;ycount != ysize;ycount++) {
 	}
 		
 	for(xcount=0;xcount != xsize;xcount++) {
-		
 		switch(vartype) {
 
 			 case VAR_NUMBER:				/* double precision */
@@ -206,15 +207,15 @@ for(ycount=0;ycount != ysize;ycount++) {
 			        break;
 
 			  case VAR_STRING:				/* string */
-				if(var->val[((xcount*xsize)+ycount)].s == NULL) {	/* empty string */
+				if(var->val[xcount*ycount].s == NULL) {	/* empty string */
 					printf("\"\"");
 				}
 				else
 				{
-					printf("\"%s\"",var->val[(xcount*xsize)+ycount].s);
+					printf("%s",var->val[xcount*ycount].s);
 				}
 
-			        break;
+				break;
 
 			  case VAR_INTEGER:	 			/* integer */
 				printf("%d",var->val[(xcount*xsize)+ycount].i);

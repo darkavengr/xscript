@@ -4,8 +4,7 @@ if number = 1 then
 else
 	return number * factorial(number-1)
 endif
-
 endfunction
 
-factorial(2)
+print factorial(6)
 

@@ -84,6 +84,8 @@ char *errs[] = { "No error",\
 		"UNTIL without REPEAT",\
 		"Reached end of program",\
 		"EXIT REPEAT outside of REPEAT loop",\
+		"Error calling module function",\
+		"Invalid condition",\
 };
 
 /*

@@ -1,0 +1,8 @@
+function testfunction(a as integer) as double
+print a
+endfunction
+
+testvar=123
+testfunction(testvar - 1)
+
+

@@ -1,7 +1,7 @@
 CC = gcc
 BASEFILE  = xscript
 FLAGS    = -lm
-CCFLAGS = -c -w -I header -fstack-protector-all
+CCFLAGS = -c -w -I header
 FILES=debug.c module.c variablesandfunctions.c dofile.c evaluate.c itoa.c xscript.c error.c statements.c interactivemode.c help.c support.c
 OBJFILES=$(addsuffix .o,$(basename $(FILES)))
 

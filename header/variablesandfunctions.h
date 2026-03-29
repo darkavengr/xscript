@@ -183,4 +183,5 @@ int IsNumber(char *str);
 functions *GetFunctionPointer(char *name);
 FUNCTIONCALLSTACK *GetFunctionCallStackTop(void);
 void FreeVariableValues(varval *val,int type,int xsize,int ysize);
+bool IsString(char *str);
 

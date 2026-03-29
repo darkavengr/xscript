@@ -39,9 +39,9 @@ libcall xlib_input() in "./xscript-stdlib-1.0.0" to inputstr
 return inputstr
 endfunction
 
-function color(ForegroundColor as integer,BackgroundColor as integer) as integer
-print chr(0x1b)+"[38;5"+str(ForegroundColor)		# set foreground color
-print chr(0x1b)+"[48;5"+str(BackgroundColor)		# set background color
+function color(ForegroundColor as integer,BackgroundColor as integer) as integer	
+print "\e[38;5;"+str(ForegroundColor)+"m"		# set foreground color
+print "\e[48;5;"+str(BackgroundColor)+"m"		# set background color
 endfunction
 
 function locate(x as integer,y as integer) as integer

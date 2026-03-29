@@ -339,14 +339,14 @@ else
 	}
 }
 
-if( ((x*y) > (next->xsize*next->ysize)) || ((x*y) < 0)) {		/* outside array */
+//printf("max=%d %d\n",next->xsize,next->ysize);
+
+if( (x > next->xsize) || (y > next->ysize) || (x < 0) || (y < 0)) {		/* outside array */
 	PrintError(INVALID_ARRAY_SUBSCRIPT);
 	return(-1);
 }
 
 if(next->IsConstant == TRUE) {			/* if constant variable */
-	printf("SET CONSTANT=%d\n",IS_CONSTANT);
-
 	SetLastError(IS_CONSTANT);
 	return(-1);
 }
@@ -693,7 +693,7 @@ char ParseEndChar;
 char *evaltokens[MAX_SIZE][MAX_SIZE];
 int evaltc;
 int varend;
-int tokencount=0;
+int tokencount=1;
 
 memset(split,0,sizeof(varsplit));
 
@@ -718,7 +718,7 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	if(strcmp(tokens[start+1],"(") == 0) split->arraytype=ARRAY_SUBSCRIPT;
 	if(strcmp(tokens[start+1],"[") == 0) split->arraytype=ARRAY_SLICE;
 	
-	for(subscriptend=end;subscriptend>start+1;subscriptend--) {
+	for(subscriptend=end;subscriptend > start+1;subscriptend--) {
 		tokencount++;
 
 		if(strcmp(tokens[subscriptend],")") == 0) break;
@@ -727,7 +727,7 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 	/* find array x and y values */
 	commacount=0;
 
-	for(count=start+1;count<end;count++) {
+	for(count=start+1;count < end;count++) {
 
 			/* Skip commas in arrays and function calls */
 
@@ -1087,9 +1087,9 @@ while(count < end) {
 	/* add function parameters */
 
 	if(BuiltInVariableTypes[paramtype] != NULL) {			/* built-in type */
-		funcs_end->parameters_end->type_int=typecount;
+		funcs_end->parameters_end->type_int=paramtype;
 	}
-		else
+	else
 	{
 		funcs_end->parameters_end->type_int=VAR_UDT;
 		strncpy(funcs_end->parameters_end->udt_type,tokens[count],MAX_SIZE);	/* user-defined type */
@@ -1230,7 +1230,7 @@ return(-1);
 
 int CallFunction(char *tokens[MAX_SIZE][MAX_SIZE],int start,int end) {
 functions *next;
-int count;
+int count=0;
 int tc;
 char *argbuf[MAX_SIZE][MAX_SIZE];
 char *buf[MAX_SIZE];
@@ -1246,6 +1246,7 @@ varval paramval;
 vars_t *parameters=NULL;
 vars_t *initialparameters=NULL;
 vars_t *var;
+int endparam;
 
 retval.has_returned_value=FALSE;			/* clear has returned value flag */
 
@@ -1295,34 +1296,40 @@ parameters=next->parameters;
 
 /* add variables from parameters */
 
-for(count=0;count < returnvalue-1;count += 2) {
-	if(parameters->type_int == VAR_NUMBER) {
-		paramval.d=atof(evaltokens[count]);
+for(count=0;count < returnvalue - 1;count++) {
+	for(endparam=count+1;endparam < returnvalue - 1;endparam++) {
+		if(strcmp(evaltokens[endparam],",") == 0) break;		/* at end of parameter */
 	}
-	else if(parameters->type_int == VAR_STRING) {
+
+	if(parameters->type_int == VAR_STRING) {
 		strncpy(&paramval.s,evaltokens[count],MAX_SIZE);
 	}
-	else if(parameters->type_int == VAR_INTEGER) {
-		paramval.i=atoi(evaltokens[count]);
-	}
-	else if(parameters->type_int == VAR_SINGLE) {
-		paramval.f=atof(evaltokens[count]);
-	}
-	else if(parameters->type_int == VAR_LONG) {
-		paramval.l=atol(evaltokens[count]);
-	}
-	else if(parameters->type_int == VAR_BOOLEAN) {
-		if(atoi(evaltokens[count]) > 1) {		/* Invalid value */
-			SetLastError(TYPE_ERROR);
+	else
+	{
+		if(parameters->type_int == VAR_INTEGER) {
+			paramval.i=EvaluateExpression(evaltokens,count,endparam);
+		}
+		else if(parameters->type_int == VAR_SINGLE) {
+			paramval.f=EvaluateExpression(evaltokens,count,endparam);
+		}
+		else if(parameters->type_int == VAR_LONG) {
+			paramval.l=EvaluateExpression(evaltokens,count,endparam);
+		}
+		else if(parameters->type_int == VAR_BOOLEAN) {
 
-			PopFunctionCallInformation();
-			return(-1);
+			if(EvaluateExpression(evaltokens,count,endparam) > 1) {		/* Invalid value */
+				SetLastError(TYPE_ERROR);
+				PopFunctionCallInformation();
+				return(-1);
+			}
+
+			paramval.b=EvaluateExpression(evaltokens,count,endparam);
+		}
+		else if(parameters->type_int == VAR_ANY) {
+			paramval.a=(int) EvaluateExpression(evaltokens,count,endparam);
 		}
 
-		paramval.b=atoi(evaltokens[count]);
-	}
-	else if(parameters->type_int == VAR_ANY) {
-		paramval.a=(unsigned int) atoi(evaltokens[count]);
+		count=endparam;
 	}
 
 	if(parameters->type_int == VAR_UDT) {			/* user defined type */
@@ -1383,16 +1390,15 @@ for(count=0;count < returnvalue-1;count += 2) {
 
 	parameters=parameters->next;
 	if(parameters == NULL) break;
-
 }
 
 /* check if number of arguments matches number of parameters */
 /*    Starts from 0 to allow for functions without parameters, but +1 to prevent off-by-one errors */
 
-if( ((NumberOfArguments+1) < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
-	SetLastError(INVALID_ARGUMENT_COUNT);
-	return(-1);
-}
+//if( ((NumberOfArguments+1) < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
+//	SetLastError(INVALID_ARGUMENT_COUNT);
+//	return(-1);
+//}
 
 /* call function */
 
@@ -1513,20 +1519,22 @@ varsplit split;
 char *valptr;
 char *buf[MAX_SIZE];
 functions *next;
-functions *func;
-char *b;
-char *d;
+char *bufptr;
+char *destptr;
 int countx;
 int outcount=0;
 varval val;
 int tokentype;
 char *temp[MAX_SIZE][MAX_SIZE];
 varval subst_returnvalue;
-int s;
 int type;
 int skiptokens=0;
 int returnvalue;
 int arraysize;
+int num;
+char *escapeout[MAX_SIZE];
+char *escapebuf;
+bool IsEscapeCode=FALSE;
 
 outcount=0;
 
@@ -1566,6 +1574,94 @@ for(count=start;count<end;count++) {
 	    strcpy(tokens[count],"0");
 	}
 
+	/* escape sequences */
+
+	bufptr=tokens[count];
+	escapebuf=escapeout;
+
+	while((char) *bufptr != 0) {
+		if((char) *bufptr == '\\') {
+			IsEscapeCode=TRUE;
+
+			bufptr++;
+
+			if((char) *bufptr == 'a') {		/* alert */
+				*escapebuf++='\a';
+			}
+			else if((char) *bufptr == 'b') {		/* backspace */
+				*escapebuf++='\b';
+			}
+			else if((char) *bufptr == 'e') {		/* escape */
+				*escapebuf++='\x1b';
+			}
+			else if((char) *bufptr == 'f') {		/* form feed */
+				*escapebuf++='\f';
+			}
+			else if((char) *bufptr == 'n') {		/* newline */
+				*escapebuf++='\n';
+			}
+			else if((char) *bufptr == 'r') {		/* carriage return */
+				*escapebuf++='\b';
+			}
+			else if((char) *bufptr == 't') {		/* tab */
+				*escapebuf++='\t';
+			}
+			else if((char) *bufptr == 'v') {		/* vertical tab */
+				*escapebuf++='\v';
+			}
+			else if((char) *bufptr == '\\') {		/* backslash */
+				*escapebuf++='\\';
+			}
+			else if((char) *bufptr == '\'') {		/* apostrophe */
+				*escapebuf++='\'';
+			}
+			else if((char) *bufptr == '"') {		/* double quote */
+				*escapebuf++='"';
+			}
+			else if((char) *bufptr == '?') {		/* question mark - only supported for completeness */
+				*escapebuf++='?';
+			}
+			else if((char) *bufptr == 'x') {		/* hex */
+				bufptr++;
+
+				memcpy(buf,bufptr,2);			/* copy next two hex digits */
+
+				bufptr += 2;
+				sscanf(buf,"%x",&num);		/* convert hex string to number */
+
+				sprintf(escapebuf,"%c",num);
+				escapebuf++;
+			}
+			else
+			{
+				sscanf(bufptr,"%o",&num);		/* convert octal string to number */
+				sprintf(escapebuf,"%c",num);
+				escapebuf++;
+			}
+		}
+		else
+		{
+			*escapebuf++=*bufptr;
+			bufptr++;
+
+		}		
+	}
+
+	if(IsEscapeCode == TRUE) {
+		strncpy(tokens[count],escapeout,MAX_SIZE);
+		IsEscapeCode=FALSE;
+	}
+
+}
+
+for(count=start;count < end;count++) {
+	if(IsOperator(tokens[count])) {
+		if( ((IsString(tokens[count-1]) == FALSE) && (IsString(tokens[count+1]) == TRUE)) ||
+		    ((IsString(tokens[count-1]) == TRUE) && (IsString(tokens[count+1]) == FALSE))) {
+			SetLastError(TYPE_ERROR);
+			return(-1);
+		}
+	}
 }
 
 for(count=start;count < end;count++) {
@@ -1574,7 +1670,7 @@ for(count=start;count < end;count++) {
 	if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
 	 	tokentype=SUBST_FUNCTION;
 
-	 	for(countx=count;countx<end;countx++) {		/* find end of function call */
+	 	for(countx=count;countx < end;countx++) {		/* find end of function call */
 			if(strcmp(tokens[countx],")") == 0) {
 				countx++;
 				break;
@@ -1649,18 +1745,18 @@ for(count=start;count < end;count++) {
 			if(split.arraytype == ARRAY_SLICE) {		/* part of string */
 				if(GetVariableValue(split.name,NULL,0,0,&val,0,0) == -1) return(-1);
 
-				b=val.s;			/* get start */
-				b += split.x;
+				bufptr=val.s;			/* get start */
+				bufptr += split.x;
 
 				memset(temp[outcount],0,MAX_SIZE);
 
-				d=temp[outcount++];
-		 		*d++='"';
+				destptr=temp[outcount++];
+		 		*destptr++='"';
 
 				if(split.y == 0) split.y=1;
 
 				for(count=0;count < split.y;count++) {
-					*d++=*b++;
+					*destptr++=*bufptr++;
 				}
 
 				break;
@@ -1716,16 +1812,15 @@ for(count=start;count < end;count++) {
 		return(-1);
 	}
 
-//	count += skiptokens;
-
-//	if(count >= end) break;
+	//count += skiptokens;
+	if(count >= end) break;
 }
 
 /* copy tokens */
 
 memset(out,0,MAX_SIZE*MAX_SIZE);
 
-for(count=0;count<outcount;count++) {
+for(count=0;count < outcount;count++) {
 	strncpy(out[count],temp[count],MAX_SIZE);
 }
 
@@ -1772,7 +1867,8 @@ for(count=start;count<end;count++) {
 	if(strcmp(tokens[count],"+") == 0) { 
 
 		/* not a string literal or string variable */
-		if(GetVariableType(tokens[count+1]) != VAR_STRING) {
+		if((GetVariableType(tokens[count-1]) != VAR_STRING) && (GetVariableType(tokens[count+1]) == VAR_STRING) ||
+		   (GetVariableType(tokens[count-1]) == VAR_STRING) && (GetVariableType(tokens[count+1]) != VAR_STRING)) {
 		   	SetLastError(TYPE_ERROR);
 			return(-1);
 		}
@@ -2752,6 +2848,26 @@ while(*SepPtr != 0) {
 }
 
 if(IsStatement(token) == TRUE) return(TRUE);
+
+return(FALSE);
+}
+
+bool IsString(char *str) {
+if(((char) *str == '"') || (GetVariableType(str) == VAR_STRING) || (CheckFunctionExists(str) == VAR_STRING)) return(TRUE);
+
+return(FALSE);
+}
+
+/*
+ * Check if operator
+ *
+ * In: token		Token to check
+ *
+ * Returns TRUE or FALSE
+ *
+ */
+int IsOperator(char *str) {
+if(strpbrk(str,"+-*/~|%&^<>") != NULL) return(TRUE);
 
 return(FALSE);
 }

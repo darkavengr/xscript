@@ -506,13 +506,14 @@ for(count=1;count < tc;count++) {
 		if((strcmp(tokens[endtoken],"(") == 0) || (strcmp(tokens[endtoken],"[") == 0)) IsInBracket=TRUE;														
 		if((strcmp(tokens[endtoken],")") == 0) || (strcmp(tokens[endtoken],"]") == 0)) IsInBracket=FALSE;														
 
-		if((IsInBracket == FALSE) && ((strcmp(tokens[endtoken],",") == 0) || (strcmp(tokens[endtoken],";") == 0))) break;		/* found separator not subscript */
+		/* found separator not subscript */
+		if((IsInBracket == FALSE) && ((strcmp(tokens[endtoken],",") == 0) || (strcmp(tokens[endtoken],";") == 0))) break;
 	}
 
 	sigsetjmp(savestate,1);		/* save current context */
 
 	/* printing string */
-	if(((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
+	if( ((char) *tokens[count] == '"') || (GetVariableType(tokens[count]) == VAR_STRING) || (CheckFunctionExists(tokens[count]) == VAR_STRING) ) {
 		memset(printtokens,0,MAX_SIZE*MAX_SIZE);	
 
 		returnvalue=SubstituteVariables(count,endtoken,tokens,printtokens);	
@@ -740,7 +741,7 @@ while(*CurrentBufferPosition != 0) {
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
 		sigsetjmp(savestate,1);		/* save current context */
 
-		exprtrue=EvaluateCondition(tokens,1,tc);	/* evaluate condition */
+		exprtrue=EvaluateCondition(tokens,1,tc-1);	/* evaluate condition */
 		if(exprtrue == -1) return(-1);
 
 		if(exprtrue == 1) has_executed_block=TRUE;	/* have executed IF/ELSEIF block */
@@ -1128,15 +1129,6 @@ retval.val.type=GetFunctionReturnType();		/* get return type */
 
 retval.has_returned_value=TRUE;				/* set has returned value flag */
 
-if(GetFunctionReturnType() != VAR_STRING) {		/* returning number */
-	if(IsValidExpression(tokens,1,tc) == FALSE) {   /* invalid expression */
-		retval.has_returned_value=FALSE;	/* clear has returned value flag */
-
-		SetLastError(INVALID_EXPRESSION);
-		return(-1);	
-	}
-}
-
 if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
 	if(substreturnvalue == -1) {
@@ -1148,18 +1140,21 @@ if(GetFunctionReturnType() == VAR_STRING) {		/* returning string */
 }
 else
 {
-	if(IsValidExpression(tokens,1,tc) == FALSE) {
-		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-		return(-1);
+	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
+
+	if(IsValidExpression(outtokens,0,substreturnvalue) == FALSE) {   /* invalid expression */
+		retval.has_returned_value=FALSE;	/* clear has returned value flag */
+
+		SetLastError(INVALID_EXPRESSION);
+		return(-1);	
 	}
 
-	substreturnvalue=SubstituteVariables(1,tc,tokens,outtokens);
 	if(substreturnvalue == -1) {
 		retval.has_returned_value=FALSE;	/* clear has returned value flag */
 		return(-1);
 	}
 
-	if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */		
+	if(GetFunctionReturnType() == VAR_INTEGER) {		/* returning integer */
 		retval.val.i=EvaluateExpression(outtokens,0,substreturnvalue+1);
 	}
 	else if(GetFunctionReturnType() == VAR_NUMBER) {		/* returning double */	 	
@@ -2147,14 +2142,29 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 						}
 						else if((char) *token == '-') {		/* can be either part of the
 											token as a negative sign or a subtract operator token */
+							lastcharptr=token;
+							lastcharptr--;
+
 							nextcharptr=token;
 							nextcharptr++;
 
-							if((char) *nextcharptr == ' ') tc++;
-	
-				      			*d++=*token++;
+							if( ((char) *lastcharptr == ' ') && ((char) *nextcharptr != ' ')) {
+								*d++=*token++;
+								*d++=*token++;
+								tc++;
+							}
+							else
+							{
+								*d++=*token++;
+
+								d=tokens[++tc];
+
+								*d++=*token++;
+								tc += 2;
+							}		
+
 						}
-						else		/* single character seperator */
+						else		/* single character token */
 						{
 			      				*d++=*token++;	
 				     		     	d=tokens[++tc];
