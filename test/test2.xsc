@@ -1,4 +1,5 @@
-a=123
-delete a
-print a
+testvar="Hello"
+print "**************************"
+testvar=testvar+"World"
+
 

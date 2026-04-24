@@ -1,2 +1,28 @@
-print 123-2
+declare valdigits(10) as string
+declare outstr as string
+declare num as integer
+
+valdigits(0)="0"
+valdigits(1)="1"
+valdigits(2)="2"
+valdigits(3)="3"
+valdigits(4)="4"
+valdigits(5)="5"
+valdigits(6)="6"
+valdigits(7)="7"
+valdigits(8)="8"
+valdigits(9)="9"
+
+num=123
+outstr=""
+
+repeat
+#	print valdigits(num % 10)
+
+	outstr=outstr+valdigits(num % 10)
+	num=num / 10
+until num > 0
+
+print outstr
+
 

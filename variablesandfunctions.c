@@ -147,7 +147,7 @@ if(args != NULL) {
 /* XScript version */
 if(CreateVariable("VERSION","DOUBLE",1,1) == -1) return(-1);
 
-cmdargs.d=(double) XSCRIPT_VERSION_MAJOR+((double) XSCRIPT_VERSION_MINOR/100)+((double) XSCRIPT_VERSION_REVISION/1000);
+cmdargs.d=(double) XSCRIPT_VERSION_MAJOR + ((double) XSCRIPT_VERSION_MINOR/100) + ((double) XSCRIPT_VERSION_REVISION/1000);
 UpdateVariable("VERSION","",&cmdargs,0,0,0,0);
 
 GetVariablePointer("VERSION")->IsConstant=TRUE;		/* set variable as constant */
@@ -181,8 +181,6 @@ UserDefinedType *usertype;
 UserDefinedTypeField *udtfieldptr;
 UserDefinedTypeField *fieldptr;
 int count;
-
-//printf("CREATE name=%s (%d,%d)\n",name,xsize,ysize);
 
 if((xsize == 0) || (ysize == 0)) {		/* invalid array size */
 	SetLastError(INVALID_ARRAY_SIZE);
@@ -267,7 +265,7 @@ else
 	
 	/* copy udt from type definition to variable */
 
-	for(count=0;count<((xsize+1)*(ysize+1));count++) {
+	for(count=0;count<((xsize + 1)*(ysize + 1));count++) {
 		while(udtfieldptr != NULL) {
 			/* copy field entries */
 		
@@ -325,8 +323,6 @@ UserDefinedType *udtptr;
 UserDefinedTypeField *fieldptr;
 UserDefinedTypeField *udtfield;
 
-//printf("UPDATE name=%s (%d,%d)\n",name,x,y);
-
 if(currentfunction == NULL) {
 	return(-1);
 }
@@ -338,8 +334,6 @@ else
 		return(-1);
 	}
 }
-
-//printf("max=%d %d\n",next->xsize,next->ysize);
 
 if( (x > next->xsize) || (y > next->ysize) || (x < 0) || (y < 0)) {		/* outside array */
 	PrintError(INVALID_ARRAY_SUBSCRIPT);
@@ -360,12 +354,14 @@ if(next->type_int == VAR_NUMBER) {		/* double precision */
 }
 else if(next->type_int == VAR_STRING) {	/* string */
 	if(next->val[x*y].s == NULL) {		/* if string element not allocated */
-		next->val[x*y].s=calloc(1,strlen(val->s)+1);	/* allocate memory */
+		next->val[x*y].s=calloc(1,strlen(val->s) + 1);	/* allocate memory */
 		if(next->val[x*y].s == NULL) {
 			PrintError(NO_MEM);
 			return(-1);
 		}
 	} 
+
+//	printf("set=%lX %lX\n",next->val[x*y].s,val->s);
 
 	strncpy(next->val[x*y].s,val->s,strlen(val->s));	/* copy value */
 	return(0);
@@ -411,7 +407,7 @@ else {					/* user-defined type */
 					}
 	      			} 
 
-	      			if( strlen(val->s) > (strlen(udtfield->fieldval[x*y].s)+x)) {	/* if string element larger */
+	      			if( strlen(val->s) > (strlen(udtfield->fieldval[x*y].s) + x)) {	/* if string element larger */
 	 				realloc(udtfield->fieldval[x*y].s,strlen(val->s));	/* resize memory */
 	      			}
 		
@@ -556,7 +552,7 @@ if(((char) *name >= '0') && ((char) *name <= '9')) {
 }
 
 if((char) *name == '"') {
-	val->s=calloc(1,strlen(name)+2);				/* allocate string */
+	val->s=calloc(1,strlen(name) + 2);				/* allocate string */
 	if(val->s == NULL) SetLastError(NO_MEM);
 
 	strncpy(val->s,name,strlen(name));
@@ -587,7 +583,12 @@ if(next->type_int == VAR_NUMBER) {
 	return(0);
 }
 else if(next->type_int == VAR_STRING) {
-	val->s=calloc(1,strlen(next->val[x*y].s)+2);				/* allocate string */
+	if(next->val[x*y].s == NULL) {		/* no value */
+		SetLastError(0);
+		return(0);
+	}
+	
+	val->s=calloc(1,strlen(next->val[x*y].s) + 2);				/* allocate string */
 	if(val->s == NULL) {
 		SetLastError(NO_MEM);
 		return(-1);
@@ -708,26 +709,27 @@ for(fieldstart=end;fieldstart > start;fieldstart--) {		/* find field start, if a
 	if(strcmp(tokens[fieldstart],".") == 0) {
 		fieldstart++;
 		tokencount++;
+
 		break;
 	}
 }
 
-if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
-	subscriptstart=start+1;
+if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0)) {
+	subscriptstart=start + 1;
 
-	if(strcmp(tokens[start+1],"(") == 0) split->arraytype=ARRAY_SUBSCRIPT;
-	if(strcmp(tokens[start+1],"[") == 0) split->arraytype=ARRAY_SLICE;
+	if(strcmp(tokens[start + 1],"(") == 0) split->arraytype=ARRAY_SUBSCRIPT;
+	if(strcmp(tokens[start + 1],"[") == 0) split->arraytype=ARRAY_SLICE;
 	
-	for(subscriptend=end;subscriptend > start+1;subscriptend--) {
-		tokencount++;
-
+	for(subscriptend=end;subscriptend > start + 1;subscriptend--) {
 		if(strcmp(tokens[subscriptend],")") == 0) break;
 	}
+
+	tokencount=subscriptend+1;
 
 	/* find array x and y values */
 	commacount=0;
 
-	for(count=start+1;count < end;count++) {
+	for(count=start + 1;count < end;count++) {
 
 			/* Skip commas in arrays and function calls */
 
@@ -748,7 +750,7 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 			}
 
 			if(strcmp(tokens[count],",") == 0) {
-				if((strcmp(tokens[count-1],"(") == 0) || (strcmp(tokens[count+1],")") == 0)) {	/* no expression before or after
+				if((strcmp(tokens[count-1],"(") == 0) || (strcmp(tokens[count + 1],")") == 0)) {	/* no expression before or after
 														   comma found */
 					SetLastError(SYNTAX_ERROR);
 					return(-1);
@@ -764,18 +766,19 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 		SetLastError(SYNTAX_ERROR);
 		return(-1);
 	}
-	else if(commacount == 0) {			/* 2d array */
-		if(IsValidExpression(tokens,subscriptstart+1,subscriptend-1) == FALSE) return(-1);	/* invalid expression */
+	else if(commacount == 0) {
+		if(IsValidExpression(tokens,subscriptstart + 1,subscriptend) == FALSE) return(-1);	/* invalid expression */
 
-		evaltc=SubstituteVariables(subscriptstart,subscriptend,tokens,evaltokens);
+		evaltc=SubstituteVariables(subscriptstart + 1,subscriptend,tokens,evaltokens)  +  1; /* arrays start from 0 */
 
 		split->x=EvaluateExpression(evaltokens,0,evaltc);
 	 	split->y=1;
+
 	}
 	else
 	{
 		/* invalid expression */
-		if((IsValidExpression(tokens,subscriptstart+1,count-1) == FALSE) || (IsValidExpression(tokens,count+1,subscriptend-1) == FALSE)) {
+		if((IsValidExpression(tokens,subscriptstart + 1,count-1) == FALSE) || (IsValidExpression(tokens,count + 1,subscriptend-1) == FALSE)) {
 			SetLastError(INVALID_EXPRESSION);
 			return(-1);
 		}
@@ -783,7 +786,7 @@ if((strcmp(tokens[start+1],"(") == 0) || (strcmp(tokens[start+1],"[") == 0)) {
 		evaltc=SubstituteVariables(subscriptstart,count,tokens,evaltokens);
 		split->x=EvaluateExpression(evaltokens,0,evaltc);
 
-		evaltc=SubstituteVariables(count+1,subscriptend,tokens,evaltokens);
+		evaltc=SubstituteVariables(count + 1,subscriptend,tokens,evaltokens);
 		split->y=EvaluateExpression(evaltokens,0,evaltc);
 	}
 
@@ -794,23 +797,25 @@ if(fieldstart != start) {					/* if there is a field name and possible subscript
 	strncpy(split->fieldname,tokens[fieldstart],MAX_SIZE);	/* copy field name */
 	tokencount++;
 
-	if((strcmp(tokens[fieldstart+1],"(") == 0) || (strcmp(tokens[fieldstart+1],"[") == 0)) {
+	if((strcmp(tokens[fieldstart + 1],"(") == 0) || (strcmp(tokens[fieldstart + 1],"[") == 0)) {
 
-		for(fieldend=start+2;count<end;count++) {
+		for(fieldend=start + 2;count < end;count++) {
 			tokencount++;			
 			if(strcmp(tokens[fieldend],")") == 0) break;
 
 		}
 
-		for(count=fieldstart+1;count<end;count++) {
+		for(count=fieldstart + 1;count < end;count++) {
+
 	   		if(strcmp(tokens[count],",") == 0) {		 /* 3d array */
-				evaltc=SubstituteVariables(fieldstart+2,count,tokens,evaltokens);
+
+				evaltc=SubstituteVariables(fieldstart + 2,count,tokens,evaltokens);
 				split->fieldx=EvaluateExpression(tokens,0,evaltc);
 
-				SubstituteVariables(count+1,subscriptend-1,tokens,evaltokens);
+				SubstituteVariables(count + 1,subscriptend-1,tokens,evaltokens);
 				split->fieldy=EvaluateExpression(evaltokens,0,evaltc);
 
-				if((IsValidExpression(tokens,fieldstart+2,count) == FALSE) || (IsValidExpression(tokens,count+1,end-1) == FALSE)) {  /* invalid expression */
+				if((IsValidExpression(tokens,fieldstart + 2,count) == FALSE) || (IsValidExpression(tokens,count + 1,end-1) == FALSE)) {  /* invalid expression */
 					SetLastError(INVALID_EXPRESSION);
 					return(-1);
 				}
@@ -821,9 +826,9 @@ if(fieldstart != start) {					/* if there is a field name and possible subscript
 	      }
 
 	      if(count == end) {			/* 2d array */  
-		      	evaltc=SubstituteVariables(start+2,end-1,tokens,evaltokens);
+		      	evaltc=SubstituteVariables(start + 2,end - 1,tokens,evaltokens);
 
-			if(IsValidExpression(tokens,start+2,end-1) == FALSE) {  /* invalid expression */
+			if(IsValidExpression(tokens,start + 2,end -1) == FALSE) {  /* invalid expression */
 				SetLastError(INVALID_EXPRESSION);
 				return(-1);
 			}
@@ -1043,23 +1048,23 @@ while(count < end) {
 
 	if(strcmpi(tokens[count],")") == 0) break;		/* function declaration without parameters */
 
-	if(strcmpi(tokens[count+1], "AS") != 0) {		/* type */
+	if(strcmpi(tokens[count + 1], "AS") != 0) {		/* type */
 		SetLastError(SYNTAX_ERROR);
 		return(-1);
 	}
 
 	vartoken=count;
 
-	if(strcmpi(tokens[count+2], "CONSTANT") == 0) {		/* constant variable declaration */
+	if(strcmpi(tokens[count + 2], "CONSTANT") == 0) {		/* constant variable declaration */
 		ParameterIsConstant=TRUE;
 		count++;		/* skip constant keyword */
 	}
 
 	/* check variable type */
 
-	paramtype=IsBuiltInVariableType(tokens[count+2]);
+	paramtype=IsBuiltInVariableType(tokens[count + 2]);
 	if(paramtype == -1) {		/* not built-in type */
-		udtptr=GetUDT(tokens[count+2]);
+		udtptr=GetUDT(tokens[count + 2]);
 		if(udtptr == NULL) {	/* not user-defined type */
 			SetLastError(INVALID_VARIABLE_TYPE);
 			return(-1);
@@ -1069,7 +1074,7 @@ while(count < end) {
 	}
  	else
 	{
-		strncpy(vartype,tokens[count+2],MAX_SIZE);
+		strncpy(vartype,tokens[count + 2],MAX_SIZE);
 	}
 
 /* add parameter */
@@ -1103,9 +1108,9 @@ while(count < end) {
 	funcs_end->parameters_end->FunctionParameterIsConstant=ParameterIsConstant;	/* parameter is constant */
 	NumberOfParameters++;
 
-	if(strcmp(tokens[count+3],")") == 0) break;	
+	if(strcmp(tokens[count + 3],")") == 0) break;	
 
-	count += 4;		/* skip "AS" and type */
+	count  += 4;		/* skip "AS" and type */
 }
 
 count++;		/* point to AS type */
@@ -1123,18 +1128,18 @@ if(strcmpi(tokens[count], "AS") != 0) {
 
 vartoken=count;
 
-if(strcmpi(tokens[count+1], "CONSTANT") == 0) count++;		/* skip CONSTANT keyword */
+if(strcmpi(tokens[count + 1], "CONSTANT") == 0) count++;		/* skip CONSTANT keyword */
 
 typecount=0;	
 
 while(BuiltInVariableTypes[typecount] != NULL) {
-	if(strcmpi(BuiltInVariableTypes[typecount],tokens[count+1]) == 0) break;
+	if(strcmpi(BuiltInVariableTypes[typecount],tokens[count + 1]) == 0) break;
 
 	typecount++;
 }
 
 if(BuiltInVariableTypes[typecount] == NULL) {
-	udtptr=GetUDT(tokens[count+2]);
+	udtptr=GetUDT(tokens[count + 2]);
 	if(udtptr == NULL) {
 		if(strcmpi(funcs_end->name,"main") != 0) PopFunctionCallInformation();
 
@@ -1264,7 +1269,7 @@ if(next == NULL) {
 	return(-1);
 }
 
-returnvalue=SubstituteVariables(start+2,end,tokens,evaltokens);			/* substitute variables */
+returnvalue=SubstituteVariables(start + 2,end,tokens,evaltokens);			/* substitute variables */
 if(returnvalue == -1) return(-1);
 
 /* save information about the called function. The caller function is already on the stack */
@@ -1297,7 +1302,7 @@ parameters=next->parameters;
 /* add variables from parameters */
 
 for(count=0;count < returnvalue - 1;count++) {
-	for(endparam=count+1;endparam < returnvalue - 1;endparam++) {
+	for(endparam=count + 1;endparam < returnvalue - 1;endparam++) {
 		if(strcmp(evaltokens[endparam],",") == 0) break;		/* at end of parameter */
 	}
 
@@ -1393,9 +1398,9 @@ for(count=0;count < returnvalue - 1;count++) {
 }
 
 /* check if number of arguments matches number of parameters */
-/*    Starts from 0 to allow for functions without parameters, but +1 to prevent off-by-one errors */
+/*    Starts from 0 to allow for functions without parameters, but  + 1 to prevent off-by-one errors */
 
-//if( ((NumberOfArguments+1) < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
+//if( ((NumberOfArguments + 1) < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
 //	SetLastError(INVALID_ARGUMENT_COUNT);
 //	return(-1);
 //}
@@ -1461,36 +1466,36 @@ if(base == 10) shiftamount=1;	/* for decimal */
 b=hex;
 count=strlen(hex);		/* point to end */
 
-b=b+(count-1);
+b=b + (count-1);
 
 while(count > 0) {
 	c=*b;
 	
 	if(base == 16) {
-	 if(c >= 'A' && c <= 'F') num += (((int) c-'A')+10) << shiftamount;
-	 if(c >= 'a' && c <= 'f') num += (((int) c-'a')+10) << shiftamount;
-	 if(c >= '0' && c <= '9') num += ((int) c-'0') << shiftamount;
+	 if(c >= 'A' && c <= 'F') num  += (((int) c-'A') + 10) << shiftamount;
+	 if(c >= 'a' && c <= 'f') num  += (((int) c-'a') + 10) << shiftamount;
+	 if(c >= '0' && c <= '9') num  += ((int) c-'0') << shiftamount;
 
-	 shiftamount += 4;
+	 shiftamount  += 4;
 	 count--;
 	}
 
 	if(base == 8) {
-	 if(c >= '0' && c <= '7') num += ((int) c-'0') << shiftamount;
+	 if(c >= '0' && c <= '7') num  += ((int) c-'0') << shiftamount;
 
-	 shiftamount += 3;
+	 shiftamount  += 3;
 	 count--;
 	}
 
 	if(base == 2) {
-	 if(c >= '0' && c <= '1') num += ((int) c-'0') << shiftamount;
+	 if(c >= '0' && c <= '1') num  += ((int) c-'0') << shiftamount;
 
-	 shiftamount += 1;
+	 shiftamount  += 1;
 	 count--;
 	}
 
 	if(base == 10) {
-	 num += (((int) c-'0')*shiftamount);
+	 num  += (((int) c-'0')*shiftamount);
 
 	 shiftamount =shiftamount*10;
 	 count--;
@@ -1505,9 +1510,9 @@ return(num);
 /*
  *  Substitute variable names with values
  * 
- *  In: int start		Start of variables in tokens array
-	      int end			End of variables in tokens array
-	      char *tokens[][MAX_SIZE] Tokens array
+ *  In: start			Start of variables in tokens array
+	end			End of variables in tokens array
+	tokens[][MAX_SIZE]	Tokens array
  * 
  *  Returns -1 on error or number of substituted tokens on success
  * 
@@ -1542,10 +1547,10 @@ memset(temp,0,(MAX_SIZE*MAX_SIZE));		/* clear temporary array */
 
 /* replace non-decimal numbers with decimal equivalents */
 
-for(count=start;count<end;count++) { 
+for(count=start;count < end;count++) { 
 	if(memcmp(tokens[count],"0x",2) == 0) {	/* hex number */  
 	    valptr=tokens[count];
-	    valptr=valptr+2;
+	    valptr=valptr + 2;
 
 	    itoa(atoi_base(valptr,16),buf);
 	    strncpy(tokens[count],buf,MAX_SIZE);
@@ -1553,7 +1558,7 @@ for(count=start;count<end;count++) {
 
 	if(*tokens[count] == '0') {				/* octal number */
 	   valptr=tokens[count];
-	   valptr=valptr+2;
+	   valptr=valptr + 2;
 
 	   itoa(atoi_base(valptr,8),buf);
 	   strncpy(tokens[count],buf,MAX_SIZE);
@@ -1561,7 +1566,7 @@ for(count=start;count<end;count++) {
 
 	if(memcmp(tokens[count],"0b",2) == 0) {					/* binary number */
 	   valptr=tokens[count];
-	   valptr=valptr+2;
+	   valptr=valptr + 2;
 
 	   itoa(atoi_base(valptr,2),tokens[count]);
 	}
@@ -1626,7 +1631,7 @@ for(count=start;count<end;count++) {
 
 				memcpy(buf,bufptr,2);			/* copy next two hex digits */
 
-				bufptr += 2;
+				bufptr  += 2;
 				sscanf(buf,"%x",&num);		/* convert hex string to number */
 
 				sprintf(escapebuf,"%c",num);
@@ -1655,18 +1660,8 @@ for(count=start;count<end;count++) {
 }
 
 for(count=start;count < end;count++) {
-	if(IsOperator(tokens[count])) {
-		if( ((IsString(tokens[count-1]) == FALSE) && (IsString(tokens[count+1]) == TRUE)) ||
-		    ((IsString(tokens[count-1]) == TRUE) && (IsString(tokens[count+1]) == FALSE))) {
-			SetLastError(TYPE_ERROR);
-			return(-1);
-		}
-	}
-}
-
-for(count=start;count < end;count++) {
 	tokentype=0;
-
+																										
 	if(CheckFunctionExists(tokens[count]) == 0) {	/* user function */
 	 	tokentype=SUBST_FUNCTION;
 
@@ -1707,7 +1702,7 @@ for(count=start;count < end;count++) {
 		  	}
 	    }
 
-	    count=countx+1;
+	    count=countx + 1;
 	}
 	else if(IsVariable(tokens[count]) == TRUE) {
 		skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
@@ -1722,12 +1717,12 @@ for(count=start;count < end;count++) {
 			if(((split.x*split.y) > arraysize) || (arraysize < 0)) {
 				SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
 				return(-1);
-			}
+			}	
 	    	}
 		else if(split.arraytype == ARRAY_SLICE) {
 			if((split.x*split.y) > strlen(val.s)) {
 		    		SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
-					return(-1);
+				return(-1);
 		    	}
 	    	}
 
@@ -1746,7 +1741,7 @@ for(count=start;count < end;count++) {
 				if(GetVariableValue(split.name,NULL,0,0,&val,0,0) == -1) return(-1);
 
 				bufptr=val.s;			/* get start */
-				bufptr += split.x;
+				bufptr  += split.x;
 
 				memset(temp[outcount],0,MAX_SIZE);
 
@@ -1774,14 +1769,16 @@ for(count=start;count < end;count++) {
 						SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
 						return(-1);
 					}
-	
+
 			        	if(GetVariableValue(split.name,split.fieldname,split.x,split.y,&val,split.fieldx,split.fieldy) == -1) return(-1);
 	
-			  		strncpy(temp[outcount++],val.s,strlen(val.s));	/* copy value */
+			  		if(val.s != NULL) strncpy(temp[outcount++],val.s,strlen(val.s));	/* copy value */
+
+					count  += skiptokens;
+					//break;
 		      		}
 	      
 			}
-
 
 		}
 		else if(type == VAR_NUMBER) {
@@ -1802,18 +1799,19 @@ for(count=start;count < end;count++) {
 		else if(type == VAR_ANY) {   
 		    sprintf(temp[outcount++],"%d",val.a);
 	       	}
+
+//		if(count >= end) break;
 	 }
 	else if (((char) *tokens[count] == '"') || IsSeperator(tokens[count],TokenCharacters) || IsNumber(tokens[count])) {
 		strncpy(temp[outcount++],tokens[count],MAX_SIZE);
 	}   
 	else
 	{
+		printf("bad=%s\n",tokens[count]);
+
 		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 		return(-1);
 	}
-
-	//count += skiptokens;
-	if(count >= end) break;
 }
 
 /* copy tokens */
@@ -1845,15 +1843,18 @@ char *destptr;
 char *temp[MAX_SIZE];
 int size=0;
 
+//printf("********************\n");
+
 /* get size of output buffer */
 
 for(count=start;count < end;count++) {
-	size += (strlen(tokens[count])+1);
+	size  += strlen(tokens[count]);
 }
 
 val->type=VAR_STRING;
 
 val->s=calloc(1,size+2);			/* allocate output buffer for string and quote characters */
+
 if(val->s == NULL) {
 	SetLastError(NO_MEM);
 	return(-1);
@@ -1863,29 +1864,32 @@ destptr=val->s;				/* point to output buffer */
 
 *destptr++='"';		/* put " at start */
 
-for(count=start;count<end;count++) {
+printf("cat start=%d\n",start);
+printf("cat end=%d\n",end);
+
+for(count=start;count < end;count++) {
+	printf("cat[%d]=%s\n",count,tokens[count]);
+
 	if(strcmp(tokens[count],"+") == 0) { 
 
 		/* not a string literal or string variable */
-		if((GetVariableType(tokens[count-1]) != VAR_STRING) && (GetVariableType(tokens[count+1]) == VAR_STRING) ||
-		   (GetVariableType(tokens[count-1]) == VAR_STRING) && (GetVariableType(tokens[count+1]) != VAR_STRING)) {
+		if((GetVariableType(tokens[count-1]) != VAR_STRING) && (GetVariableType(tokens[count + 1]) == VAR_STRING) ||
+		   (GetVariableType(tokens[count-1]) == VAR_STRING) && (GetVariableType(tokens[count + 1]) != VAR_STRING)) {
+
 		   	SetLastError(TYPE_ERROR);
 			return(-1);
 		}
 	}
-	else if((char) *tokens[count] == '"') {
-		StripQuotesFromString(tokens[count],temp);	/* remove quotes from string */
-		strncat(val->s,temp,strlen(temp));
-
-	}
 	else
 	{
-		SetLastError(SYNTAX_ERROR);
-		return(-1);
+		StripQuotesFromString(tokens[count],temp);	/* remove quotes from string */
+		strncat(val->s,temp,strlen(temp));
 	}
 }
 
-strncat(val->s,"\"",size);		/* put " at end */
+strncat(val->s,"\"",size+2);		/* put " at end */
+
+printf("val.s=%s\n",val->s);
 
 SetLastError(0);
 return(0);
@@ -2295,39 +2299,39 @@ while(udtfield != NULL) {
 	if(strcmp(udtfield->fieldname,fieldname) == 0) {	/* found field */				
 		val->type=udtfield->type;
 		if(udtfield->type == VAR_NUMBER) {
-		        val->d=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].d;
+		        val->d=udtfield->fieldval[(next->ysize*fieldy) + (next->xsize*fieldx)].d;
 
 		        SetLastError(0);
 			return(0);
 		 }
 		 else if(udtfield->type == VAR_STRING) {
-			val->s=calloc(1,strlen(udtfield->fieldval[(fieldy*next->ysize)+(next->xsize*fieldx)].s)+1);	/* allocate string */
+			val->s=calloc(1,strlen(udtfield->fieldval[(fieldy*next->ysize) + (next->xsize*fieldx)].s) + 1);	/* allocate string */
 			if(val->s == NULL) {
 				SetLastError(NO_MEM);
 				return(-1);
 			}
 
-		        strncpy(val->s,udtfield->fieldval[(fieldy*next->ysize)+(next->xsize*fieldx)].s,strlen(udtfield->fieldval[(fieldy*next->ysize)+(next->xsize*fieldx)].s));
+		        strncpy(val->s,udtfield->fieldval[(fieldy*next->ysize) + (next->xsize*fieldx)].s,strlen(udtfield->fieldval[(fieldy*next->ysize) + (next->xsize*fieldx)].s));
 
 		        SetLastError(0);
 			return(0);
 		 }
 		 else if(udtfield->type == VAR_INTEGER) {
-		        val->i=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].i;
+		        val->i=udtfield->fieldval[(next->ysize*fieldy) + (next->xsize*fieldx)].i;
 			SetLastError(0);
 		 }
 		 else if(udtfield->type == VAR_SINGLE) {
-		        val->f=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].f;
+		        val->f=udtfield->fieldval[(next->ysize*fieldy) + (next->xsize*fieldx)].f;
 		        SetLastError(0);
 			return(0);
 		 }
  		else if(udtfield->type == VAR_BOOLEAN) {
-		        val->b=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].b;
+		        val->b=udtfield->fieldval[(next->ysize*fieldy) + (next->xsize*fieldx)].b;
 		        SetLastError(0);
 			return(0);
 		}
 		else if(udtfield->type == VAR_ANY) {
-		        val->a=udtfield->fieldval[(next->ysize*fieldy)+(next->xsize*fieldx)].a;
+		        val->a=udtfield->fieldval[(next->ysize*fieldy) + (next->xsize*fieldx)].a;
 		        SetLastError(0);
 			return(0);
 		}
@@ -2618,10 +2622,12 @@ SAVEINFORMATION *oldtop;
 
 if(currentfunction == NULL) return(-1);
 
-oldtop=currentfunction->saveinformation_top;		/* get current topmost entry */
-currentfunction->saveinformation_top=currentfunction->saveinformation_top->next;	/* remove from stack */
-
 if(currentfunction->saveinformation_top != NULL) {
+	oldtop=currentfunction->saveinformation_top;		/* get current topmost entry */
+	currentfunction->saveinformation_top=currentfunction->saveinformation_top->next;	/* remove from stack */
+
+	printf("oldtop=%lX\n",oldtop);
+
 	free(oldtop);		/* free entry */
 }
 else
@@ -2707,7 +2713,7 @@ return(FunctionCallStackTop);
 */
 
 int IsValidVariableOrKeyword(char *name) {
-char *InvalidChars = { "¬`\"$%^&*()-+={}[]:;@'~#<>,.?/|\\" };
+char *InvalidChars = { "¬`\"$%^&*()- +={}[]:;@'~#<>,.?/|\\" };
 
 if(strpbrk(name,InvalidChars) != NULL) return(FALSE);		/* can't start with invalid character */
 
@@ -2844,7 +2850,7 @@ if(*token == 0) return(TRUE);
 SepPtr=sep;
 
 while(*SepPtr != 0) {
-	if((char) *SepPtr++ == (char) *token) return(TRUE);
+	if((char) *SepPtr++== (char) *token) return(TRUE);
 }
 
 if(IsStatement(token) == TRUE) return(TRUE);
@@ -2867,7 +2873,7 @@ return(FALSE);
  *
  */
 int IsOperator(char *str) {
-if(strpbrk(str,"+-*/~|%&^<>") != NULL) return(TRUE);
+if(strpbrk(str," + -*/~|%&^<>") != NULL) return(TRUE);
 
 return(FALSE);
 }

@@ -380,18 +380,29 @@ else
 }
 
 if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	if(ConatecateStrings(start,exprpos-1,tokens,&firstval) == -1) return(-1);		/* join all the strings on the lines */
-	if(ConatecateStrings(exprpos+1,end,tokens,&secondval) == -1) return(-1);
+	if(ConatecateStrings(start,exprpos-1,tokens,&firstval) == -1) {		/* join all the strings on the lines */
+		if(firstval.s != NULL) free(firstval.s);
+
+		return(-1);
+	}
+
+	if(ConatecateStrings(exprpos+1,end,tokens,&secondval) == -1) {
+		if(secondval.s != NULL) free(secondval.s);
+		return(-1);
+	}
+
+
+	if(firstval.s != NULL) free(firstval.s);
 
 	return(!strncmp(firstval.s,secondval.s,MAX_SIZE));
 }
 
-if(IsValidExpression(tokens,start,exprpos-1) == FALSE) {
+if(IsValidExpression(tokens,start,exprpos - 1) == FALSE) {
 	SetLastError(INVALID_EXPRESSION);
 	return(-1);
 }
 
-if(IsValidExpression(tokens,exprpos+1,end-1) == FALSE) {
+if(IsValidExpression(tokens,exprpos + 1,end - 1) == FALSE) {
 	SetLastError(INVALID_EXPRESSION);
 	return(-1);
 }
@@ -632,7 +643,7 @@ if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
 /* check if expression is in form {symbol} {op}... */
 
 if(start == end) {	/* kludge */
-	if(strpbrk(tokens[start],ValidExpressionCharacters) != NULL) return(FALSE);
+	if(IsNumber(tokens[start]) == FALSE) return(FALSE);
 	
 	return(TRUE);
 }
@@ -669,10 +680,8 @@ for(count=start;count<end;count++) {
 	}
 
 	if(IsOperator == FALSE) {
-		/* Two condition characters can be together */
-		if((strpbrk(tokens[count-1],ConditionCharacters) != NULL) && (strpbrk(tokens[count],ConditionCharacters) != NULL)) {
+		if(IsNumber(tokens[count]) == TRUE) {
 			IsValid=TRUE;
-			IsOperator=!IsOperator;		/* make sure that the next token is treated as a non-operator */
 		}
 		else
 		{
@@ -685,6 +694,7 @@ for(count=start;count<end;count++) {
 				IsValid=TRUE;	
 			}
 		}
+
 	}
 	else {
 		if(strpbrk(tokens[count],ValidExpressionCharacters) == NULL) {

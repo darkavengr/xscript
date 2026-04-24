@@ -139,7 +139,7 @@ UpdateVariable("ERR","",&errval,0,0,0,0);
 errval.i=GetCurrentFunctionLine();		/* update error line */
 UpdateVariable("ERRL","",&errval,0,0,0,0);
 
-errval.s=calloc(1,MAX_SIZE);
+errval.s=malloc(MAX_SIZE);
 if(errval.s == NULL) return;
 
 if(GetCurrentFunctionName() != NULL) strncpy(errval.s,GetCurrentFunctionName(),MAX_SIZE);

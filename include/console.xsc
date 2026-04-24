@@ -40,8 +40,8 @@ return inputstr
 endfunction
 
 function color(ForegroundColor as integer,BackgroundColor as integer) as integer	
-print "\e[38;5;"+str(ForegroundColor)+"m"		# set foreground color
-print "\e[48;5;"+str(BackgroundColor)+"m"		# set background color
+print "\e[38;5;"+str(ForegroundColor)+"m"
+print "\e[48;5;"+str(BackgroundColor)+"m"
 endfunction
 
 function locate(x as integer,y as integer) as integer
@@ -50,6 +50,6 @@ if (x < 1) or (y < 1) then
 	return -1
 endif
 
-print chr(0x1b)+"["+str(x)+";"+str(y)+"H"		# set cursor position
+print "\e["+str(x)+";"+str(y)+"H"		# set cursor position
 endfunction
 

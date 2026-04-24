@@ -21,8 +21,9 @@ colornames(15)="Light white"
 
 for ForegroundColor=0 to 15
 	for BackgroundColor=0 to 15
-#		color(ForegroundColor,BackgroundColor)
-		print colornames(ForegroundColor)#;"on";colornames(BackgroundColor)
-	next
+		color(Foregroundcolor,BackgroundColor)
+
+		print colornames(ForegroundColor),"on",colornames(BackgroundColor)
+	next BackgroundColor
 next
 

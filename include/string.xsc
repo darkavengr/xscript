@@ -309,11 +309,9 @@ valdigits(7)="7"
 valdigits(8)="8"
 valdigits(9)="9"
 
-print num
-
 while num > 0
-	outstr=outstr+valdigits(num % 10)		# Get digit
-	num=num / 10		# remove digit
+	outstr=outstr+valdigits(num % 10)
+	num=num / 10
 wend
 
 # add - sign if it's a negative number
@@ -322,7 +320,7 @@ if num < 0 then
 	outstr=outstr+"-"
 endif
 
-return reverse(outstr) # reverse string
+return reverse(outstr)
 endfunction
 
 #

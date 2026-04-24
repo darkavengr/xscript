@@ -1,8 +1,6 @@
 function testfunction(a as integer,b as integer,c as integer) as double
-print a,b,c
-print a+b+c
-#return a*b*c
+return a*b*c
 endfunction
 
-testfunction(1,2,3)
+print testfunction(1,2,3)
 

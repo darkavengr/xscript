@@ -114,7 +114,13 @@ char *tokenptr=token;
 
 while((char) *tokenptr != 0) {
 	if( ((char ) *tokenptr < '0') || ((char ) *tokenptr > '9')) {
-		if((char) *tokenptr != '.') return(FALSE);
+		if(((char) *tokenptr == 'e') || ((char) *tokenptr == '-') || ((char) *tokenptr == '.')) {
+			return(TRUE);
+		}
+		else
+		{
+			return(FALSE);
+		}
 	}
 
 	tokenptr++;

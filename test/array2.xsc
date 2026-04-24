@@ -7,9 +7,9 @@ numbers(3)=13
 
 count=0
 
-while count < 3
-#	print numbers(count)
-	count=count+1
-wend
+for count=0 to 3
+	print numbers(count)
+next
+
 
 
