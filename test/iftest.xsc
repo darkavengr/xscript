@@ -1,4 +1,5 @@
-if "Test"+"AAA"="Test"+"AAA" then
- print "Yes"
-endif
+teststr="Hello"
 
+if teststr="Hello" then
+	print "Yes"
+endif

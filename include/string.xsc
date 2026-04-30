@@ -25,41 +25,18 @@
 #
 # Returns: string length
 #
-function len(str as string) as integer
+function len(lenstr as string) as integer																																		
 declare count as integer
 
 count=0
 
-while str(count) != ""			# until end of string
-	count=count+1			# increment counter
+while lenstr[count] != ""			# until end of string
+	count=count+1			# increment length count
 wend
 
 return count
 endfunction
 
-#
-# Get left-most characters
-#
-# In: str	String
-#     count	Number of characters
-#
-# Returns: string containing <count> characters starting from the start of the string
-#
-function left(str as string,count as integer) as string
-return str[1,count]			# return left-most characters
-endfunction
-
-#
-# Get right-most characters
-#
-# In: str	String
-#
-# Returns: string containing <count> characters starting from the end of the string
-#
-#
-function right(str as string,count as integer) as string
-return str[count-len(str),count]	# return right-most characters
-endfunction
 
 #
 # Fill string with characters
@@ -73,7 +50,7 @@ endfunction
 #
 function fillstring(str as string,fillstring as string,num as integer)
 for count=0 to num
-	str += fillstring			# append fill string
+	str=str+fillstring			# append fill string
 next count
 end function
 
@@ -136,15 +113,15 @@ for count=0 to 4*2			# For each nibble
 	index=(number & mask) >> shiftamount	# get the nibble
 	
 	if index != 0 then		# Ignore leading zeroes
-		foundstart=1
+		foundstart=True
 	endif
 
 	shiftamount=shiftamount-4	# Decrement shit count
 	mask=mask >> 4			# Move bit mask to the right
 
-	if foundstart == 1 then
+	if foundstart == True then
 		outstring=outstring + hexbuf(index)	# Append hexadecimal digit
-	end if
+	endif
 next count
 
 return outstring		
@@ -224,17 +201,17 @@ pos=0
 # find first non-space character
 
 repeat
-	if str[pos,pos+1] == " " then		# skip spaces
+	if str[pos] == " " then		# skip spaces
 		pos=pos+1
 	else					# found non-space character
 		exit while
 	endif
-until while str[pos,pos+1] != ""
+until str[pos] != ""
 
 # copy rest of string
 
-while str[pos,1] != ""
-	outstring=outstring + str[pos,1]
+while str[pos] != ""
+	outstring=outstring + str[pos]
 wend
 
 return outstring
@@ -251,7 +228,7 @@ function rtrim(str as string) as string
 declare outstring as string
 declare pos as integer
 
-pos=len(str)-1
+pos=len(str)
 
 # find first non-space character
 
@@ -266,36 +243,28 @@ wend
 # copy rest of string
 
 for count=1 to pos
-	outstring=outstring + str[count:1]
+	outstring=outstring + str[count]
 next count
 
 return outstring
 endfunction
 
-function reverse(str as string) as string
-declare revstr as string
-declare charpos as integer
+function reverse(reversestr as string) as string							
+count=len(reversestr)
 
-charpos=len(str)-1
+revstr=""
 
-while charpos > 0
-	revstr=revstr+str[charpos,charpos+1]
-	charpos=charpos-1
-wend
+repeat
+	revstr=revstr+reversestr[count]
+	
+	count=count-1
+until count = -1
 
 return revstr
 endfunction
 
-#
-# Convert integer into string
-#
-# In: num	number
-#
-# Returns: string representation of the number
-#
-
 function str(num as integer) as string
-declare valdigits(9) as string
+declare valdigits(10) as string
 declare outstr as string
 
 valdigits(0)="0"
@@ -309,16 +278,12 @@ valdigits(7)="7"
 valdigits(8)="8"
 valdigits(9)="9"
 
+outstr=""
+
 while num > 0
 	outstr=outstr+valdigits(num % 10)
 	num=num / 10
 wend
-
-# add - sign if it's a negative number
-
-if num < 0 then
-	outstr=outstr+"-"
-endif
 
 return reverse(outstr)
 endfunction
@@ -352,7 +317,7 @@ shiftamount=1
 
 for count=0 to len(numstr)
 	for digitcount=0 to 9
-		if numstr[count,count+1] == valdigits(digitcount) then
+		if numstr[count] == valdigits(digitcount) then
 			outnum=outnum+(digitcount*shiftamount)
 			shiftamount=shiftamount * 10			
 			exit for
@@ -361,7 +326,7 @@ for count=0 to len(numstr)
 next
 
 
-if numstr[0,1] == "-" then
+if numstr[0] == "-" then
 	outnum=outnum-outnum-outnum
 endif
 

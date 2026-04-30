@@ -1,5 +1,45 @@
-testvar="Hello"
-print "**************************"
-testvar=testvar+"World"
+function len(lenstr as string) as integer																																		
+declare count as integer
 
+count=0
+
+while lenstr[count] != ""			# until end of string
+	count=count+1			# increment length count
+wend
+
+return count
+endfunction
+
+function val(numstr as string) as integer
+declare shiftamount as integer
+declare outnum as integer
+declare count as integer
+declare digitcount as integer
+declare start as integer
+declare valdigits(10) as string
+
+valdigits(0)="0"
+valdigits(1)="1"
+valdigits(2)="2"
+valdigits(3)="3"
+valdigits(4)="4"
+valdigits(5)="5"
+valdigits(6)="6"
+valdigits(7)="7"
+valdigits(8)="8"
+valdigits(9)="9"
+
+start=0
+shiftamount=1
+
+count=0
+
+if numstr[count] = valdigits(digitcount) then
+	shiftamount=shiftamount * 10
+endif
+
+return outnum
+endfunction
+
+print val("123")
 

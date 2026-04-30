@@ -179,18 +179,18 @@ int ysize=GetVariableYSize(var->varname);
 char *varprefixname[MAX_SIZE];
 int padlength;
 char *temp[MAX_SIZE];
+varval val;
 
 padlength=strlen(var->varname)+1;	/* get variable name and = to get length */
 
 vartype=GetVariableType(var->varname);
 
-
-for(ycount=0;ycount != ysize;ycount++) {
+for(ycount=1;ycount != ysize + 1;ycount++) {
 
 	/* print ( before arrays and pad out with spaces on subsequent lines */
 
 	if((GetVariableXSize(var->varname) > 1) || (GetVariableYSize(var->varname) > 1)) {
-		if(ycount == 0) {
+		if(ycount == 1) {
 			printf("(");
 		}
 		else
@@ -200,37 +200,42 @@ for(ycount=0;ycount != ysize;ycount++) {
 	}
 		
 	for(xcount=0;xcount != xsize;xcount++) {
+
+		//int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy);
+
+		GetVariableValue(var->varname,NULL,xcount,ycount,&val,0,0);
+
 		switch(vartype) {
 
 			 case VAR_NUMBER:				/* double precision */
-				printf("%.6g",var->val[(xcount*xsize)+ycount].d);
+				printf("%.6g",val.d);
 			        break;
 
 			  case VAR_STRING:				/* string */
-				if(var->val[xcount*ycount].s == NULL) {	/* empty string */
+				if(val.s == NULL) {	/* empty string */
 					printf("\"\"");
 				}
 				else
 				{
-					printf("%s",var->val[xcount*ycount].s);
+					printf("%s",val.s);
 				}
 
 				break;
 
 			  case VAR_INTEGER:	 			/* integer */
-				printf("%d",var->val[(xcount*xsize)+ycount].i);
+				printf("%d",val.i);
         			break;
 
 			  case VAR_SINGLE:				/* single */	     
-				printf("%f",var->val[(xcount*xsize)+ycount].f);
+				printf("%f",val.f);
 			        break;
 
 			  case VAR_BOOLEAN:				/* boolean */
-				printf("%s",truefalse[var->val[xcount*ycount].b]);
+				printf("%s",truefalse[val.b]);
 			        break;
 
 			  case VAR_ANY:				/* top type */	     
-				printf("[0x%X]",var->val[(xcount*xsize)+ycount].a);
+				printf("[0x%X]",val.a);
 			        break;
 
   		}

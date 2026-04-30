@@ -104,7 +104,7 @@ for(count=start;count<end;count++) {
 	}
 }
 
-for(count=0;count<exprcount;count++) {
+for(count=0;count < exprcount;count++) {
 	if((GetVariableType(temp[count]) == VAR_STRING) && (GetVariableType(temp[count+1]) != VAR_STRING)) {
 		SetLastError(TYPE_ERROR);
 		return(-1);
@@ -329,14 +329,14 @@ int count=0;
 varval firstval;
 varval secondval;
 char *OperatorCharacters="=!<>";
+int returnvalue;
 
 /* check kind of expression */
 
 exprone=0;
 exprtwo=0;
-
+																						
 for(exprpos=start;exprpos < end;exprpos++) {
-
 	if(strcmp(tokens[exprpos],"=") == 0) {
 		ifexpr=EQUAL;
 		break;
@@ -373,28 +373,35 @@ if(ifexpr == -1) {	/* evaluate non-zero or zero */
 }
 else
 {
-	if((strpbrk(tokens[exprpos - 1],OperatorCharacters) != NULL) || (strpbrk(tokens[exprpos + 1],OperatorCharacters) != NULL)) {
-		SetLastError(INVALID_CONDITION);
-		return(-1);
-	}
+//	if((strpbrk(tokens[exprpos - 1],OperatorCharacters) != NULL) || (strpbrk(tokens[exprpos + 1],OperatorCharacters) != NULL)) {
+//		SetLastError(INVALID_CONDITION);
+//		return(-1);
+// 	}
 }
 
 if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	if(ConatecateStrings(start,exprpos-1,tokens,&firstval) == -1) {		/* join all the strings on the lines */
+	if(ConatecateStrings(start,exprpos,tokens,&firstval) == -1) {		/* join all the strings on the lines */
 		if(firstval.s != NULL) free(firstval.s);
-
-		return(-1);
-	}
-
-	if(ConatecateStrings(exprpos+1,end,tokens,&secondval) == -1) {
 		if(secondval.s != NULL) free(secondval.s);
+
 		return(-1);
 	}
 
+	if(ConatecateStrings(exprpos + 1,end,tokens,&secondval) == -1) {
+		if(firstval.s != NULL) free(firstval.s);
+		if(secondval.s != NULL) free(secondval.s);
 
-	if(firstval.s != NULL) free(firstval.s);
+		return(-1);
+	}
 
-	return(!strncmp(firstval.s,secondval.s,MAX_SIZE));
+	returnvalue=strncmp(firstval.s,secondval.s,MAX_SIZE);	/* reverse return value because strcmp returns 0 if strings match */
+
+	free(firstval.s);
+	free(secondval.s);
+
+	if(returnvalue == 0) return(FALSE);
+
+	return(TRUE);
 }
 
 if(IsValidExpression(tokens,start,exprpos - 1) == FALSE) {
@@ -471,6 +478,8 @@ struct {
 /* Evaluate sub-conditions */
 
 evaltc=SubstituteVariables(start,end,tokens,evaltokens);
+
+printf("evaltc=%d\n",evaltc);
 if(evaltc == -1) return(-1);
 
 startcount=start;
@@ -478,7 +487,7 @@ count=0;
 
 /* Do conditions in brackets first */
 
-for(count=0;count<evaltc+1;count++) {
+for(count=0;count < evaltc + 1;count++) {
 	if(strcmp(evaltokens[count],"(") == 0) {		/* if sub-expression */
 	 	subcount++;
 	 	startcount=count;
@@ -643,6 +652,8 @@ if((bracketcount != 0) || (squarebracketcount != 0)) return(FALSE);
 /* check if expression is in form {symbol} {op}... */
 
 if(start == end) {	/* kludge */
+	if((char) *tokens == '"') return(TRUE);
+
 	if(IsNumber(tokens[start]) == FALSE) return(FALSE);
 	
 	return(TRUE);

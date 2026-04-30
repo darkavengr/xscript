@@ -1,0 +1,4 @@
+teststr="Hello"
+
+x=teststr[5]
+

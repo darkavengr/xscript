@@ -1,0 +1,28 @@
+function len(str as string) as integer
+declare count as integer
+
+count=0
+
+while str(count) != ""			# until end of string
+	count=count+1			# increment counter
+wend
+
+return count
+endfunction
+
+#function reverse(str as string) as string
+#declare revstr as string
+#declare charpos as integer
+
+#charpos=len(str)-1
+
+#while charpos > 0
+#	revstr=revstr+str[charpos]
+#	charpos=charpos-1
+#wend
+
+#return revstr
+#endfunction
+
+print len("Hello")
+
