@@ -201,7 +201,7 @@ do {
 
 	SetCurrentFunctionLine(GetCurrentFunctionLine()+1);
 
-}    while(*CurrentBufferPosition != 0); 			/* until end */
+}    while((char) *CurrentBufferPosition != 0); 			/* until end */
 
 CurrentBufferPosition=saveCurrentBufferPosition;
 
@@ -240,12 +240,16 @@ char *filename[MAX_SIZE];
 int end;
 int IsValid=FALSE;
 char *functionname[MAX_SIZE];
+char *commentptr;
+int commentend;
 
 GetCurrentFile(filename);	/* get name of current file */
 
 RemoveNewline(lbuf);		/* remove newline from line */
 
 while(((char) *lbuf == ' ') || ((char) *lbuf == '\t')) lbuf++;	/* skip white space */
+
+//printf("lbuf=%s\n",lbuf);
 	
 if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n') || (((char) *lbuf) == 0) || (((char) *lbuf) == '\t')) {
 	SetLastError(0);
@@ -256,26 +260,30 @@ memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
 tc=TokenizeLine(lbuf,tokens,TokenCharacters);			/* tokenize line */
 
+//for(count=0;count < tc;count++) {
+//	printf("tokens[%d]=%s\n",count,tokens[count]);
+//}
+
 /* remove comments */
 
 for(count=0;count < tc;count++) {
-	if(strcmp(tokens[count],"#") == 0) {	/* found comment */
-		if(count == 0) {
-			SetLastError(0);		/* ignore lines with only comments */
-			return(0);
+	commentptr=tokens[count];
+
+	while((char) *commentptr != 0) {	
+		if((char) *commentptr == '#') {
+			*commentptr=0;		/* remove comment token from array */
+			tc=count;
+
+			if((count == 0) && (commentptr == tokens[count])) return(0);	/* ignore comments by themselves */
+
+			goto consideredharmful;	/* exit from both loops */
 		}
-
-		/* remove comments from array */
-
-		for(end=count;end<tc;end++) {
-			*tokens[end]=0;
-		}
-
-		tc=count;		/* set new end */
-		break;
+	
+		commentptr++;
 	}
 }
 
+consideredharmful:
 if(IsStatement(tokens[0])) {
 	if(CallIfStatement(tc,tokens) == -1) return(-1); /* run if statement */
 
@@ -294,8 +302,6 @@ for(count=1;count < tc;count++) {
 	if((strcmp(tokens[count],"=") == 0) && (IsValid == FALSE)) {
  		if(ParseVariableName(tokens,0,count,&split) == -1) return(-1);		/* split variable */  	
 
-		printf("assign name=%s\n",split.name);
-
 		if(IsValidVariableOrKeyword(split.name) == FALSE) {	/* Variable name is invalid */
 			SetLastError(SYNTAX_ERROR);
 			return(-1);
@@ -306,18 +312,8 @@ for(count=1;count < tc;count++) {
 			return(-1);
 		}
 
-		printf("ASSSSSSSSSSSSSSSSSSSIGN 1\n");
-	
-		printf("assign start=%d\n",count+1);
-
-		for(int countz=count+1;countz < tc;countz++) {
-			printf("assign tokens[%d]=%s\n",countz,tokens[countz]);
-		}
-
 		returnvalue=SubstituteVariables(count+1,tc,tokens,outtokens);
  		if(returnvalue == -1) return(-1);
-
-		printf("ASSSSSSSSSSSSSSSSSSSIGN 2\n");
 
 	 	if(strlen(split.fieldname) == 0) {			/* use variable name */
 	 		vartype=GetVariableType(split.name);
@@ -337,9 +333,9 @@ for(count=1;count < tc;count++) {
 				if(CreateVariable(split.name,"STRING",1,1) == -1) return(-1); /* create new string variable */ 
 			}
 
-		  	if(ConatecateStrings(0,returnvalue,outtokens,&val) == -1) {
+		  	if(ConatecateStrings(0,returnvalue,outtokens,&val) == -1) {	/* join all the strings on the line */
 				if(val.s != NULL) free(val.s);
-				return(-1);/* join all the strings on the line */
+				return(-1);
 			}
 
 			/* set variable */
@@ -365,7 +361,7 @@ for(count=1;count < tc;count++) {
 
 		exprone=EvaluateExpression(outtokens,0,returnvalue);
 
-		printf("exprone=%d\n",exprone);
+	//	printf("exprone=%d\n",exprone);
 
 		if(vartype == VAR_NUMBER) {
 	 		val.d=exprone;
@@ -549,7 +545,7 @@ for(count=1;count < tc;count++) {
 		memset(tempstring,0,MAX_SIZE);
 
 		StripQuotesFromString(val.s,tempstring);	/* remove quotes from string */
-		printf("%s\n",tempstring);
+		printf("%s",tempstring);
 
 		if(val.s != NULL) free(val.s);
 
@@ -594,17 +590,16 @@ for(count=1;count < tc;count++) {
 			}
 		}
  
-
-		if(strcmp(tokens[endtoken],",") == 0) printf("\t");	/* print tab if comma seperator */
-		if(strcmp(tokens[endtoken],";") == 0) printf(" ");	/* print space if semicolon seperator */
-
 		count=endtoken;
 	}
 
 	sigsetjmp(savestate,1);		/* save current context */
+
+	if(strcmp(tokens[endtoken],",") == 0) printf("\t");	/* print tab if comma seperator */
+	if(strcmp(tokens[endtoken],";") == 0) printf(" ");	/* print space if semicolon seperator */
 }
 
-if(strcmp(tokens[tc-1],";") != 0) printf("\n");
+if(strcmp(tokens[tc],";") != 0) printf("\n");
 
 SetLastError(0);
 return(0);
@@ -750,6 +745,7 @@ int exprtrue;
 int returnvalue;
 bool has_else_statement=FALSE;
 bool has_executed_block=FALSE;
+char *iftokens[MAX_SIZE][MAX_SIZE];
 
 if(tc < 2) {
 	SetLastError(SYNTAX_ERROR);					/* Too few parameters */
@@ -758,12 +754,20 @@ if(tc < 2) {
 
 SetFunctionFlags(IF_STATEMENT);
 
-while(*CurrentBufferPosition != 0) {
+while((char) *CurrentBufferPosition != 0) {
+	
 	if(GetFunctionFlags() & WAS_ITERATED) {		/* Skip statements if iterated */	
 		ClearFunctionFlags(WAS_ITERATED);
 		return(0);
 	}
+	else if(GetFunctionFlags() & EXIT_STATEMENT) {
+		SkipToEndOfStatement("ENDIF");
 
+		SetLastError(0);
+		return(0);
+	}
+
+	
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
 		sigsetjmp(savestate,1);		/* save current context */
 
@@ -773,7 +777,7 @@ while(*CurrentBufferPosition != 0) {
 		if(exprtrue == 1) has_executed_block=TRUE;	/* have executed IF/ELSEIF block */
 	}
 
-	if(*CurrentBufferPosition == 0) {
+	if((char) *CurrentBufferPosition == 0) {
 		SetLastError(0);
 		return(0);
 	}
@@ -786,37 +790,37 @@ while(*CurrentBufferPosition != 0) {
 
 	memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
-	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+	tc=TokenizeLine(buf,iftokens,TokenCharacters);			/* tokenize line */
 	if(tc == -1) {
 		SetLastError(SYNTAX_ERROR);
 		return(-1);
 	}
 
-	if(strcmpi(tokens[0],"ENDIF") == 0) {			/* at end of if block */
+	if(strcmpi(iftokens[0],"ENDIF") == 0) {			/* at end of if block */
 		ClearFunctionFlags(IF_STATEMENT);
 
 		SetLastError(0);
 		return(0);
 	}
-	else if(strcmpi(tokens[0],"ELSE") == 0) { 			
+	else if(strcmpi(iftokens[0],"ELSE") == 0) { 			
 		has_else_statement=TRUE;			/* has ELSE statement */
 
 		/* skip to end of ELSE block of condition is FALSE */
 
-		while(*CurrentBufferPosition != 0) {
+		while((char) *CurrentBufferPosition != 0) {
 			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
 			if(has_executed_block == FALSE) {
 				if(ExecuteLine(buf) == -1) return(-1);
 			}
 
-			tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+			tc=TokenizeLine(buf,iftokens,TokenCharacters);			/* tokenize line */
 			if(tc == -1) {
 				SetLastError(SYNTAX_ERROR);
 				return(-1);
 			}
 
-			if(strcmpi(tokens[0],"ENDIF") == 0) {			/* at end of if block */
+			if(strcmpi(iftokens[0],"ENDIF") == 0) {			/* at end of if block */
 				ClearFunctionFlags(IF_STATEMENT);
 				SetLastError(0);
 				return(0);
@@ -880,6 +884,8 @@ int vartype;
 varval loopcount;
 int ifexpr;
 varval test;
+char *linetokens[MAX_SIZE][MAX_SIZE];
+char *lbuf;
 
 PushSaveInformation();
 
@@ -1003,7 +1009,7 @@ if(vartype == -1) {
 	loopcount.d=exprone;
 	vartype=VAR_NUMBER;
 }
-else if((vartype == VAR_STRING) || (vartype == VAR_BOOLEAN) || (vartype == VAR_ANY)	) {
+else if((vartype == VAR_STRING) || (vartype == VAR_BOOLEAN) || (vartype == VAR_ANY)) {
 	SetLastError(TYPE_ERROR);
 	return(-1);
 }
@@ -1039,11 +1045,13 @@ while(1) {
 
 	if( (((char) *buf) == '\r') || (((char) *buf) == '\n') || (((char) *buf) == 0)) continue; 	/* skip blank line */
 
-	RemoveNewline(buf);
+	lbuf=buf;
+	while(((char) *lbuf == ' ') || ((char) *lbuf == '\t')) lbuf++;	/* skip white space */
 
-	tc=TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
+	tc=TokenizeLine(lbuf,linetokens,TokenCharacters);			/* tokenize line */
 
-	if(strcmpi(tokens[0],"NEXT") != 0) {  
+	if(strcmpi(linetokens[0],"NEXT") != 0) {  
+
 		if(ExecuteLine(buf) == -1) {	/* run statement */
 			PopSaveInformation();
 
@@ -1063,17 +1071,17 @@ while(1) {
 
 	sigsetjmp(savestate,1);		/* save current context */
 
-	if(strcmpi(tokens[0],"NEXT") == 0) {
+	if(strcmpi(linetokens[0],"NEXT") == 0) {
 		sigsetjmp(savestate,1);		/* save current context */
   
 		SetCurrentFunctionLine(GetSaveInformationLineCount());
 		lc=GetSaveInformationLineCount();
 
 		sigsetjmp(savestate,1);		/* save current context */
- 
-	      	if( (vartype == VAR_NUMBER) && (ifexpr == 0)) loopcount.d += StepValue;      
-	      	if( (vartype == VAR_INTEGER) && (ifexpr == 0)) loopcount.i += StepValue;
-	      	if( (vartype == VAR_SINGLE) && (ifexpr == 0)) loopcount.f += StepValue;      
+
+	      	if(vartype == VAR_NUMBER) loopcount.d += StepValue;      
+	      	if(vartype == VAR_INTEGER) loopcount.i += StepValue;
+	      	if(vartype == VAR_SINGLE) loopcount.f += StepValue;      
 
 		/* set loop variable to next */	
 	      	if(UpdateVariable(split.name,split.fieldname,&loopcount,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
@@ -1092,6 +1100,17 @@ while(1) {
 		SetCurrentBufferPosition(GetSaveInformationBufferPointer());			/* get pointer to start of for statement */
     	} 
 
+	if(GetFunctionFlags() & EXIT_STATEMENT) {		/* must exit statement block */
+		SkipToEndOfStatement("NEXT");
+
+		ClearFunctionFlags(EXIT_STATEMENT);		/* clear exit statement flag */
+
+		PopSaveInformation();
+
+		SetLastError(0);
+		return(0);
+	}
+
 	sigsetjmp(savestate,1);		/* save current context */
   
 } 
@@ -1099,7 +1118,6 @@ while(1) {
 sigsetjmp(savestate,1);		/* save current context */
 
 PopSaveInformation();
-//CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* skip over "next" statement */	
 
 SetLastError(NO_ERROR);
 return(0);
@@ -1277,6 +1295,13 @@ PushSaveInformation();		/* save while loop state */
 SetSaveInformationBufferPointer(CurrentBufferPosition);
 	
 do {
+	if(GetFunctionFlags() & EXIT_STATEMENT) {		/* must exit statement block */
+		SkipToEndOfStatement("WEND");
+
+		SetLastError(0);
+		return(0);
+	}
+
 	sigsetjmp(savestate,1);		/* save current context */
 
 	memset(buf,0,LINE_SIZE);		/* clear buffer */
@@ -1363,6 +1388,13 @@ PushSaveInformation();		/* save do loop state */
 SetSaveInformationBufferPointer(CurrentBufferPosition);
 	
 do {
+	if(GetFunctionFlags() & EXIT_STATEMENT) {		/* must exit statement block */
+		SkipToEndOfStatement("UNTIL");
+
+		SetLastError(0);
+		return(0);
+	}
+
 	sigsetjmp(savestate,1);		/* save current context */
 
 	memset(buf,0,LINE_SIZE);		/* clear buffer */
@@ -1383,13 +1415,13 @@ do {
 	if(strcmpi(tokens[0],"UNTIL") == 0) {			/* end of loop block */
 		/* Evaluate and test condition */
 
-		if(IsValidExpression(tokens,1,tc) == FALSE) {
-			PopSaveInformation();
+	//	if(IsValidExpression(tokens,1,tc) == FALSE) {
+	//		PopSaveInformation();
 
-			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-			return(-1);
+	//		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+	//		return(-1);
 
-		}
+	//	}
 
 		exprtrue=EvaluateCondition(tokens,1,tc);			/* do condition */
 
@@ -1519,6 +1551,7 @@ SetLastError(0);
 int exit_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *buf[MAX_SIZE];
 char *savebuffer;
+char *exittokens[MAX_SIZE][MAX_SIZE];
 
 if(strcmpi(tokens[1],"FOR") == 0) {
 	if((GetFunctionFlags() & FOR_STATEMENT) == 0) {
@@ -1544,30 +1577,7 @@ else
 	return(-1);
 }
 
-savebuffer=CurrentBufferPosition;
-
-/* find end of loop */
-while(*CurrentBufferPosition != 0) {
-	sigsetjmp(savestate,1);		/* save current context */
-	
-	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
-	TokenizeLine(buf,tokens,TokenCharacters);			/* tokenize line */
-
-	ClearIsRunningFlag();
-
-	if(((strcmpi(tokens[1],"WEND") == 0) && (GetFunctionFlags() & WHILE_STATEMENT)) ||
-	   ((strcmpi(tokens[1],"FOR") == 0) && (GetFunctionFlags() & FOR_STATEMENT))) {
-	 	ClearFunctionFlags(WHILE_STATEMENT);
-
-		SetCurrentBufferPosition(savebuffer);		/* go back to statement before NEXT or WEND to amke sure they are executed */
-
-	 	ClearFunctionFlags(FOR_STATEMENT);
-
-		SetLastError(0);
-		return(0);
-	}
-
-}
+SetFunctionFlags(EXIT_STATEMENT);		/* signal to for_statement(), while_statement(), repeat_statement() to exit loop */
 
 SetLastError(0);
 return(0);
@@ -1723,7 +1733,7 @@ char *buf[MAX_SIZE];
 /* find end of loop */
 CurrentBufferPosition=GetCurrentBufferPosition();
 
-while(*CurrentBufferPosition != 0) {
+while((char) *CurrentBufferPosition != 0) {
 	SavePosition=CurrentBufferPosition;		/* save position before end of for/while loop */
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
@@ -1827,7 +1837,7 @@ do {
 		return(-1);
 	}
 
-	if(*CurrentBufferPosition == 0) break;		/* at end */
+	if((char) *CurrentBufferPosition == 0) break;		/* at end */
 	
 /* add link to next field */
 	fieldptr->next=calloc(1,sizeof(UserDefinedTypeField));
@@ -1838,7 +1848,7 @@ do {
 
 	fieldptr=fieldptr->next;
 
-} while(*CurrentBufferPosition != 0);
+} while((char) *CurrentBufferPosition != 0);
 
 SetLastError(TYPE_NO_END_TYPE);
 return(-1);
@@ -1859,14 +1869,14 @@ char *buf[MAX_SIZE];
 int returnvalue;
 char *trytokens[MAX_SIZE][MAX_SIZE];
 
-while(*CurrentBufferPosition != 0) {
+while((char) *CurrentBufferPosition != 0) {
 
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
 	tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
 
 	if(strcmpi(trytokens[0],"CATCH") == 0) {	/* reached catch statement without error occurring in try block */
-		while(*CurrentBufferPosition != 0) {
+		while((char) *CurrentBufferPosition != 0) {
 			sigsetjmp(savestate,1);		/* save current context */
 
 			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
@@ -1887,7 +1897,7 @@ while(*CurrentBufferPosition != 0) {
 	if(ExecuteLine(buf) == -1) {			/* run statement */
 		/* error occurred */
 
-		while(*CurrentBufferPosition != 0) {	/* find catch block */
+		while((char) *CurrentBufferPosition != 0) {	/* find catch block */
 			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
 			tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
@@ -1896,7 +1906,7 @@ while(*CurrentBufferPosition != 0) {
 
 			/* run catch statements */
 
-				while(*CurrentBufferPosition != 0) {
+				while((char) *CurrentBufferPosition != 0) {
 					CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 					tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
 
@@ -2111,12 +2121,16 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 							nextcharptr=token;
 							nextcharptr++;
 										
-							if((char) *nextcharptr != '=') {
+							if((char) *nextcharptr == '=') {
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+							else if((char) *nextcharptr == '>') {
+						      		*d++=*token++;
 						      		*d++=*token++;
 							}
 							else
 							{
-						      		*d++=*token++;
 						      		*d++=*token++;
 							}
 
@@ -2127,12 +2141,16 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 							nextcharptr=token;
 							nextcharptr++;
 	
-							if((char) *nextcharptr != '=') {
+							if((char) *nextcharptr == '=') {
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+							else if((char) *nextcharptr == '<') {
+						      		*d++=*token++;
 						      		*d++=*token++;
 							}
 							else
 							{
-						      		*d++=*token++;
 						      		*d++=*token++;
 							}
 
@@ -2438,12 +2456,34 @@ do {
 
 	memset(linebuf,0,MAX_SIZE);
 
-} while(*CurrentBufferPosition != 0); 			/* until end */
+} while((char) *CurrentBufferPosition != 0); 			/* until end */
 
 CurrentBufferPosition=saveCurrentBufferPosition;	/* restore current pointer */
 SetCurrentFileBufferPosition(CurrentBufferPosition);
 
 PopFunctionCallInformation();
 return(0);
+}
+
+void SkipToEndOfStatement(char *end) {
+char *buf[LINE_SIZE];
+char *tokens[MAX_SIZE][MAX_SIZE];
+int tc;
+char *lbuf;
+
+while((char) *CurrentBufferPosition != 0) {
+	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
+
+	lbuf=buf;
+	while(((char) *lbuf == ' ') || ((char) *lbuf == '\t')) lbuf++;	/* skip white space */
+
+	tc=TokenizeLine(lbuf,tokens,TokenCharacters);			/* tokenize line */
+	if(tc == -1) return;
+
+	if(strcmpi(tokens[0],end) == 0) return;			/* at end of if block */
+
+}
+
+return;
 }
 

@@ -199,7 +199,7 @@ if(IsVariable(name)) {				/* check if variable exists */
 	return(-1);
 }
 
-printf("CreateVariable() %s(%d,%d)\n",name,xsize,ysize);
+//printf("CreateVariable() %s(%d,%d)\n",name,xsize,ysize);
 
 /* Add entry to variable list */
 
@@ -566,7 +566,7 @@ if(currentfunction == NULL) {
 }
 else
 {
-	printf("GetVariableValue() name=%s\n",name);
+	//printf("GetVariableValue() name=%s\n",name);
 
 	next=GetVariablePointer(name);		/* get variable entry */
 	if(next == NULL) {
@@ -635,8 +635,6 @@ else {					/* User-defined type */
 	SetLastError(0);
 	return(0);
 }	
-
-printf("evil=%s\n",name);
 
 SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 return(-1);
@@ -727,8 +725,7 @@ if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0))
 	
 	for(subscriptend=end;subscriptend > start + 1;subscriptend--) {
 		if((strcmp(tokens[subscriptend],")") == 0) || (strcmp(tokens[subscriptend],"]") == 0)) {
-			tokencount += (subscriptend - start);
-			printf("found subscriptend=%d\n",subscriptend);
+			tokencount += (subscriptend - start)+1;
 			break;
 		}
 	}
@@ -775,20 +772,21 @@ if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0))
 	}
 	else if(commacount == 0) {
 		//if(IsValidExpression(tokens,subscriptstart + 1,subscriptend) == FALSE) return(-1);	/* invalid expression */
-		
-		printf("substart=%d\n",subscriptstart + 1);
-		printf("subend=%d\n",subscriptend - 1);
 
-		evaltc=SubstituteVariables(subscriptstart+1,subscriptend-1,tokens,evaltokens); /* arrays start from 0 */
+		//for(int countz=subscriptstart+1;countz < subscriptend;countz++) {
+		//	printf("subst eval tokens[%d]=%s\n",countz,tokens[countz]);
+		//}
 
-		for(int countz=0;countz < evaltc;countz++) {
-			printf("parse eval tokens[%d]=%s\n",countz,evaltokens[countz]);
-		}
+		evaltc=SubstituteVariables(subscriptstart + 1,subscriptend,tokens,evaltokens); /* arrays start from 0 */
+
+		//for(int countz=0;countz < evaltc;countz++) {
+		//	printf("parse eval tokens[%d]=%s\n",countz,evaltokens[countz]);
+		//}
 
 		split->x=EvaluateExpression(evaltokens,0,evaltc);
 	 	split->y=1;
 
-		printf("eval split->x=%d\n",split->x);
+		//printf("eval split->x=%d\n",split->x);
 	}
 	else
 	{
@@ -1568,17 +1566,9 @@ char *escapebuf;
 bool IsEscapeCode=FALSE;
 int copycount;
 
-printf("****************************\n");
-printf("subst start=%d\n",start);
-printf("subst end=%d\n",end);
-
 outcount=0;
 
 memset(temp,0,(MAX_SIZE*MAX_SIZE));		/* clear temporary array */
-
-for(count=start;count < end;count++) { 
-	printf("subst tokens[%d]=%s\n",count,tokens[count]);
-}
 
 /* replace non-decimal numbers with decimal equivalents */
 
@@ -1679,8 +1669,6 @@ for(count=start;count < end;count++) {
 }
 
 for(count=start;count < end;count++) {
-	printf("loop outcount=%d\n",outcount);
-
 	tokentype=0;
 																										
 	if(CheckFunctionExists(tokens[count]) != -1) {	/* user function */
@@ -1730,7 +1718,6 @@ for(count=start;count < end;count++) {
 		skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 		if(skiptokens == -1) return(-1);
 
-		printf("subst var parse %s(%d,%d)\n",split.name,split.x,split.y);
 		count  += skiptokens;
 
 		tokentype=SUBST_VAR;
@@ -1757,9 +1744,18 @@ for(count=start;count < end;count++) {
 				    		SetLastError(INVALID_ARRAY_SUBSCRIPT); /* Out of bounds */
 						return(-1);
 				    	}
+
 				}
-				
-				bufptr=val.s;			/* get start */
+			
+				memset(escapeout,0,MAX_SIZE);
+
+//				printf("subst val.s=%s\n",val.s);
+				StripQuotesFromString(val.s,escapeout);
+
+//				printf("slice string=%s\n",escapeout);
+//				printf("slice split.x=%d\n",split.x);
+
+				bufptr=escapeout;			/* get start */
 				bufptr += split.x;	/* point to start */
 	
 				memset(temp[outcount],0,MAX_SIZE);
@@ -1769,7 +1765,7 @@ for(count=start;count < end;count++) {
 
 				if(split.y == 0) split.y=1;
 
-				for(copycount=0;copycount < split.y;copycount++) {
+				for(copycount=0;copycount < split.y;copycount++) {																	
 					*destptr++=*bufptr++;
 				}
 
@@ -1825,14 +1821,10 @@ for(count=start;count < end;count++) {
 		}
 	 }
 	else if (((char) *tokens[count] == '"') || IsSeperator(tokens[count],TokenCharacters) || IsNumber(tokens[count])) {
-		printf("other[%d]=%s\n",count,tokens[count]);
-
 		strncpy(temp[outcount++],tokens[count],MAX_SIZE);
 	}   
 	else
 	{
-		printf("BAD=%s\n",tokens[count]);
-
 		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 		return(-1);
 	}
@@ -1842,17 +1834,11 @@ for(count=start;count < end;count++) {
 
 memset(out,0,MAX_SIZE*MAX_SIZE);
 
-printf("outcount=%d\n",outcount);
-
-//printf("*********************************\n");
-
 for(count=0;count < outcount;count++) {
 	strncpy(out[count],temp[count],MAX_SIZE);
-
-	printf("out[%d]=%s\n",count,out[count]);
 }
 
-printf("return outcount=%d\n",outcount);
+//printf("return outcount=%d\n",outcount);
 
 return(outcount);
 }

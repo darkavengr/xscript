@@ -10,4 +10,5 @@ int IsBlockStatement(char *statement);
 #define FUNCTION_INTERACTIVE_MODE	16
 #define WAS_ITERATED			32
 #define REPEAT_STATEMENT		64
+#define EXIT_STATEMENT			128
 

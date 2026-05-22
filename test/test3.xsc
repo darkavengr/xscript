@@ -1,2 +1,9 @@
-print 2 + 2
+lenstr="Hello"
+count=0
+
+for count=0 to 2
+	if count != 2 then		# until end of string
+		print "No"
+	endif
+next
 

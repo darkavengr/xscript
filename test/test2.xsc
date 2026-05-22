@@ -1,45 +1,56 @@
-function len(lenstr as string) as integer																																		
+function hex(number as integer) as string
+declare hexbuf(16) as string
+declare mask as integer
 declare count as integer
-
-count=0
-
-while lenstr[count] != ""			# until end of string
-	count=count+1			# increment length count
-wend
-
-return count
-endfunction
-
-function val(numstr as string) as integer
+declare index as integer
 declare shiftamount as integer
-declare outnum as integer
-declare count as integer
-declare digitcount as integer
-declare start as integer
-declare valdigits(10) as string
+declare foundstart as boolean
+declare outstring as string
 
-valdigits(0)="0"
-valdigits(1)="1"
-valdigits(2)="2"
-valdigits(3)="3"
-valdigits(4)="4"
-valdigits(5)="5"
-valdigits(6)="6"
-valdigits(7)="7"
-valdigits(8)="8"
-valdigits(9)="9"
+hexbuf(0)="0"			# Initialize hexadecimal digit array
+hexbuf(1)="1"
+hexbuf(2)="2"
+hexbuf(3)="3"
+hexbuf(4)="4"
+hexbuf(5)="5"
+hexbuf(6)="6"
+hexbuf(7)="7"
+hexbuf(8)="8"
+hexbuf(9)="8"
+hexbuf(10)="A"
+hexbuf(11)="B"
+hexbuf(12)="C"
+hexbuf(13)="D"
+hexbuf(14)="E"
+hexbuf(15)="F"
 
-start=0
-shiftamount=1
+mask=0xf0000000				# Initial bit mask
+shiftamount=(4*4)-4
 
-count=0
 
-if numstr[count] = valdigits(digitcount) then
-	shiftamount=shiftamount * 10
-endif
+print 0xABCDEF123 & 0xF0000000
 
-return outnum
+for count=0 to 4*2			# For each nibble
+	print number & mask
+	index=(number & mask) >> shiftamount	# get the nibble
+											
+	if index != 0 then		# Ignore leading zeroes
+		foundstart=True
+	endif
+
+
+	shiftamount=shiftamount-4	# Decrement shit count
+	mask=mask >> 4			# Move bit mask to the right
+
+	if foundstart == True then
+		print "hex=",hexbuf(index)
+
+		outstring=outstring + hexbuf(index)	# Append hexadecimal digit
+	endif
+next count
+
+return outstring		
 endfunction
 
-print val("123")
-
+print hex(255)
+																																																																																																																																										

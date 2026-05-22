@@ -30,9 +30,11 @@ declare count as integer
 
 count=0
 
-while lenstr[count] != ""			# until end of string
-	count=count+1			# increment length count
-wend
+while lenstr[count] != ""
+	count=count+1		# test comment
+wend		
+
+count=count+2
 
 return count
 endfunction
@@ -301,6 +303,7 @@ declare shiftamount as integer
 declare outnum as integer
 declare count as integer
 declare digitcount as integer
+declare valdigits(10) as string
 
 valdigits(0)="0"
 valdigits(1)="1"
@@ -315,21 +318,20 @@ valdigits(9)="9"
 
 shiftamount=1
 
-for count=0 to len(numstr)
+count=0
+
+for count=len(numstr) to 0 step -1
 	for digitcount=0 to 9
-		if numstr[count] == valdigits(digitcount) then
+		if valdigits(digitcount) = numstr[count] then
 			outnum=outnum+(digitcount*shiftamount)
+
 			shiftamount=shiftamount * 10			
 			exit for
 		endif
-	next
-next
-
-
-if numstr[0] == "-" then
-	outnum=outnum-outnum-outnum
-endif
+	next digitcount
+next count																																					
 
 return outnum
 endfunction
+
 

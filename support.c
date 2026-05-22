@@ -25,17 +25,17 @@ void StripQuotesFromString(char *str,char *buf) {
 char *strptr=str;
 char *bufptr=buf;
 
-if(IsValidString(str) == FALSE) return;		/* not valid string */
+if(IsValidString(str) == TRUE) strptr++;	/* skip quote character */
 
 /* copy filename without quotes */
-
-strptr++;
 
 while((char) *strptr != 0) {
 	if((char) *strptr == '"') break;
 
 	*bufptr++=*strptr++;	/* copy character */
 }
+
+*bufptr++=0;
 
 return;
 }

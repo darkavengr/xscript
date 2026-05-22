@@ -62,22 +62,18 @@ memset(temp,0,MAX_SIZE*MAX_SIZE);
 
 exprcount=0;
 
-for(count=start;count<end;count++) {
-	if((strcmp(tokens[count],"(") == 0)) {				/* start of expression */ 
-
-		if(CheckFunctionExists(tokens[count-1]) == 0) {
+for(count=start;count < end;count++) {
+	if(strcmp(tokens[count],"(") == 0) {
+		if(CheckFunctionExists(tokens[count - 1]) == 0) {
 			while(count < end) {
 				if(strcmp(tokens[count++] ,")") == 0) break;
 			}
-		
-			continue;
+
 		}
 		else if(IsVariable(tokens[count-1]) == TRUE) {
-			for(countx=count+1;countx<end;countx++) {
+			for(countx=count + 1;countx < end;countx++) {
 	 			if(strcmp(tokens[countx] ,")") == 0) break;
 			}
-		
-			continue;
 		}
 		else
 		{
@@ -99,7 +95,7 @@ for(count=start;count<end;count++) {
 		}
 	}
 	else
-	{	
+	{
 		strncpy(temp[exprcount++],tokens[count],MAX_SIZE);
 	}
 }
@@ -139,6 +135,9 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
+		count--;
+		operatorcount--;
+		operandcount--;
 	 } 
 }
 
@@ -150,6 +149,9 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
+
 	 } 
 }
 	
@@ -161,6 +163,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count/2)+1,(count/2)+1);		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	 } 
 }
 
@@ -172,6 +176,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	 } 
 }
 
@@ -183,6 +189,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	 } 
 }
 
@@ -194,6 +202,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	 } 
 }
 
@@ -207,6 +217,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	 } 
 }
 
@@ -220,6 +232,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	}
 }
 
@@ -232,6 +246,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operators,0,operatorcount,count*2,count*2);		/* remove operator */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	}
 }
 
@@ -245,6 +261,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	}
 }
 
@@ -258,6 +276,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	}
 }
 
@@ -271,6 +291,8 @@ for(count=0;count < operatorcount;count++)  {
 		DeleteFromArray(split_operands,0,operandcount,(count*2+1),(count*2+1));		/* remove second operand */
 
 		count--;
+		operatorcount--;
+		operandcount--;
 	}
 }
 
@@ -330,13 +352,20 @@ varval firstval;
 varval secondval;
 char *OperatorCharacters="=!<>";
 int returnvalue;
+char *exprtokens[MAX_SIZE][MAX_SIZE];
+int substtc;
 
 /* check kind of expression */
 
 exprone=0;
 exprtwo=0;
-																						
+
+//printf("eval start=%d\n",start);
+//printf("eval end=%d\n",end);
+											
 for(exprpos=start;exprpos < end;exprpos++) {
+//	printf("eval tokens[%d]=%s\n",exprpos,tokens[exprpos]);
+
 	if(strcmp(tokens[exprpos],"=") == 0) {
 		ifexpr=EQUAL;
 		break;
@@ -379,49 +408,66 @@ else
 // 	}
 }
 
-if(GetVariableType(tokens[exprpos-1]) == VAR_STRING) {		/* comparing strings */
-	if(ConatecateStrings(start,exprpos,tokens,&firstval) == -1) {		/* join all the strings on the lines */
+if(GetVariableType(tokens[start]) == VAR_STRING) {		/* comparing strings */
+	substtc=SubstituteVariables(start,exprpos,tokens,exprtokens);
+
+	if(ConatecateStrings(0,substtc,exprtokens,&firstval) == -1) {		/* join all the strings on the lines */
+		if(firstval.s != NULL) free(firstval.s);
+		return(-1);
+	}
+
+	substtc=SubstituteVariables(exprpos+1,end,tokens,exprtokens);
+
+	if(ConatecateStrings(0,substtc,exprtokens,&secondval) == -1) {
 		if(firstval.s != NULL) free(firstval.s);
 		if(secondval.s != NULL) free(secondval.s);
 
 		return(-1);
 	}
 
-	if(ConatecateStrings(exprpos + 1,end,tokens,&secondval) == -1) {
-		if(firstval.s != NULL) free(firstval.s);
-		if(secondval.s != NULL) free(secondval.s);
-
-		return(-1);
-	}
+	//printf("firstval.s=%s\n",firstval.s);
+	//printf("secondval.s=%s\n",secondval.s);
+	//asm("int $3");
 
 	returnvalue=strncmp(firstval.s,secondval.s,MAX_SIZE);	/* reverse return value because strcmp returns 0 if strings match */
+
+//	printf("returnvalue=%d\n",returnvalue);
 
 	free(firstval.s);
 	free(secondval.s);
 
-	if(returnvalue == 0) return(FALSE);
+	if(returnvalue == 0) return(TRUE);
 
-	return(TRUE);
+	return(FALSE);
 }
 
-if(IsValidExpression(tokens,start,exprpos - 1) == FALSE) {
-	SetLastError(INVALID_EXPRESSION);
-	return(-1);
-}
+//if(IsValidExpression(tokens,start,exprpos - 1) == FALSE) {
+//	SetLastError(INVALID_EXPRESSION);
+//	return(-1);
+//}
 
-if(IsValidExpression(tokens,exprpos + 1,end - 1) == FALSE) {
-	SetLastError(INVALID_EXPRESSION);
-	return(-1);
-}
+//if(IsValidExpression(tokens,exprpos + 1,end - 1) == FALSE) {
+//	SetLastError(INVALID_EXPRESSION);
+//	return(-1);
+//}
 
-exprone=EvaluateExpression(tokens,start,exprpos);				/* evaluate expressions */
-exprtwo=EvaluateExpression(tokens,exprpos+1,end);
+substtc=SubstituteVariables(start,exprpos,tokens,exprtokens);
+exprone=EvaluateExpression(exprtokens,0,substtc);				/* evaluate expressions */
+
+substtc=SubstituteVariables(exprpos+1,end,tokens,exprtokens);
+exprtwo=EvaluateExpression(exprtokens,0,substtc);
+
+//printf("EvaluateSingleCondition() exprone=%.6g\n",exprone);
+//printf("EvaluateSingleCondition() exprtwo=%.6g\n",exprtwo);
 
 exprtrue=0;
 
 switch(ifexpr) {
 
 	case EQUAL:					/* exprone = exprtwo */
+		//printf("equal=%d\n",exprone == exprtwo);
+		//asm("int $3");
+
 		return(exprone == exprtwo);
 
 	case NOTEQUAL:					/* exprone != exprtwo */ 
@@ -440,7 +486,7 @@ switch(ifexpr) {
 		return(exprone >= exprtwo);
 	}
 
-	
+return(FALSE);
 }
 
 /*
@@ -477,23 +523,23 @@ struct {
 
 /* Evaluate sub-conditions */
 
-evaltc=SubstituteVariables(start,end,tokens,evaltokens);
-
-printf("evaltc=%d\n",evaltc);
-if(evaltc == -1) return(-1);
-
 startcount=start;
 count=0;
 
 /* Do conditions in brackets first */
 
-for(count=0;count < evaltc + 1;count++) {
-	if(strcmp(evaltokens[count],"(") == 0) {		/* if sub-expression */
+for(count=start;count < end;count++) {
+	/* if sub-expression */
+
+	if(strcmp(tokens[count],"(") == 0 && (CheckFunctionExists(tokens[count - 1]) == -1) && (IsVariable(tokens[count - 1]) == -1) ) {
 	 	subcount++;
 	 	startcount=count;
 
 	 	while(count < exprend) {
-	 		if(strcmp(evaltokens[count],")") == 0) {		/* end of sub-expression */
+	 		if(strcmp(tokens[count],")") == 0) {		/* end of sub-expression */
+				evaltc=SubstituteVariables(startcount,count,tokens,evaltokens);
+				if(evaltc == -1) return(-1);
+
 	 			results[resultcount].result=EvaluateSingleCondition(evaltokens,0,count+1);
 
 	 			resultcount++;
@@ -507,10 +553,6 @@ for(count=0;count < evaltc + 1;count++) {
 			count++;
 	  	}
 	}
-	else
-	{		
-		strncpy(temp[outcount++],evaltokens[count],MAX_SIZE);
-	}
 
 }
 
@@ -519,8 +561,11 @@ for(count=0;count < evaltc + 1;count++) {
 	startcount=0;
 
 	for(count=0;count < outcount;count++) {
-		if((strcmpi(temp[count],"AND") == 0) || (strcmpi(temp[count],"OR") == 0) || (count >= outcount-1)) {
-			results[resultcount].result=EvaluateSingleCondition(temp,startcount,count);		
+		if((strcmpi(temp[count],"AND") == 0) || (strcmpi(temp[count],"OR") == 0)) {// || (count >= outcount-1)) {
+			evaltc=SubstituteVariables(startcount,count,tokens,evaltokens);
+			if(evaltc == -1) return(-1);
+
+			results[resultcount].result=EvaluateSingleCondition(evaltokens,0,evaltc);		
 
 			if(strcmpi(temp[count],"AND") == 0) results[resultcount].and_or=CONDITION_AND;
 			if(strcmpi(temp[count],"OR") == 0) results[resultcount].and_or=CONDITION_OR;
@@ -538,9 +583,13 @@ for(count=0;count < evaltc + 1;count++) {
 		results[resultcount-1].and_or=CONDITION_END;
 	}
 
+	//printf("resultcount=%d\n",resultcount);
+
 	/* If there are no sub conditions, use whole expression */
-	if(resultcount == 1) {
-		retval=EvaluateSingleCondition(temp,0,outcount);
+	if(resultcount == 0) {
+		//printf("SINGLE CONDITION\n");
+
+		retval=EvaluateSingleCondition(tokens,start,end);
 		return(retval);
 	}
 

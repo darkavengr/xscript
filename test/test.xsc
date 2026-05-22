@@ -1,5 +1,20 @@
-numstr="123"
-print numstr[0]
+function len(lenstr as string) as integer																																		
+declare count as integer
 
+count=0
+
+repeat
+	count=count+1			# increment length count
+until lenstr[count] != ""			# until end of string
+
+count=count+1
+return count
+endfunction
+
+numstr="ABC"
+
+for count=0 to len(numstr)
+	print numstr[count]
+next count
 
 
