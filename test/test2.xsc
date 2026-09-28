@@ -1,56 +1,39 @@
-function hex(number as integer) as string
-declare hexbuf(16) as string
-declare mask as integer
+function len(lenstr as string) as integer																																		
 declare count as integer
-declare index as integer
-declare shiftamount as integer
-declare foundstart as boolean
-declare outstring as string
 
-hexbuf(0)="0"			# Initialize hexadecimal digit array
-hexbuf(1)="1"
-hexbuf(2)="2"
-hexbuf(3)="3"
-hexbuf(4)="4"
-hexbuf(5)="5"
-hexbuf(6)="6"
-hexbuf(7)="7"
-hexbuf(8)="8"
-hexbuf(9)="8"
-hexbuf(10)="A"
-hexbuf(11)="B"
-hexbuf(12)="C"
-hexbuf(13)="D"
-hexbuf(14)="E"
-hexbuf(15)="F"
+count=0
 
-mask=0xf0000000				# Initial bit mask
-shiftamount=(4*4)-4
+repeat
+	count=count+1		# test comment
+until lenstr[count] != ""
 
-
-print 0xABCDEF123 & 0xF0000000
-
-for count=0 to 4*2			# For each nibble
-	print number & mask
-	index=(number & mask) >> shiftamount	# get the nibble
-											
-	if index != 0 then		# Ignore leading zeroes
-		foundstart=True
-	endif
-
-
-	shiftamount=shiftamount-4	# Decrement shit count
-	mask=mask >> 4			# Move bit mask to the right
-
-	if foundstart == True then
-		print "hex=",hexbuf(index)
-
-		outstring=outstring + hexbuf(index)	# Append hexadecimal digit
-	endif
-next count
-
-return outstring		
+return count
 endfunction
 
-print hex(255)
-																																																																																																																																										
+function instr_x(start as integer,mainstr as string,substr as string) as integer
+declare size as integer
+
+count=0
+
+print len(substr)
+
+while count < 5
+	print mainstr[count,count+len(substr)],count,count+len(substr)
+
+#	if count+len(substr) > len(mainstr) then	# no more to match
+#		exit for
+#	endif
+
+	if mainstr[count,count+len(substr)] = substr then	# if sub-string found
+		print "EEEEEEvil"
+		return count				# return position
+	endif
+
+count=count+1
+wend
+
+return -1			# sub-string not found
+endfunction
+
+print instr_x(0,"Hello","He")
+

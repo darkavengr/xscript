@@ -126,6 +126,7 @@ cmdargs.i=0;
 CreateVariable("ERR","INTEGER",1,1);			/* error number */
 CreateVariable("ERRL","INTEGER",1,1);			/* error line */
 CreateVariable("ERRFUNC","STRING",1,1);			/* error function */
+CreateVariable("ERRFILE","STRING",1,1);			/* error file */
 
 if(progname != NULL) {
 	CreateVariable("PROGRAMNAME","STRING",1,1);		/* script name */
@@ -199,8 +200,6 @@ if(IsVariable(name)) {				/* check if variable exists */
 	return(-1);
 }
 
-//printf("CreateVariable() %s(%d,%d)\n",name,xsize,ysize);
-
 /* Add entry to variable list */
 
 if(currentfunction->vars == NULL) {			/* first entry */
@@ -235,6 +234,7 @@ if(count != -1) {				/* is built-in variable type */
 	}
 
 	currentfunction->vars_end->type_int=count;
+
 }
 else
 {
@@ -362,8 +362,6 @@ else if(next->type_int == VAR_STRING) {	/* string */
 			return(-1);
 		}
 	} 
-
-//	printf("set=%lX %lX\n",next->val[x*y].s,val->s);
 
 	strncpy(next->val[x*y].s,val->s,strlen(val->s));	/* copy value */
 	return(0);
@@ -699,6 +697,7 @@ char *evaltokens[MAX_SIZE][MAX_SIZE];
 int evaltc;
 int varend;
 int tokencount=0;
+int commapos;
 
 memset(split,0,sizeof(varsplit));
 
@@ -718,7 +717,7 @@ for(fieldstart=end;fieldstart > start;fieldstart--) {		/* find field start, if a
 }
 
 if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0)) {
-	subscriptstart=start + 1;
+	subscriptstart=start;
 
 	if(strcmp(tokens[start + 1],"(") == 0) split->arraytype=ARRAY_SUBSCRIPT;
 	if(strcmp(tokens[start + 1],"[") == 0) split->arraytype=ARRAY_SLICE;
@@ -733,18 +732,18 @@ if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0))
 	/* find array x and y values */
 	commacount=0;
 
-	for(count=start + 1;count < subscriptend;count++) {
+	for(count=start;count < subscriptend;count++) {
 
 			/* Skip commas in arrays and function calls */
-
 			if((strcmp(tokens[count],"(") == 0) || (strcmp(tokens[count],"[") == 0)) {
+				subscriptstart=count;
 
 				if(strcmp(tokens[count],"(") == 0) ParseEndChar=')';
 				if(strcmp(tokens[count],"[") == 0) ParseEndChar=']';
 
 				varend=count;
 				while(*tokens[varend] != ParseEndChar) {
-					if(varend == end) {		/* Missing end */
+					if(varend == end) {
 						SetLastError(SYNTAX_ERROR);
 						return(-1);
 					}
@@ -760,7 +759,7 @@ if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0))
 					return(-1);
 				}
 
-				if(commacount == 0) subscriptstart=count;	/* save comma position */
+				commapos=count;
 
 				commacount++;		 /* comma found */
 			}
@@ -771,22 +770,12 @@ if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0))
 		return(-1);
 	}
 	else if(commacount == 0) {
-		//if(IsValidExpression(tokens,subscriptstart + 1,subscriptend) == FALSE) return(-1);	/* invalid expression */
+		if(IsValidExpression(tokens,subscriptstart + 2,subscriptend) == FALSE) return(-1);	/* invalid expression */
 
-		//for(int countz=subscriptstart+1;countz < subscriptend;countz++) {
-		//	printf("subst eval tokens[%d]=%s\n",countz,tokens[countz]);
-		//}
-
-		evaltc=SubstituteVariables(subscriptstart + 1,subscriptend,tokens,evaltokens); /* arrays start from 0 */
-
-		//for(int countz=0;countz < evaltc;countz++) {
-		//	printf("parse eval tokens[%d]=%s\n",countz,evaltokens[countz]);
-		//}
+		evaltc=SubstituteVariables(subscriptstart + 2,subscriptend,tokens,evaltokens); /* arrays start from 0 */
 
 		split->x=EvaluateExpression(evaltokens,0,evaltc);
 	 	split->y=1;
-
-		//printf("eval split->x=%d\n",split->x);
 	}
 	else
 	{
@@ -796,10 +785,10 @@ if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0))
 		//	return(-1);
 		//}
 	
-		evaltc=SubstituteVariables(subscriptstart,count,tokens,evaltokens);
+		evaltc=SubstituteVariables(subscriptstart + 2,commapos,tokens,evaltokens);
 		split->x=EvaluateExpression(evaltokens,0,evaltc);
 
-		evaltc=SubstituteVariables(count + 1,subscriptend,tokens,evaltokens);
+		evaltc=SubstituteVariables(commapos + 1,subscriptend,tokens,evaltokens);
 		split->y=EvaluateExpression(evaltokens,0,evaltc);
 	}
 
@@ -832,7 +821,6 @@ if(fieldstart != start) {					/* if there is a field name and possible subscript
 					SetLastError(INVALID_EXPRESSION);
 					return(-1);
 				}
-
 			
 				break;
 			}
@@ -1330,35 +1318,31 @@ for(count=0;count < returnvalue - 1;count++) {
 		}
 
 		StripQuotesFromString(evaltokens[count],paramval.s);
+	}	
+	else if(parameters->type_int == VAR_INTEGER) {
+		paramval.i=EvaluateExpression(evaltokens,count,endparam);
 	}
-	else
-	{
-		if(parameters->type_int == VAR_INTEGER) {
-			paramval.i=EvaluateExpression(evaltokens,count,endparam);
-
-		}
-		else if(parameters->type_int == VAR_SINGLE) {
-			paramval.f=EvaluateExpression(evaltokens,count,endparam);
-		}
-		else if(parameters->type_int == VAR_LONG) {
-			paramval.l=EvaluateExpression(evaltokens,count,endparam);
-		}
-		else if(parameters->type_int == VAR_BOOLEAN) {
-
-			if(EvaluateExpression(evaltokens,count,endparam) > 1) {		/* Invalid value */
-				SetLastError(TYPE_ERROR);
-				PopFunctionCallInformation();
-				return(-1);
-			}
-
-			paramval.b=EvaluateExpression(evaltokens,count,endparam);
-		}
-		else if(parameters->type_int == VAR_ANY) {
-			paramval.a=(int) EvaluateExpression(evaltokens,count,endparam);
-		}
-
-		count=endparam;
+	else if(parameters->type_int == VAR_SINGLE) {
+		paramval.f=EvaluateExpression(evaltokens,count,endparam);
 	}
+	else if(parameters->type_int == VAR_LONG) {
+		paramval.l=EvaluateExpression(evaltokens,count,endparam);
+	}
+	else if(parameters->type_int == VAR_BOOLEAN) {
+
+		if(EvaluateExpression(evaltokens,count,endparam) > 1) {		/* Invalid value */
+			SetLastError(TYPE_ERROR);
+			PopFunctionCallInformation();
+			return(-1);
+		}
+
+		paramval.b=EvaluateExpression(evaltokens,count,endparam);
+	}
+	else if(parameters->type_int == VAR_ANY) {
+		paramval.a=(int) EvaluateExpression(evaltokens,count,endparam);
+	}
+
+	count=endparam;
 
 	if(parameters->type_int == VAR_UDT) {			/* user defined type */
 		if(CreateVariable(parameters->varname,parameters->udt_type,split.x,split.y) == -1) {
@@ -1444,6 +1428,8 @@ while(*GetCurrentBufferPosition() != 0) {
 
 	returnvalue=ExecuteLine(buf);				/* Run line */
 	if(returnvalue == -1) return(-1);
+
+	if(GetThrowFlag()) return(0);	/* return early if throw statement was called */
 
 	if(strcmpi(argbuf[0],"RETURN") == 0) break;
 }
@@ -1684,7 +1670,7 @@ for(count=start;count < end;count++) {
 		retval.has_returned_value=FALSE;
 
 	  	if(CallFunction(tokens,count,FunctionCallEndToken) == -1) return(-1);	/* call the function */
-
+	
 		if(retval.has_returned_value == TRUE) {		/* function has returned value */
 		  	get_return_value(&subst_returnvalue);
 
@@ -1749,11 +1735,7 @@ for(count=start;count < end;count++) {
 			
 				memset(escapeout,0,MAX_SIZE);
 
-//				printf("subst val.s=%s\n",val.s);
 				StripQuotesFromString(val.s,escapeout);
-
-//				printf("slice string=%s\n",escapeout);
-//				printf("slice split.x=%d\n",split.x);
 
 				bufptr=escapeout;			/* get start */
 				bufptr += split.x;	/* point to start */
@@ -1763,11 +1745,10 @@ for(count=start;count < end;count++) {
 				destptr=temp[outcount];
 		 		*destptr++='"';			/* put quote at start */
 
-				if(split.y == 0) split.y=1;
-
-				for(copycount=0;copycount < split.y;copycount++) {																	
+				copycount=split.x;
+				do {
 					*destptr++=*bufptr++;
-				}
+				} while(++copycount < split.y);
 
 				*destptr++='"';			/* put quote at end */
 
@@ -1842,7 +1823,6 @@ for(count=0;count < outcount;count++) {
 
 return(outcount);
 }
-
 /*
  *  Conatecate strings
  * 
@@ -1881,21 +1861,26 @@ destptr=val->s;				/* point to output buffer */
 *destptr++='"';		/* put " at start */
 
 for(count=start;count < end;count++) {
+
 	if(strcmp(tokens[count],"+") == 0) { 
 
 		/* not a string literal or string variable */
-		if((GetVariableType(tokens[count-1]) != VAR_STRING) && (GetVariableType(tokens[count + 1]) == VAR_STRING) ||
-		   (GetVariableType(tokens[count-1]) == VAR_STRING) && (GetVariableType(tokens[count + 1]) != VAR_STRING)) {
-		   	SetLastError(TYPE_ERROR);
-			return(-1);
+		if((strlen(tokens[count-1]) > 0) && (strlen(tokens[count+1]) > 0)) {
+			if((GetVariableType(tokens[count-1]) != VAR_STRING) && (GetVariableType(tokens[count + 1]) == VAR_STRING) ||
+			   (GetVariableType(tokens[count-1]) == VAR_STRING) && (GetVariableType(tokens[count + 1]) != VAR_STRING)) {
+			   	SetLastError(TYPE_ERROR);
+				return(-1);
+			}
 		}
 	}
 	else
 	{
 		memset(temp,0,MAX_SIZE);
 
-		StripQuotesFromString(tokens[count],temp);	/* remove quotes from string */
-		strncat(val->s,temp,strlen(temp));
+		if(strlen(tokens[count]) > 0) {
+			StripQuotesFromString(tokens[count],temp);	/* remove quotes from string */
+			strncat(val->s,temp,strlen(temp));	
+		}
 	}
 }
 

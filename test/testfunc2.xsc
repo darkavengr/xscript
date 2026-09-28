@@ -1,8 +1,8 @@
-function testfunction(a as integer) as double
-print a
+function testfunction(num as integer,first as string,second as string) as integer
+print first
+print second
 endfunction
 
-testvar=123
-testfunction(testvar - 1)
+testfunction(1,"A","B")
 
 

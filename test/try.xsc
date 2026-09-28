@@ -1,10 +1,10 @@
-declare a as integer
+function testfunc() as integer
+throw 10
+endfunction
 
 try
-	a="XXXXXXXXXXXXXXXXX"
+	testfunc()
 catch
-	print "Caught error"
+	print "Error"
 endtry
-
-
 

@@ -76,7 +76,6 @@ returnval->val.i=read(params[0].val->i,params[1].val->s,params[2].val->i);
 
 if(returnval->val.i == -1) returnval->systemerrornumber=errno;
 return;
-
 }
 
 //params[0]=handle (integer)
@@ -88,7 +87,6 @@ returnval->val.i=write(params[0].val->i,params[1].val->s,params[2].val->i);
 
 if(returnval->val.i == -1) returnval->systemerrornumber=errno;
 return;
-
 }
 
 //params[0]=handle (integer)

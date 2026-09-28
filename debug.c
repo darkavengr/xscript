@@ -200,9 +200,6 @@ for(ycount=1;ycount != ysize + 1;ycount++) {
 	}
 		
 	for(xcount=0;xcount != xsize;xcount++) {
-
-		//int GetVariableValue(char *name,char *fieldname,int x,int y,varval *val,int fieldx,int fieldy);
-
 		GetVariableValue(var->varname,NULL,xcount,ycount,&val,0,0);
 
 		switch(vartype) {

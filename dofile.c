@@ -181,13 +181,6 @@ do {
 	CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,linebuf,LINE_SIZE);			/* get data */
 	SetCurrentFileBufferPosition(CurrentBufferPosition);
 
-	if(ExecuteLine(linebuf) == -1) {			/* run statement */
-		ClearIsRunningFlag();
-
-		free(progname.s);
-		return(-1);
-	}
-
 	if(GetIsRunningFlag() == FALSE) {
 		CurrentBufferPosition=saveCurrentBufferPosition;
 
@@ -195,6 +188,13 @@ do {
 
 		SetLastError(NO_ERROR);	/* program ended */
 		return(0);
+	}
+
+	if(ExecuteLine(linebuf) == -1) {			/* run statement */
+		ClearIsRunningFlag();
+
+		free(progname.s);
+		return(-1);
 	}
 
 	memset(linebuf,0,MAX_SIZE);
@@ -248,8 +248,6 @@ GetCurrentFile(filename);	/* get name of current file */
 RemoveNewline(lbuf);		/* remove newline from line */
 
 while(((char) *lbuf == ' ') || ((char) *lbuf == '\t')) lbuf++;	/* skip white space */
-
-//printf("lbuf=%s\n",lbuf);
 	
 if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n') || (((char) *lbuf) == 0) || (((char) *lbuf) == '\t')) {
 	SetLastError(0);
@@ -259,10 +257,6 @@ if( (((char) *lbuf) == '\r') || (((char) *lbuf) == '\n') || (((char) *lbuf) == 0
 memset(tokens,0,MAX_SIZE*MAX_SIZE);
 
 tc=TokenizeLine(lbuf,tokens,TokenCharacters);			/* tokenize line */
-
-//for(count=0;count < tc;count++) {
-//	printf("tokens[%d]=%s\n",count,tokens[count]);
-//}
 
 /* remove comments */
 
@@ -284,12 +278,14 @@ for(count=0;count < tc;count++) {
 }
 
 consideredharmful:
+if(GetThrowFlag()) return(0);		/* return early if throw statement was called */
+
+
 if(IsStatement(tokens[0])) {
 	if(CallIfStatement(tc,tokens) == -1) return(-1); /* run if statement */
 
 	IsValid=TRUE;
 }
-
 /*
  *
  * assignment
@@ -328,6 +324,10 @@ for(count=1;count < tc;count++) {
 		}
 
 		if( ((char) *tokens[count + 1] == '"') || (GetVariableType(tokens[count + 1]) == VAR_STRING)) {			/* string */  
+			if(GetVariableType(split.name) != VAR_STRING) {
+				SetLastError(TYPE_ERROR);
+				return(-1);
+			}
 
 			if(GetVariableType(split.name) == -1) {
 				if(CreateVariable(split.name,"STRING",1,1) == -1) return(-1); /* create new string variable */ 
@@ -337,6 +337,7 @@ for(count=1;count < tc;count++) {
 				if(val.s != NULL) free(val.s);
 				return(-1);
 			}
+
 
 			/* set variable */
 		  	if(UpdateVariable(split.name,split.fieldname,&val,split.x,split.y,split.fieldx,split.fieldy) == -1) return(-1);
@@ -354,14 +355,12 @@ for(count=1;count < tc;count++) {
 			return(-1);
 		}
 	
-	//	if(IsValidExpression(outtokens,0,returnvalue) == FALSE) {
-	//		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-	//		return(-1);
-	//	}
+		if(IsValidExpression(outtokens,0,returnvalue) == FALSE) {
+			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+			return(-1);
+		}
 
 		exprone=EvaluateExpression(outtokens,0,returnvalue);
-
-	//	printf("exprone=%d\n",exprone);
 
 		if(vartype == VAR_NUMBER) {
 	 		val.d=exprone;
@@ -680,8 +679,6 @@ return(-1);
  *
  */
 
-//LIBCALL function name(arguments) IN module name TO result_variable
-
 int libcall_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 int paramendpos;
 char *parameters[MAX_SIZE][MAX_SIZE];
@@ -707,8 +704,6 @@ for(paramendpos=3;paramendpos < tc;paramendpos++) {		/* find ) */
 
 	strncpy(parameters[paramcount++],tokens[paramendpos],MAX_SIZE);	/* get parameter */
 }
-
-//LIBCALL function name(arguments) IN module name TO result_variable
 
 if((strcmpi(tokens[paramendpos+1],"IN") != 0) || (strcmpi(tokens[paramendpos+3],"TO") != 0)) { 	/* missing IN or TO */
 	SetLastError(SYNTAX_ERROR);
@@ -767,7 +762,6 @@ while((char) *CurrentBufferPosition != 0) {
 		return(0);
 	}
 
-	
 	if((strcmpi(tokens[0],"IF") == 0) || (strcmpi(tokens[0],"ELSEIF") == 0)) {  
 		sigsetjmp(savestate,1);		/* save current context */
 
@@ -918,9 +912,6 @@ if(IsValidVariableOrKeyword(tokens[1]) == FALSE) {		/* check if variable name is
 	return(-1);
 }
 
-//  0  1     2 3 4  5
-// for count = 1 to 10
-
 for(StartOfSecondExpression=3;StartOfSecondExpression<tc;StartOfSecondExpression++) {
 	if(strcmpi(tokens[StartOfSecondExpression],"TO") == 0) {		/* found start of second expression */
 		StartOfSecondExpression++;
@@ -950,6 +941,7 @@ if(StartOfStepExpression == tc) {		/* no step keyword */
 }
 else			/* have step keyword */
 {
+
 	if(IsValidExpression(outtokens,StartOfStepExpression,tc) == FALSE) {
 		PopSaveInformation();
 
@@ -966,20 +958,17 @@ else			/* have step keyword */
 	StepValue=EvaluateExpression(outtokens,0,returnvalue);		/* evaulate for step expression */
 }
 
-//  0   1    2 3 4  5
-// for count = 1 to 10
-
 /* validate start and end values */
 
-//if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression-1) == FALSE) {
-//	SetLastError(INVALID_EXPRESSION);
-//	return(-1);
-//}
+if(IsValidExpression(tokens,StartOfFirstExpression,StartOfSecondExpression-1) == FALSE) {
+	SetLastError(INVALID_EXPRESSION);
+	return(-1);
+}
 
-//if(IsValidExpression(tokens,StartOfSecondExpression,StartOfStepExpression) == FALSE) {
-//	SetLastError(INVALID_EXPRESSION);
-//	return(-1);
-//}
+if(IsValidExpression(tokens,StartOfSecondExpression,StartOfStepExpression) == FALSE) {
+	SetLastError(INVALID_EXPRESSION);
+	return(-1);
+}
 
 returnvalue=SubstituteVariables(StartOfFirstExpression,StartOfSecondExpression,tokens,outtokens);
 if(returnvalue == -1) {
@@ -1310,12 +1299,11 @@ do {
 
 	RemoveNewline(buf);
 		
-//	if(IsValidExpression(condition_tokens,0,condition_tc) == FALSE) {
-//		PopSaveInformation();
-
-//		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-//		return(-1);
-//	}
+	if(IsValidExpression(condition_tokens,0,condition_tc) == FALSE) {
+		PopSaveInformation();
+		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+		return(-1);
+	}
 
 	exprtrue=EvaluateCondition(condition_tokens,0,condition_tc);			/* do condition */
 
@@ -1415,13 +1403,12 @@ do {
 	if(strcmpi(tokens[0],"UNTIL") == 0) {			/* end of loop block */
 		/* Evaluate and test condition */
 
-	//	if(IsValidExpression(tokens,1,tc) == FALSE) {
-	//		PopSaveInformation();
+		if(IsValidExpression(tokens,1,tc) == FALSE) {
+			PopSaveInformation();
 
-	//		SetLastError(INVALID_EXPRESSION);	/* invalid expression */
-	//		return(-1);
-
-	//	}
+			SetLastError(INVALID_EXPRESSION);	/* invalid expression */
+			return(-1);
+		}
 
 		exprtrue=EvaluateCondition(tokens,1,tc);			/* do condition */
 
@@ -1480,6 +1467,29 @@ else
 }
 
 return(0);
+}
+
+/*
+ * Stop statement
+ *
+ * In: tc Token count
+ *     tokens Token array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+int stop_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+
+/* If in interactive mode, return to command prompt, otherwise exit interpreter */
+
+if(GetInteractiveModeFlag() == TRUE) {
+	SetLastError(NOT_IN_INTERACTIVE_MODE);
+	return(-1);
+}
+
+ClearIsRunningFlag();
+return(-1);
 }
 
 /*
@@ -1889,13 +1899,14 @@ while((char) *CurrentBufferPosition != 0) {
 			}
 		}
 
+
 		SetLastError(TRY_WITHOUT_ENDTRY);
 		return(-1);
 	}
 
 
-	if(ExecuteLine(buf) == -1) {			/* run statement */
-		/* error occurred */
+	if((ExecuteLine(buf) == -1) || GetThrowFlag()) {	/* error occurred */
+		ClearThrowFlag();
 
 		while((char) *CurrentBufferPosition != 0) {	/* find catch block */
 			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
@@ -1903,8 +1914,7 @@ while((char) *CurrentBufferPosition != 0) {
 			tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
 
 			if(strcmpi(trytokens[0],"CATCH") == 0) {	/* found catch block */
-
-			/* run catch statements */
+				/* run catch statements */
 
 				while((char) *CurrentBufferPosition != 0) {
 					CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
@@ -1956,6 +1966,62 @@ return(-1);
 
 int catch_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 SetLastError(CATCH_WITHOUT_TRY);
+return(-1);
+}
+
+/*
+ * throw statement
+ *
+ * In: tc Token count
+ * tokens Token array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+int throw_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *currentpos;
+char *savepos;
+char *linetokens[MAX_SIZE][MAX_SIZE];
+char *buf[MAX_SIZE];
+char *prevpos;
+
+if(tc < 1) {
+	SetLastError(SYNTAX_ERROR);			/* Too few parameters */
+	return(-1);
+}
+
+currentpos=GetCurrentBufferPosition();
+savepos=currentpos;
+
+SetThrowFlag();
+
+SetLastError(atoi(tokens[1]));
+
+/* find CATCH statement */
+while(*GetCurrentBufferPosition() != 0) {
+	prevpos=GetCurrentBufferPosition();
+
+	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),buf,LINE_SIZE));		/* read line from buffer */
+
+	tc=TokenizeLine(buf,linetokens,TokenCharacters);			/* tokenize line */
+
+	if(strcmpi(linetokens[0],"ENDFUNCTION") == 0) ReturnFromFunction();	/* unwind function call */
+
+	if(strcmpi(linetokens[0],"CATCH") == 0) {
+		SetCurrentBufferPosition(prevpos);
+		return(0);
+	}
+}
+
+/* here if no catch statement
+   print error message and halt
+*/
+
+PrintError(atoi(tokens[1]));
+
+ClearIsRunningFlag();			/* halt interpreter */
+
 return(-1);
 }
 
@@ -2300,6 +2366,18 @@ int GetIsRunningFlag(void) {
 return((Flags & IS_RUNNING_FLAG) >> 1);
 }
 
+int GetThrowFlag(void) {
+return((Flags & THROW_FLAG) >> 4);
+}
+
+void SetThrowFlag(void) {
+Flags |= THROW_FLAG;
+}
+
+void ClearThrowFlag(void) {
+Flags &= ~THROW_FLAG;
+}
+
 void SetIsFileLoadedFlag(void) {
 Flags |= IS_FILE_LOADED_FLAG;
 }
@@ -2433,8 +2511,6 @@ newfunc.stat=0;
 newfunc.moduleptr=modptr;		/* get module information for this function */
 PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
 
-//printf("module=%s\n",GetFunctionCallStackTop()->moduleptr->modulename);
-
 DeclareBuiltInVariables(NULL,NULL);			/* declare built-in variables */
 
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
@@ -2448,7 +2524,7 @@ do {
 	RemoveNewline(linebuf);		/* remove newline from line */
 
 	if(ExecuteLine(linebuf) == -1) {
-		// don't call PopCallInformation() here; the call stack information is needed for PrintBackTrace()
+		/* don't call PopCallInformation() here; the call stack information is needed for PrintBackTrace() */
 		return(-1);		/* run statement */
 	}
 

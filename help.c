@@ -38,6 +38,7 @@ FILE *handle;
 char *LineBuffer[MAX_SIZE];
 bool FoundTopic=FALSE;
 char *LineTokens[MAX_SIZE][MAX_SIZE];
+int ScreenLineCount=0;
 
 handle=fopen(helpfile,"r");		/* open help file */
 if(!handle) {				/* can't open file */
@@ -64,7 +65,17 @@ while(!feof(handle)) {
 			return(0);
 		}
 
-		if(strcmpi(LineTokens[0],"%TOPIC") != 0) printf("%s\n",LineBuffer);
+		if(strcmpi(LineTokens[0],"%TOPIC") != 0) {
+			printf("%s\n",LineBuffer);
+
+			if(ScreenLineCount++ == HELP_LINE_COUNT) {		/* at end of screenful */
+				ScreenLineCount=0;
+
+				/* prompt for input */
+				printf("--- Press any key to continue or q to quit --");
+				if(getc(stdin) == 'q') return(0);		/* quit */
+			}
+		}
 	}
 }
 

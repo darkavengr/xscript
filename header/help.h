@@ -17,7 +17,7 @@
     along with XScript.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define HELP_LINE_COUNT 20
+#define HELP_LINE_COUNT 28
 
 int DisplayHelp(char *topic);
 int DisplayHelpTopic(char *helpfile,char *topic);

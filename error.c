@@ -142,9 +142,13 @@ UpdateVariable("ERRL","",&errval,0,0,0,0);
 errval.s=malloc(MAX_SIZE);
 if(errval.s == NULL) return;
 
+/* update error function */
 if(GetCurrentFunctionName() != NULL) strncpy(errval.s,GetCurrentFunctionName(),MAX_SIZE);
-
 UpdateVariable("ERRFUNC","",&errval,0,0,0,0);
+
+/* update error file */
+GetCurrentFile(errval.s);
+UpdateVariable("ERRFILE","",&errval,0,0,0,0);
 
 free(errval.s);
 }

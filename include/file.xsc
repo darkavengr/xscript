@@ -17,6 +17,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
 
+import errors
+import errorhandling
+
 #
 # File I/O
 #
@@ -49,21 +52,41 @@ type FindResult
 endtype
 
 declare MAX_PATH as constant integer = 255
+
+function open(filename as string,how as string) as integer
+declare handle as integer
+declare mode as integer
 declare O_RDONLY as constant integer = 1
 declare O_WRONLY as constant integer = 2
-declare O_RDWR as constant integer = O_RDONLY | O_WRONLY
 
-function open(filename as string,mode as integer) as integer
-declare handle as integer
+if how = "r" then	# open read-only
+	mode=O_RDONLY
+elseif how = "w" then	# open write only
+	mode=O_WRONLY
+elseif how = "rw" then	# open read-write
+	mode=O_RDONLY | O_WRONLY
+else
+	throw ERROR_INVALID_VALUE
+endif
 
 libcall xlib_open(filename,mode) in "xscript-stdlib-1.0.0" to handle
-return(handle);
+
+if handle == -1 then	
+	throw FileError
+endif
+
+return handle
 endfunction
 
 function close(handle as integer) as integer
 declare result as integer
 
 libcall xlib_close(handle) in "xscript-stdlib-1.0.0" to result
+
+if result == -1 then
+	throw FileIOError
+endif
+
 return result
 endfunction
 
@@ -84,7 +107,7 @@ endfunction
 function seek(handle as integer,position as long,whence as integer) as long
 declare result as long
 
-libcall xlib_seek(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+libcall xlib_seek(handle,position,whence) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
@@ -109,14 +132,7 @@ libcall xlib_create(filename) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
-function create(filename as string) as integer
-declare result as integer
-
-libcall xlib_create(filename) in "xscript-stdlib-1.0.0" to result
-return result
-endfunction
-
-function delete(filename as string) as integer
+function unlink(filename as string) as integer
 declare result as integer
 
 libcall xlib_delete(filename) in "xscript-stdlib-1.0.0" to result
@@ -170,5 +186,34 @@ declare result as integer
 
 libcall xlib_findnext(findhandle,"",FindBuf) in "xscript-stdlib-1.0.0" to result
 return result
+endfunction
+
+
+function ReadLineFromFile(handle as integer,buffer as string) as integer
+declare temp as string
+declare bytesread as integer
+declare count;
+declare readsize=255
+declare bytecount
+
+repeat
+	bytesread=read(handle,temp,readsize);		# read from file
+
+	# copy to buffer until newline is found
+
+	for count=0 to bytesread
+		if temp[count,count+1] == "\n" then		# found newline
+			seek(handle,tell(handle)-(bytesread-count))		# seek back to start of new line
+
+			return bytecount
+		endif
+
+		buffer=buffer+temp[count,count+1]
+		bytecount=bytecount+1
+	next count
+
+until bytesread != -1
+
+return -1
 endfunction
 

@@ -4,17 +4,26 @@ declare count as integer
 count=0
 
 repeat
-	count=count+1			# increment length count
-until lenstr[count] != ""			# until end of string
+	print lenstr[count],count
 
-count=count+1
+	if count == 5 then
+		exit repeat
+	endif
+
+	count=count+1		# test comment
+until lenstr[count] == ""
+
 return count
 endfunction
 
-numstr="ABC"
+print len("Hello")
 
-for count=0 to len(numstr)
-	print numstr[count]
-next count
+#mainstr="Hello"							
+#substr="He"
 
+#count=0
+
+#if mainstr[count,len(substr)] = substr then
+#	print "EEEEEEvil"
+#endif
 

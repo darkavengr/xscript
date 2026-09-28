@@ -1,11 +1,12 @@
 %TOPIC index
 The following help is avaliable:
 
-DATATYPES	Show information on data types
-DEBUGGING	Show information on debugging
-KEYWORDS	Show keywords
-OPERATORS	Show information on operators
-SYNTAX		Show information on syntax
+DATATYPES		Show information on data types
+DEBUGGING		Show information on debugging
+KEYWORDS		Show keywords
+OPERATORS		Show information on operators
+SYNTAX			Show information on syntax
+BUILTINVARS		Show information on built-in variables
 
 Type HELP {word} to get help on {word}.
 %ENDTOPIC
@@ -13,12 +14,16 @@ Type HELP {word} to get help on {word}.
 %TOPIC keywords
 The following are keywords. Type help {keyword} to get help for {keyword}
 
-AND     ANY          AS         BACKTRACE  BOOLEAN    CATCH        CBREAK    CONSTANT  CONTINUE  DECLARE
-DELETE  DOUBLE       ELSE	ELSEIF     END        ENDFUNCTION  ENDIF     ENDTRY    ENDTYPE   EXIT
-FALSE   FOR          FUNCTION   HELP       IF         IMPORT       INTEGER   ITERATE   LBREAK    LOAD
-LONG    NEXT         NOT        OR         PRINT      QUIT         REPEAT    RESIZE    RETURN    RUN
-S       SBREAK       SINGLE     STEP       STRING     THEN         TO        TRUE      TRY       TYPE
-UNTIL   VARIABLES    WEND       WHILE
+AND        AS        BACKTRACE        BOOLEAN      CATCH        CBREAK
+CONSTANT   CONTINUE  DECLARE          DELETE       DOUBLE       ELSE
+ELSEIF     END       ENDFUNCTION      ENDIF        ENDTRY       ENDTYPE
+EXIT       FALSE     FOR              FUNCTION     HELP         IF
+IMPORT     IN        INTEGER          ITERATE      LBREAK       LIBCALL
+LOAD       LONG      NEXT             NOT          OR           PRINT
+QUIT       REPEAT    RESIZE           RETURN       RUN          S
+SBREAK     SINGLE    STEP             STOP         STRING       THEN
+THROW      TO        TRUE             TRY          TYPE         UNTIL
+VARIABLES  WEND      WHILE
 %ENDTOPIC
 
 %TOPIC while
@@ -185,6 +190,14 @@ LIBCALL function(args) IN module RETURNTYPE [ SINGLE | DOUBLE | INTEGER | LONG |
 Call function in binary module.
 %ENDTOPIC
 
+%TOPIC stop
+STOP
+
+Halts the program.
+%ENDTOPIC
+
+%TOPIC load
+
 %TOPIC load
 LOAD filename
 
@@ -239,9 +252,49 @@ Display expression or string.
 %TOPIC programname
 PROGRAMNAME
 
-The PROGRAMNAME variables holds the filename of the current program.
+The PROGRAMNAME variable holds the filename of the current program.
 
 See also: COMMAND
+%ENDTOPIC
+
+%TOPIC err
+ERR
+
+The ERR variable holds the last error to occur.
+
+See also: ERRL, ERRFUNC, ERRFILE
+%ENDTOPIC
+
+%TOPIC errl
+ERRL
+
+The ERRL variable holds the line number where last error to occurred.
+
+See also: ERR, ERRFUNC, ERRFILE
+%ENDTOPIC
+
+%TOPIC errfunc
+ERRFUNC
+
+The ERRFUNC variable holds the function where last error to occurred.
+
+See also: ERR, ERRL, ERRFILE
+%ENDTOPIC
+
+%TOPIC errfile
+ERRL
+
+The ERRFILE variable holds the filename where last error to occurred.
+
+See also: ERR, ERRFUNC, ERRL
+%ENDTOPIC
+
+%TOPIC builtinvars
+COMMAND		Holds command-line arguments
+PROGRAMNAME	Holds the program name
+ERR		Holds the last error to occur
+ERRL		Holds the line number where last error to occurred.
+ERRFUNC		Holds the function where last error to occurred.
 %ENDTOPIC
 
 %TOPIC quit
@@ -257,6 +310,7 @@ Return from function.
 %ENDTOPIC
 
 %TOPIC run
+7	throw FileError
 RUN filename
 
 Load and run file.
@@ -473,17 +527,13 @@ See also: FOR
 
 %TOPIC try
 TRY
-
 {statements}
-
 CATCH
-
 {error handler}
-
 ENDTRY
 
 Handle errors.
-
+The statements in the TRY block are executed and if an error occurs the statements in the CATCH block are executed.
 %ENDTOPIC
 
 %TOPIC type
@@ -504,6 +554,70 @@ See also: DATATYPES, DECLARE
 VARIABLES
 
 List variables for the current function.
+%ENDTOPIC
+
+%TOPIC errornumbers
+Number  Reason
+
+0	No error
+1	File not found
+2	Invalid expression
+3	IF statement without ENDIF
+4	FOR statement without NEXT
+5	WHILE without WEND
+6	ELSE or ELSEIF without IF
+7	ENDIF without IF
+8	ENDFUNCTION without FUNCTION
+9	Invalid variable name
+10	Out of memory
+11	EXIT FOR outside of FOR loop
+12	EXIT WHILE outside of WHILE loop
+13	Missing XSCRIPT_MODULE_PATH enviroment variable
+14	Syntax error
+15	Error calling library function
+16	Invalid statement
+17	Cannot declare a function inside another function
+18	FUNCTION without ENDFUNCTION
+19	NEXT without FOR
+20	WEND without WHILE
+21	Duplicate function name
+22	Invalid number of arguments to function call
+23	Invalid array subscript
+24	Type mismatch
+25	Invalid variable type
+26	ITERATE without FOR or WHILE
+27	Variable already exists
+28	Variable or function not defined
+29	FOR without NEXT
+30	User-defined type already exists
+31	TYPE without ENDTYPE
+32	Field in user-defined type does not exist
+33	Breakpoint not found
+34	No program loaded
+35	Invalid value
+36	Include file without main file
+37	TRY without CATCH
+38	TRY without ENDTRY
+39	CATCH without TRY
+40	ENDTRY without TRY
+41	No program currently running
+42	Not an array
+43	Missing array subscript
+44	User-defined type does not exist
+45	TYPE without ENDTYPE
+46	Command can only be used in interactive mode
+47	Module not found
+48	I/O error
+49	No such help topic exists
+50	Invalid array size
+51	No file loaded
+52	Variable is constant
+53	REPEAT without UNTIL
+54	UNTIL without REPEAT
+55	Reached end of program
+56	EXIT REPEAT outside of REPEAT loop
+57	Error calling module function
+58	Invalid condition
 %ENDTOPIC
 
 %TOPIC warranty

@@ -187,8 +187,6 @@ MODULES *next=modules;
 /* search through module list for buffer address */
 
 while(next != NULL) {
-//	printf("%s %lX %lX\n",next->modulename,next->StartInBuffer,next->EndInBuffer);
-
 	if((address >= next->StartInBuffer) && (address <= next->EndInBuffer)) return(next);	/* found entry */
  
 	next=next->next;

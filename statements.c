@@ -57,6 +57,8 @@ statement statements[] = {
 	     { "DELETE",NULL,&delete_statement,FALSE},\
 	     { "REPEAT","UNTIL",&repeat_statement,TRUE},\
 	     { "UNTIL",NULL,&until_statement,FALSE},\
+	     { "STOP",NULL,&stop_statement,FALSE},\
+	     { "THROW",NULL,&throw_statement,FALSE},\
 	     { "AS",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "TO",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "STEP",NULL,&bad_keyword_as_statement,FALSE},\
@@ -105,12 +107,13 @@ char *statement[MAX_SIZE];
 /* search through struct for statement */
 
 do {
+
 	if(statements[statementcount].statement == NULL) break;
 
-	if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  	/* found statement */
+	if(strcmpi(statements[statementcount].statement,tokens[0]) == 0) {  	/* found statement */	
 		return(statements[statementcount].call_statement(tc,tokens)); 		/* call statement */
 	}
-	
+
 	statementcount++;
 
 } while(statements[statementcount].statement != NULL);
