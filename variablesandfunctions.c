@@ -973,7 +973,8 @@ return(-1);
 	funcargcount		   number of tokens
  * 
  *  Returns -1 on failure or 0 on success
- * 
+ *
+ * This function passes the function name in subscript 0.
  */
 int DeclareFunction(char *tokens[MAX_SIZE][MAX_SIZE],int end) {
 functions *next;
@@ -995,6 +996,16 @@ FUNCTIONCALLSTACK newfunc;
 
 if((currentfunction != NULL) && ((currentfunction->stat & FUNCTION_STATEMENT) == FUNCTION_STATEMENT)) {
 	SetLastError(NESTED_FUNCTION);
+	return(-1);
+}
+
+if(IsValidVariableOrKeyword(tokens[0]) == FALSE) {	/* Variable name is invalid */
+	SetLastError(SYNTAX_ERROR);
+	return(-1);
+}
+
+if(IsStatement(tokens[0]) == TRUE) {	/* is keyword */
+	SetLastError(SYNTAX_ERROR);
 	return(-1);
 }
 
@@ -2708,7 +2719,7 @@ return(FunctionCallStackTop);
 int IsValidVariableOrKeyword(char *name) {
 char *InvalidChars = { "¬`\"$%^&*()- +={}[]:;@'~#<>,.?/|\\" };
 
-if(strpbrk(name,InvalidChars) != NULL) return(FALSE);		/* can't start with invalid character */
+if(strpbrk(name,InvalidChars) != NULL) return(FALSE);		/* can't contain an invalid character */
 
 return(TRUE);
 }
