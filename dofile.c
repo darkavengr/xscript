@@ -1878,6 +1878,9 @@ int try_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 char *buf[MAX_SIZE];
 int returnvalue;
 char *trytokens[MAX_SIZE][MAX_SIZE];
+int linetc=0;
+int tryerror;
+int catchtc=0;
 
 while((char) *CurrentBufferPosition != 0) {
 
@@ -1891,7 +1894,7 @@ while((char) *CurrentBufferPosition != 0) {
 
 			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
-			tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
+			linetc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
 	
 			if(strcmpi(trytokens[0],"ENDTRY") == 0) {
 				SetLastError(0);
@@ -1911,27 +1914,29 @@ while((char) *CurrentBufferPosition != 0) {
 		while((char) *CurrentBufferPosition != 0) {	/* find catch block */
 			CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
 
-			tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
+			catchtc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
 
 			if(strcmpi(trytokens[0],"CATCH") == 0) {	/* found catch block */
+				tryerror=atoi(trytokens[1]);
+
 				/* run catch statements */
 
 				while((char) *CurrentBufferPosition != 0) {
 					CurrentBufferPosition=ReadLineFromBuffer(CurrentBufferPosition,buf,LINE_SIZE);			/* get data */
-					tc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
-
+					linetc=TokenizeLine(buf,trytokens,TokenCharacters);			/* tokenize line */
+			
 					if(strcmpi(trytokens[0],"ENDTRY") == 0) {
 						SetLastError(0);		/* at end of catch block */
 						return(0);
 					}
 
-					if(ExecuteLine(buf) == -1) return(-1);	/* run statement and return if error */
+					if((catchtc > 1) && (tryerror == GetLastError()) || (catchtc == catchtc)) {
+						if(ExecuteLine(buf) == -1) return(-1);	/* run statement and return if error */
+					}
 				}
 			}
-		}
 
-		SetLastError(TRY_WITHOUT_CATCH);		/* no catch block */
-		return(-1);
+		}
 	}
 }
 
@@ -1985,6 +1990,7 @@ char *savepos;
 char *linetokens[MAX_SIZE][MAX_SIZE];
 char *buf[MAX_SIZE];
 char *prevpos;
+int linetc;
 
 if(tc < 1) {
 	SetLastError(SYNTAX_ERROR);			/* Too few parameters */
@@ -2004,13 +2010,15 @@ while(*GetCurrentBufferPosition() != 0) {
 
 	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),buf,LINE_SIZE));		/* read line from buffer */
 
-	tc=TokenizeLine(buf,linetokens,TokenCharacters);			/* tokenize line */
+	linetc=TokenizeLine(buf,linetokens,TokenCharacters);			/* tokenize line */
 
 	if(strcmpi(linetokens[0],"ENDFUNCTION") == 0) ReturnFromFunction();	/* unwind function call */
 
 	if(strcmpi(linetokens[0],"CATCH") == 0) {
-		SetCurrentBufferPosition(prevpos);
-		return(0);
+		if((linetc > 1) && (atoi(linetokens[1]) == GetLastError()) || (linetc == 1)) {
+			SetCurrentBufferPosition(prevpos);
+			return(0);
+		}
 	}
 }
 

@@ -1,0 +1,8 @@
+declare mystr as integer
+
+try
+	xxx
+catch 16
+	print "Error!!!"
+endtry
+
