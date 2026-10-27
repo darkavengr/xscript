@@ -188,6 +188,24 @@ libcall xlib_findnext(findhandle,"",FindBuf) in "xscript-stdlib-1.0.0" to result
 return result
 endfunction
 
+function eof(handle as integer) as boolean
+declare result as integer
+declare FindBuf as FindResult
+
+libcall xlib_findfirst(filespec,FindBuf) in "xscript-stdlib-1.0.0" to result
+
+if result == -1 then
+	return -1
+endif
+
+libcall xlib_tell(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+
+if result > FindBuf.size then
+	return True
+endif
+
+return False
+endfunction
 
 function ReadLineFromFile(handle as integer,buffer as string) as integer
 declare temp as string

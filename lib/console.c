@@ -40,6 +40,10 @@ fgets(returnval->val.s,1,stdin);
 }
 
 void xlib_input(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
+char *x=NULL;
+
+*x='A';
+
 returnval->val.s=calloc(1,MAX_SIZE);	/* allocate return string */
 if(returnval->val.s == NULL) {
 	returnval->systemerrornumber=errno;

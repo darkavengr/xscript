@@ -57,4 +57,5 @@
 #define EXIT_REPEAT_WITHOUT_REPEAT		56
 #define LIBCALL_ERROR				57
 #define INVALID_CONDITION			58
+#define LIB_CRASH				59
 

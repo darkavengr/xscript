@@ -187,4 +187,5 @@ bool IsString(char *str);
 int GetThrowFlag(void);
 void SetThrowFlag(void);
 void ClearThrowFlag(void);
+UserDefinedTypeField *GetUDTFieldPointer(UserDefinedType *udt,char *fieldname,int fieldx,int fieldy);
 

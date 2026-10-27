@@ -1,5 +1,7 @@
-function testfunc() as integer
-throw 10
+function testfunc(value as integer) as integer
+if value == -1 then
+	throw 10
+endif
 endfunction
 
 try

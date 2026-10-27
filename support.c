@@ -2,10 +2,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
-#include "support.h"
 #include "size.h"
-#include "module.h"
-#include "variablesandfunctions.h"
+#include "support.h"
 
 /* support functions */
 
@@ -130,25 +128,216 @@ return(TRUE);
 }
 
 /*
-*  Get pointer to UDT field
-* 
-*  In:  udt		User defined type
-	fieldname	Field name
-	fieldx		Field X subscript	
-	fieldy		Field Y subscript	
-* 
-*  Returns: Pointer to field on success or NULL on error
-*
-*/
-UserDefinedTypeField *GetUDTFieldPointer(UserDefinedType *udt,char *fieldname,int fieldx,int fieldy) {
-UserDefinedTypeField *udtptr=udt->field;
+ * Tokenize string
+ *
+ * In: linebuf				Line to tokenize
+       tokens[MAX_SIZE][MAX_SIZE]	Token array output
+ *
+ * Returns -1 on error or token count on success
+ *
+ */
 
-while(udtptr != NULL) {
-	if(strcmp(udtptr->fieldname,fieldname) == 0) return(udtptr);	/* found field */				
- 
-	udtptr=udtptr->next;
+/* TODO: Rewrite this function */
+
+int TokenizeLine(char *linebuf,char *tokens[][MAX_SIZE],char *split) {
+char *token;
+int tc;
+int count;
+char *d;
+char *s;
+int IsSeperatorCharacter;
+char *lastcharptr;
+char *nextcharptr;
+
+token=linebuf;
+
+while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leading whitespace characters */
+
+/* tokenize line */
+
+	tc=0;
+	
+	d=tokens[0];
+	memset(d,0,MAX_SIZE);				/* clear line */
+	
+	while((char) *token != 0) {
+		IsSeperatorCharacter=FALSE;
+
+		if(*token == '"' ) {		/* quoted text */ 
+	   		*d++=*token++;
+
+	   		while((char)  *token != 0) {
+	    			*d++=*token++;
+
+	    			if(*(d-1) == '"') break;		/* quoted text */	
+
+	  		}
+
+	  		tc++;
+	 	}
+	 	else
+	 	{
+	  		s=split;
+
+	  		while(*s != 0) {
+	    			if((char) *token == *s) {		/* seperator found */
+
+			    		if((strlen(tokens[tc]) != 0) && (*token != '.')) tc++;
+	    
+			    		IsSeperatorCharacter=TRUE;
+			    		d=tokens[tc]; 			
+
+			    		memset(d,0,MAX_SIZE);				/* clear line */
+
+					/* ignore spaces between tokens; this then allows the following be be equivalent:
+						2 + 2
+						2+2
+					*/
+
+			    		if((char) *token != ' ') {
+						/* handle seperators that are multi-character operators */
+
+						if((char) *token == '*') {		/* ** */
+							nextcharptr=token;
+							nextcharptr++;
+		
+							if((char) *nextcharptr != '*') {
+						      		*d++=*token++;
+							}
+							else
+							{
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+
+							IsSeperatorCharacter=FALSE;
+							d=tokens[++tc];	
+						}
+						else if((char) *token == '>') {		/* >> or >= */
+							nextcharptr=token;
+							nextcharptr++;
+										
+							if((char) *nextcharptr == '=') {
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+							else if((char) *nextcharptr == '>') {
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+							else
+							{
+						      		*d++=*token++;
+							}
+
+							IsSeperatorCharacter=FALSE;
+							d=tokens[++tc];
+						}
+						else if((char) *token == '<') {		/* << or <= */					
+							nextcharptr=token;
+							nextcharptr++;
+	
+							if((char) *nextcharptr == '=') {
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+							else if((char) *nextcharptr == '<') {
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+							else
+							{
+						      		*d++=*token++;
+							}
+
+							IsSeperatorCharacter=FALSE;
+							d=tokens[++tc];	
+						}
+						else if((char) *token == '!') {	
+							nextcharptr=token;
+							nextcharptr++;
+										
+							if((char) *nextcharptr != '=') {
+								tc++;
+						      		*d++=*token++;
+							}
+							else
+							{
+						      		*d++=*token++;
+						      		*d++=*token++;
+							}
+
+							IsSeperatorCharacter=FALSE;
+							d=tokens[++tc];	
+						}
+						else if((char) *token == '.') {		/* can be either decimal point or member */
+							nextcharptr=token;
+							nextcharptr++;
+
+							if((char) *nextcharptr == 0) return(tc);
+
+							lastcharptr=token;
+							lastcharptr--;
+
+							if( (((char)  *lastcharptr >= '0') && ((char)  *lastcharptr <= '9')) && 
+							    (((char) *nextcharptr >= '0') && ((char) *nextcharptr <= '9'))) {
+								*d++=*lastcharptr;
+								*d++=*token++;
+								*d++=*token++;
+							}
+							else
+							{
+								tc++;
+								token++;
+							}
+						}
+						else if((char) *token == '-') {		/* can be either part of the
+											token as a negative sign or a subtract operator token */
+							lastcharptr=token;
+							lastcharptr--;
+
+							nextcharptr=token;
+							nextcharptr++;
+
+							if( ((char) *lastcharptr == ' ') && ((char) *nextcharptr != ' ')) {
+								*d++=*token++;
+								*d++=*token++;
+								tc++;
+							}
+							else
+							{
+								*d++=*token++;
+
+								d=tokens[++tc];
+
+								*d++=*token++;
+								tc += 2;
+							}		
+
+						}
+						else		/* single character token */
+						{
+			      				*d++=*token++;	
+				     		     	d=tokens[++tc];
+						}
+			    		}
+			    		else
+					{
+						token++;		/* ignore spaces next to tokens */
+
+						if((char) *token == 0) break;
+					}
+	   	}
+
+	 	s++;
+	 }
+
+	 if(IsSeperatorCharacter == FALSE) *d++=*token++; /* non-token character */
+	}
 }
 
-return(NULL);
+if(strlen(tokens[tc]) > 0) tc++;		/* if there is data in the last token, increment the counter so it is accounted for */
+
+return(tc);
 }
 
