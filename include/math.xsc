@@ -31,7 +31,7 @@ libcall xlib_abs(num) in "xscript-stdlib-1.0.0" to result
 return result
 end function
 
-function arctab(num as double) as double
+function arctan(num as double) as double
 declare result as double
 
 libcall xlib_arctan(num) in "xscript-stdlib-1.0.0" to result

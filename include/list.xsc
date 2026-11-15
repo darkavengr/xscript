@@ -28,6 +28,13 @@ function list_insert(DataList as LIST,EntryNumber as integer,NewEntry as any) as
 declare result as integer
 
 libcall xlib_list_insert(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
@@ -35,13 +42,52 @@ function list_delete(DataList as LIST,EntryNumber as integer) as integer
 declare result as integer
 
 libcall xlib_list_delete(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
 function list_get(DataList as LIST,EntryNumber as integer) as any
-declare result as int
+declare result as any
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
 
 libcall xlib_list_get(DataList,EntryNumber,NewEntry) in "xscript-stdlib-1.0.0" to result
+
+
+return(result);
+endfunction
+
+function list_push_front(DataList as LIST,NewEntry as any) as integer
+libcall xlib_list_push_front(DataList,NewEntry) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
+return(result);
+endfunction
+
+function list_pop_front(DataList as LIST) as any
+libcall xlib_list_pop_front(DataList,NewEntry) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 

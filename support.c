@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include "size.h"
-#include "support.h"
 
 /* support functions */
 
@@ -339,5 +338,67 @@ while(((char) *token == ' ') || ((char) *token == '\t')) token++;	/* skip leadin
 if(strlen(tokens[tc]) > 0) tc++;		/* if there is data in the last token, increment the counter so it is accounted for */
 
 return(tc);
+}
+
+/*
+ *  Convert char * to int using base
+ * 
+ *  In: char *hex		char representation of number
+ *	      int base			Base
+ * 
+ *  Returns -1 on failure or 0 on success
+ * 
+  */
+int atoi_base(char *hex,int base) {
+int num=0;
+char *b;
+char c;
+int count=0;
+int shiftamount=0;
+
+if(base == 10) shiftamount=1;	/* for decimal */
+
+b=hex;
+count=strlen(hex);		/* point to end */
+
+b=b + (count-1);
+
+while(count > 0) {
+	c=*b;
+	
+	if(base == 16) {
+	 if(c >= 'A' && c <= 'F') num  += (((int) c-'A') + 10) << shiftamount;
+	 if(c >= 'a' && c <= 'f') num  += (((int) c-'a') + 10) << shiftamount;
+	 if(c >= '0' && c <= '9') num  += ((int) c-'0') << shiftamount;
+
+	 shiftamount  += 4;
+	 count--;
+	}
+
+	if(base == 8) {
+	 if(c >= '0' && c <= '7') num  += ((int) c-'0') << shiftamount;
+
+	 shiftamount  += 3;
+	 count--;
+	}
+
+	if(base == 2) {
+	 if(c >= '0' && c <= '1') num  += ((int) c-'0') << shiftamount;
+
+	 shiftamount  += 1;
+	 count--;
+	}
+
+	if(base == 10) {
+	 num  += (((int) c-'0')*shiftamount);
+
+	 shiftamount =shiftamount*10;
+	 count--;
+	}
+
+	b--;
+}
+
+return(num);
 }
 

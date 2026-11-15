@@ -24,11 +24,7 @@ type VECTOR
 endtype
 
 function vector_insert(DataVector as VECTOR,EntryNumber as integer,NewEntry as any) as integer
-try
-	resize DataVector.DataArray(DataVector.NumberOfEntries+1);		# resize array
-catch
-	return -1
-endtry
+resize DataVector.DataArray(DataVector.NumberOfEntries+1);		# resize array
 
 DataVector.NumberOfEntries=DataVector.NumberOfEntries+1		# increment number of entries
 
@@ -39,8 +35,6 @@ for count=DataVector.NumberOfEntries-1 to EntryNumber step -1
 next count
 
 DataVector.DataArray(EntryNumber)=NewEntry		# set new entry
-
-return 0
 endfunction
 
 function vector_delete(DataVector as VECTOR,EntryNumber as integer) as integer
@@ -55,13 +49,7 @@ endif
 
 DataVector.NumberOfEntries=DataVector.NumberOfEntries-1		# decrement number of entries
 
-try
-	resize DataVector.DataArray(DataVector.NumberOfEntries);		# resize array
-catch
-	return -1
-endtry
-
-return 0
+resize DataVector.DataArray(DataVector.NumberOfEntries);		# resize array
 endfunction
 
 function vector_size(DataVector as VECTOR) as integer

@@ -169,15 +169,6 @@ free(cmdargs.s);
   */
 
 int CreateVariable(char *name,char *type,int xsize,int ysize) {
-vars_t *next;
-vars_t *last;
-void *o;
-char *n;
-int *resize;
-char *arr[MAX_SIZE];
-int arrval;
-varsplit split;
-functions *funcnext;
 UserDefinedType *usertype;
 UserDefinedTypeField *udtfieldptr;
 UserDefinedTypeField *fieldptr;
@@ -317,12 +308,6 @@ return(0);
  */
 int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y,int fieldx,int fieldy) {
 vars_t *next=NULL;
-char *o;
-varval *varv;
-char *strptr;
-varsplit split;
-UserDefinedType *udtptr;
-UserDefinedTypeField *fieldptr;
 UserDefinedTypeField *udtfield;
 
 if(currentfunction == NULL) {
@@ -515,7 +500,7 @@ if(name == NULL) {
 	return(-1);
 }
 
-if(((char) *name >= '0') && ((char) *name <= '9')) {
+if(IsNumber(name)) {		/* is number */
 	  switch(GetVariableType(name)) {
 	  	case VAR_NUMBER:				/* Double precision */
 	  	     	val->d=atof(name);
@@ -657,7 +642,7 @@ if(name == NULL) {
 	return(-1);
 }
 
-if(((char) *name >= '0') && ((char) *name <= '9')) return(VAR_NUMBER);	/* Literal number */
+if(IsNumber(name)) return(VAR_NUMBER);	/* Literal number */
 
 if((char) *name == '"') return(VAR_STRING);			/* Literal string */
 
@@ -780,10 +765,10 @@ if((strcmp(tokens[start + 1],"(") == 0) || (strcmp(tokens[start + 1],"[") == 0))
 	else
 	{
 		/* invalid expression */
-		//if((IsValidExpression(tokens,subscriptstart + 1,count-1) == FALSE) || (IsValidExpression(tokens,count + 1,subscriptend-1) == FALSE)) {
-		//	SetLastError(INVALID_EXPRESSION);
-		//	return(-1);
-		//}
+		if((IsValidExpression(tokens,subscriptstart + 1,count-1) == FALSE) || (IsValidExpression(tokens,count + 1,subscriptend-1) == FALSE)) {
+			SetLastError(INVALID_EXPRESSION);
+			return(-1);
+		}
 	
 		evaltc=SubstituteVariables(subscriptstart + 2,commapos,tokens,evaltokens);
 		split->x=EvaluateExpression(evaltokens,0,evaltc);
@@ -1312,6 +1297,8 @@ currentfunction->saveinformation_top=NULL;
 currentfunction->vars=NULL;
 DeclareBuiltInVariables(NULL,NULL);			/* declare built-in variables */
 
+printf("CallFunction() currentfunction->name=%s\n",currentfunction->name);
+
 parameters=next->parameters;
 
 /* add variables from parameters */
@@ -1419,16 +1406,16 @@ for(count=0;count < returnvalue - 1;count++) {
 /* check if number of arguments matches number of parameters */
 /*    Starts from 0 to allow for functions without parameters, but  + 1 to prevent off-by-one errors */
 
-//if( ((NumberOfArguments + 1) < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
-//	SetLastError(INVALID_ARGUMENT_COUNT);
-//	return(-1);
-//}
+if( ((NumberOfArguments + 1) < next->funcargcount) || ((returnvalue/2) > NumberOfArguments)) {
+	SetLastError(INVALID_ARGUMENT_COUNT);
+	return(-1);
+}
 
 /* call function */
 
 linenumber=next->linenumber;
 
-while(*GetCurrentBufferPosition() != 0) {	
+while((char) *GetCurrentBufferPosition() != 0) {	
 	SetCurrentBufferPosition(ReadLineFromBuffer(GetCurrentBufferPosition(),buf,LINE_SIZE));		/* read line from buffer */
 
 	tc=TokenizeLine(buf,argbuf,TokenCharacters);			/* tokenize line */
@@ -1464,68 +1451,6 @@ return(returnvalue);
  */
 void ReturnFromFunction(void) {
 PopFunctionCallInformation();
-}
-
-/*
- *  Convert char * to int using base
- * 
- *  In: char *hex		char representation of number
- *	      int base			Base
- * 
- *  Returns -1 on failure or 0 on success
- * 
-  */
-int atoi_base(char *hex,int base) {
-int num=0;
-char *b;
-char c;
-int count=0;
-int shiftamount=0;
-
-if(base == 10) shiftamount=1;	/* for decimal */
-
-b=hex;
-count=strlen(hex);		/* point to end */
-
-b=b + (count-1);
-
-while(count > 0) {
-	c=*b;
-	
-	if(base == 16) {
-	 if(c >= 'A' && c <= 'F') num  += (((int) c-'A') + 10) << shiftamount;
-	 if(c >= 'a' && c <= 'f') num  += (((int) c-'a') + 10) << shiftamount;
-	 if(c >= '0' && c <= '9') num  += ((int) c-'0') << shiftamount;
-
-	 shiftamount  += 4;
-	 count--;
-	}
-
-	if(base == 8) {
-	 if(c >= '0' && c <= '7') num  += ((int) c-'0') << shiftamount;
-
-	 shiftamount  += 3;
-	 count--;
-	}
-
-	if(base == 2) {
-	 if(c >= '0' && c <= '1') num  += ((int) c-'0') << shiftamount;
-
-	 shiftamount  += 1;
-	 count--;
-	}
-
-	if(base == 10) {
-	 num  += (((int) c-'0')*shiftamount);
-
-	 shiftamount =shiftamount*10;
-	 count--;
-	}
-
-	b--;
-}
-
-return(num);
 }
 
 /*

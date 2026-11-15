@@ -2249,7 +2249,6 @@ if(stat(filename,&includestat) == -1) {
 	return(-1);
 }
 
-
 handle=fopen(filename,"rb");				/* open module file */
 if(!handle) {
 	PopFunctionCallInformation();
@@ -2298,14 +2297,14 @@ AddToModulesList(&ModuleEntry);
 
 modptr=GetModuleEntry(filename);
 
-newfunc.callptr=NULL;
-newfunc.startlinenumber=1;
-newfunc.currentlinenumber=1;
-newfunc.stat=0;
-newfunc.moduleptr=modptr;		/* get module information for this function */
-PushFunctionCallInformation(&newfunc);			/* push function information onto call stack */
-
-DeclareBuiltInVariables(NULL,NULL);			/* declare built-in variables */
+memcpy(&newfunc,GetFunctionCallStackTop(),sizeof(FUNCTIONCALLSTACK));	/* save function call stack top */
+ 
+strncpy(GetFunctionCallStackTop()->name,"",MAX_SIZE);		/* no function for this module */
+GetFunctionCallStackTop()->callptr=NULL;
+GetFunctionCallStackTop()->startlinenumber=1;
+GetFunctionCallStackTop()->currentlinenumber=1;
+GetFunctionCallStackTop()->stat=0;
+GetFunctionCallStackTop()->moduleptr=modptr;		/* get module information for this function */
 
 saveCurrentBufferPosition=GetCurrentBufferPosition();		/* save current pointer */
 SetCurrentFileBufferPosition(ModuleEntry.StartInBuffer);	/* set start */
@@ -2331,7 +2330,8 @@ do {
 CurrentBufferPosition=saveCurrentBufferPosition;	/* restore current pointer */
 SetCurrentFileBufferPosition(CurrentBufferPosition);
 
-PopFunctionCallInformation();
+memcpy(GetFunctionCallStackTop(),&newfunc,sizeof(FUNCTIONCALLSTACK));	/* restore function call stack top */
+
 return(0);
 }
 

@@ -1,0 +1,90 @@
+#
+#    XScript library
+#    (C) Matthew Boote 2026
+#
+#    This file is part of XScript.
+#
+#    XScript is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    XScript is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
+
+import hash
+
+type DICTIONARY
+	Name(1) as string
+	DataArray(1) as any
+	NumberOfEntries as integer
+	DataType as integer
+endtype
+
+function dictionary_get(DataDictionary as DICTIONARY,name as string) as any
+declare hash as integer
+declare INVALID_HANDLE as integer = 35
+
+hash=HashString(name,DataDictionary.NumberOfEntries)		# hash string
+
+if hash = -1 then		# entry doesn't exist
+	throw INVALID_VALUE	# throw error
+endif
+
+return DataDictionary(hash)
+endfunction
+
+function dictionary_insert(DataDictionary as DICTIONARY,name as string,NewEntry as any) as integer
+declare hash as integer
+
+hash=HashString(name,DataDictionary.NumberOfEntries)		# hash string
+
+if hash > DataDictionary.NumberOfEntries then
+	resize DataDictionary.DataArray(DataDictionary.NumberOfEntries+1);		# resize array
+
+	DataDictionary.NumberOfEntries=DataDictionary.NumberOfEntries+1		# increment number of entries
+endif
+
+# Make a space for the new entry
+
+for count=DataDictionary.NumberOfEntries-1 to hash step -1
+	DataDictionary.DataArray(count+1)=DataDictionary.DataArray(count)
+next count
+
+DataDictionary.DataArray(hash)=NewEntry		# set new entry
+endfunction
+
+function dictionary_delete(DataDictionary as DICTIONARY,EntryNumber as integer) as integer
+
+hash=HashString(name,DataDictionary.NumberOfEntries)		# hash string
+
+# Remove from DICTIONARY
+
+for count=DataDictionary.NumberOfEntries to EntryNumber step -1
+	DataDictionary.DataArray(count-1))=DataDictionary.DataArray(count)
+next count
+
+DataDictionary.NumberOfEntries=DataDictionary.NumberOfEntries-1		# decrement number of entries
+
+resize DataDictionary.DataArray(DataDictionary.NumberOfEntries);		# resize array
+endfunction
+
+function dictionary_size(DataDictionary as DICTIONARY) as integer
+return DataDictionary.NumberOfEntries
+endfunction
+
+function dictionary_clear(DataDictionary as DICTIONARY) as integer
+DataDictionary.NumberOfEntries=0
+resize DataDictionary(1)
+endfunction
+
+function dictionary_resize(DataDictionary as DICTIONARY,size as integer) as integer
+DataDictionary.NumberOfEntries=size
+resize DataDictionary(size)
+endfunction
+

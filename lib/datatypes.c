@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include "variablesandfunctions.h"
-#include "datatypes_list.h"
+#include "datatypes.h"
 #include "support.h"
 
 void SetDataValue(int type,varval *source,varval *dest) {

@@ -17,9 +17,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
 
-import errors
-import errorhandling
-
 #
 # File I/O
 #
@@ -51,8 +48,6 @@ type FindResult
 	modifydate_year as integer
 endtype
 
-declare MAX_PATH as constant integer = 255
-
 function open(filename as string,how as string) as integer
 declare handle as integer
 declare mode as integer
@@ -71,8 +66,10 @@ endif
 
 libcall xlib_open(filename,mode) in "xscript-stdlib-1.0.0" to handle
 
-if handle == -1 then	
-	throw FileError
+if handle < 0 then		# error ocurred
+	handle=handle-handle-handle	# convert to positive
+
+	throw handle		# throw error
 endif
 
 return handle
@@ -83,17 +80,25 @@ declare result as integer
 
 libcall xlib_close(handle) in "xscript-stdlib-1.0.0" to result
 
-if result == -1 then
-	throw FileIOError
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
 endif
 
-return result
 endfunction
 
 function read(handle as integer,buffer as string,size as integer) as integer
 declare result as integer
 
 libcall xlib_read(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return result
 endfunction
 
@@ -101,6 +106,13 @@ function write(handle as integer,buffer as string,size as integer) as integer
 declare result as integer
 
 libcall xlib_write(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return result
 endfunction
 
@@ -108,6 +120,13 @@ function seek(handle as integer,position as long,whence as integer) as long
 declare result as long
 
 libcall xlib_seek(handle,position,whence) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return result
 endfunction
 
@@ -115,6 +134,13 @@ function tell(handle as integer) as long
 declare result as long
 
 libcall xlib_tell(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return result
 endfunction
 
@@ -122,48 +148,91 @@ function chmod(filename as string,attribs as integer) as integer
 declare result as integer
 
 libcall xlib_chmod(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 
 function create(filename as string) as integer
 declare result as integer
 
 libcall xlib_create(filename) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 
 function unlink(filename as string) as integer
 declare result as integer
 
 libcall xlib_delete(filename) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 
 function mkdir(dirname as string) as integer
 declare result as integer
 
 libcall xlib_mkdir(dirname) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 
 function rmdir(dirname as string) as integer
 declare result as integer
 
 libcall xlib_rmdir(dirname) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 
 function rename(oldname as string,newname as string) as integer
 declare result as integer
 
 libcall xlib_rename(oldname,newname) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 
 function getcwd() as string
 declare currentdirectory as string
 
 libcall xlib_getcwd() in "xscript-stdlib-1.0.0" to currentdirectory
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(currentdirectory)
 endfunction
 
@@ -171,21 +240,39 @@ function touch(filename as string,attributes as integer) as integer
 declare result as integer
 
 libcall xlib_touch(filename,attributes) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 	
 function findfirst(filespec as string,FindBuf as FindResult) as integer
 declare result as integer
 
 libcall xlib_findfirst(filespec,FindBuf) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 	
 function findnext(findhandle as ANY,FindBuf as FindResult) as integer
 declare result as integer
 
 libcall xlib_findnext(findhandle,"",FindBuf) in "xscript-stdlib-1.0.0" to result
-return result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 endfunction
 
 function eof(handle as integer) as boolean
@@ -194,9 +281,12 @@ declare FindBuf as FindResult
 
 libcall xlib_findfirst(filespec,FindBuf) in "xscript-stdlib-1.0.0" to result
 
-if result == -1 then
-	return -1
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
 endif
+
 
 libcall xlib_tell(handle,buffer,size) in "xscript-stdlib-1.0.0" to result
 

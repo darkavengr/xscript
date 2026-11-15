@@ -56,4 +56,3 @@ declare ERROR_UNTIL_WITHOUT_REPEAT as constant integer = 54
 declare ERROR_AT_END_OF_PROGRAM as constant integer = 55
 declare ERROR_EXIT_REPEAT_WITHOUT_REPEAT as constant integer = 56
 
-

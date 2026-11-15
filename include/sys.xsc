@@ -27,13 +27,13 @@ function exec(filename as string,args as string) as integer
 declare result as double
 
 libcall xlib_exec(filename,args) in "xscript-stdlib-1.0.0" to result
-return result
-end function
 
-function exit(exitvalue as integer) as integer
-declare result as double
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
 
-libcall xlib_exit(exitvalue) in "xscript-stdlib-1.0.0" to result
+	throw result		# throw error
+endif
+
 return result
 end function
 
@@ -41,6 +41,13 @@ function sleep(sleeptime as integer) as integer
 declare result as double
 
 libcall xlib_sleep(sleeptime) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return result
 end function
 
@@ -48,6 +55,13 @@ function dup(handle as integer) as integer
 declare result as integer
 
 libcall xlib_dup(handle) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
@@ -55,6 +69,13 @@ function dup2(handle as integer,newhandle as integer) as integer
 declare result as integer
 
 libcall xlib_dup2(handle,newhandle) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
@@ -62,6 +83,13 @@ function chdir(dirname as string) as integer
 declare result as integer
 
 libcall xlib_chdir(dirname) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
@@ -69,6 +97,13 @@ function getpid() as integer
 declare result as integer
 
 libcall xlib_getpid() in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
@@ -76,6 +111,13 @@ function getenv(name as string,outbuf as string) as integer
 declare result as integer
 
 libcall xlib_getenv(name,outbuf) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
@@ -83,6 +125,13 @@ function kill(process as integer,signal as integer) as integer
 declare result as integer
 
 libcall xlib_kill(process,signal) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
@@ -90,6 +139,13 @@ function fncntl(handle as integer,action as integer,param as integer) as integer
 declare result as integer
 
 libcall xlib_fnctl(handle,action,param) in "xscript-stdlib-1.0.0" to result
+
+if result < 0 then		# error ocurred
+	result=result-result-result	# convert to positive
+
+	throw result		# throw error
+endif
+
 return(result);
 endfunction
 
