@@ -15,15 +15,15 @@ Type HELP {word} to get help on {word}.
 The following are keywords. Type help {keyword} to get help for {keyword}
 
 AND        AS        BACKTRACE        BOOLEAN      CATCH        CBREAK
-CONSTANT   CONTINUE  DECLARE          DELETE       DOUBLE       ELSE
-ELSEIF     END       ENDFUNCTION      ENDIF        ENDTRY       ENDTYPE
-EXIT       FALSE     FOR              FUNCTION     HELP         IF
-IMPORT     IN        INTEGER          ITERATE      LBREAK       LIBCALL
-LOAD       LONG      NEXT             NOT          OR           PRINT
-QUIT       REPEAT    RESIZE           RETURN       RUN          S
-SBREAK     SINGLE    STEP             STOP         STRING       THEN
-THROW      TO        TRUE             TRY          TYPE         UNTIL
-VARIABLES  WEND      WHILE
+CONSTANT   CONTINUE  DECLARE          DEFINE       DELETE       DOUBLE
+ELSE       ELSEIF    END              ENDFUNCTION  ENDIF        ENDTRY
+ENDTYPE    EXIT      FALSE            FOR          FUNCTION     HELP
+IF         IMPORT    IN               INTEGER      ITERATE      LBREAK
+LIBCALL    LOAD      LONG             NEXT         NOT          OR
+PRINT      QUIT      REPEAT           RESIZE       RETURN       RUN
+S          SBREAK    SINGLE           STEP         STOP         STRING
+THEN       THROW      TO              TRUE         TRY          TYPE
+UNTIL      VARIABLES  WEND            WHILE
 %ENDTOPIC
 
 %TOPIC while
@@ -119,7 +119,7 @@ STRING		String
 ANY		Top type. Can be any type.
 "Data"		String literals
 
-See also: TYPE, DECLARE, TRUE, FALSE
+See also: TYPE, DECLARE, DEFINE, TRUE, FALSE
 %ENDTOPIC
 
 %TOPIC boolean
@@ -159,6 +159,14 @@ See also: OPERATORS, DATATYPES, TYPE
 
 %ENDTOPIC
 
+%TOPIC define
+DEFINE name value
+
+Define a global constant
+
+See also: DECLARE
+
+%ENDTOPIC
 %TOPIC command
 COMMAND
 
@@ -203,9 +211,7 @@ LOAD filename
 
 Load program.
 
-Unlike INCLUDE, this statement replaces the current program.
-
-See also: INCLUDE, IMPORT
+See also: IMPORT
 %ENDTOPIC
 
 %TOPIC operators

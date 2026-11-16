@@ -18,6 +18,7 @@
 #    along with XScript.  If not, see <https://www.gnu.org/licenses/>.
 
 import hash
+import error
 
 type DICTIONARY
 	Name(1) as string
@@ -28,7 +29,6 @@ endtype
 
 function dictionary_get(DataDictionary as DICTIONARY,name as string) as any
 declare hash as integer
-declare INVALID_HANDLE as integer = 35
 
 hash=HashString(name,DataDictionary.NumberOfEntries)		# hash string
 

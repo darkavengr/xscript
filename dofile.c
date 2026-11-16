@@ -1727,6 +1727,39 @@ return(0);
 }
 
 /*
+ * Define statement
+ *
+ * In: tc Token count
+ * tokens Token array
+ *
+ * Returns error number on error or 0 on success
+ *
+ */
+
+int define_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+varval val;
+
+if(IsGlobalConstant(tokens[1])) {		/* already defined */
+	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+	return(-1);
+}
+
+if(IsString(tokens[2])) {
+	val.type=VAR_STRING;
+	
+	val.s=calloc(1,strlen(tokens[2]));		/* allocate string */
+	strncpy(val.s,tokens[2],MAX_SIZE);
+}
+else
+{
+	val.type=DEFAULT_TYPE_INT;
+	val.d=atof(tokens[2]);
+}
+
+return(DefineGlobalConstant(tokens[1],&val));
+}
+
+/*
  * Iterate statement
  *
  * In: tc Token count

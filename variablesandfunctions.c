@@ -49,6 +49,8 @@ char *truefalse[] = { "False","True" };
 functionreturnvalue retval;
 vars_t *findvar;
 int callpos=0;
+GLOBALCONST *GlobalConstants=NULL;
+GLOBALCONST *GlobalConstantsEnd=NULL;
 
 /*
  * Intialize main function
@@ -296,6 +298,128 @@ return(0);
 }
 
 /*
+ *  Return if name is global constant
+ * 
+ *  In: name	name
+ * 
+ *  Returns TRUE or FALSE
+ * 
+ */
+
+bool IsGlobalConstant(char *name) {
+GLOBALCONST *next=GlobalConstants;
+
+while(next != NULL) {
+	if(strncmp(next->name,name,MAX_SIZE) == 0) return(TRUE);
+
+	next=next->next;
+}
+
+return(FALSE);
+}
+
+/*
+ *  Get global constant value
+ * 
+ *  In: name	name
+ * 
+ *  Returns TRUE or FALSE
+ * 
+ */
+
+int GetGlobalConstantValue(char *name,varval *val) {
+GLOBALCONST *next=GlobalConstants;
+
+while(next != NULL) {
+	if(strncmp(next->name,name,MAX_SIZE) == 0) {
+		memcpy(val,&next->val,sizeof(varval));
+
+		return(0);
+	}
+
+	next=next->next;
+}
+
+SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+return(-1);
+}
+
+/*
+ *  Get global constant type
+ * 
+ *  In: name	name
+ * 
+ *  Returns type or -1 on failure
+ * 
+ */
+
+int GetGlobalConstantValueType(char *name) {
+GLOBALCONST *next=GlobalConstants;
+
+while(next != NULL) {
+	if(strncmp(next->name,name,MAX_SIZE) == 0) return(next->val.type);
+
+	next=next->next;
+}
+
+SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+return(-1);
+}
+
+/*
+ *  Define global constant
+ * 
+ *  In: name	name
+	val	value
+ * 
+ *  Returns -1 on failure or 0 on success
+ * 
+ */
+
+int DefineGlobalConstant(char *name,varval *val) {
+GLOBALCONST *next=GlobalConstants;
+
+if(IsStatement(name)) {				/* Check if variable name is a reserved name */
+	SetLastError(INVALID_VARIABLE_NAME);
+	return(-1);
+}
+
+if(IsGlobalConstant(name)) {		/* check if constant exists */
+	SetLastError(VARIABLE_EXISTS);
+	return(-1);
+}
+
+/* Add entry to variable list */
+
+if(GlobalConstants == NULL) {			/* first entry */
+	GlobalConstants=calloc(1,sizeof(struct vartype));		/* add new item to list */
+	if(GlobalConstants == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
+
+	GlobalConstantsEnd=GlobalConstants;
+}
+else
+{
+	GlobalConstantsEnd->next=calloc(1,sizeof(struct vartype));		/* add new item to list */
+	if(GlobalConstantsEnd->next == NULL) {
+		SetLastError(NO_MEM);
+		return(-1);
+	}
+
+	GlobalConstantsEnd=GlobalConstantsEnd->next;
+}
+
+strncpy(GlobalConstantsEnd->name,name,MAX_SIZE);		/* set name */
+memcpy(&GlobalConstantsEnd->val,val,sizeof(varval));		/* copy value */
+GlobalConstantsEnd->next=NULL;
+
+SetLastError(NO_ERROR);
+return(0);
+}
+
+/*
  *  Update variable
  * 
  *  In: name	Variable name
@@ -310,16 +434,17 @@ int UpdateVariable(char *name,char *fieldname,varval *val,int x,int y,int fieldx
 vars_t *next=NULL;
 UserDefinedTypeField *udtfield;
 
-if(currentfunction == NULL) {
+if(currentfunction == NULL) return(-1);
+
+if(IsGlobalConstant(name)) {		/* check if constant exists */
+	SetLastError(IS_CONSTANT);
 	return(-1);
 }
-else
-{
-	next=GetVariablePointer(name);		/* get variable entry */
-	if(next == NULL) {
-		PrintError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
+
+next=GetVariablePointer(name);		/* get variable entry */
+if(next == NULL) {
+	PrintError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+	return(-1);
 }
 
 if( (x > next->xsize) || (y > next->ysize) || (x < 0) || (y < 0)) {		/* outside array */
@@ -544,18 +669,17 @@ if((char) *name == '"') {
 	SetLastError(0);
 }
 
-if(currentfunction == NULL) {
-	return(-1);
-}
-else
-{
-	//printf("GetVariableValue() name=%s\n",name);
+if(currentfunction == NULL) return(-1);
 
-	next=GetVariablePointer(name);		/* get variable entry */
-	if(next == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
+next=GetVariablePointer(name);		/* get variable entry */
+
+if(next == NULL) {
+	if(IsGlobalConstant(name)) {		/* is global constant */
+		if(GetGlobalConstantValue(name,val) == -1) return(-1);
 	}
+
+	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+	return(-1);
 }
 
 if( (x > next->xsize) || (y > next->ysize)) {
@@ -645,6 +769,10 @@ if(name == NULL) {
 if(IsNumber(name)) return(VAR_NUMBER);	/* Literal number */
 
 if((char) *name == '"') return(VAR_STRING);			/* Literal string */
+
+if(IsGlobalConstant(name)) {		/* is global constant */
+	return(GetGlobalConstantValueType(name));
+}
 
 if(currentfunction == NULL) {
 	return(-1);
@@ -868,6 +996,11 @@ UserDefinedTypeField *fieldnext;
 UserDefinedTypeField *fieldprev;
 UserDefinedTypeField *fieldptr;
 UserDefinedTypeField *fieldsave;
+
+if(IsGlobalConstant(name)) {		/* check if constant exists */
+	SetLastError(IS_CONSTANT);
+	return(-1);
+}
 
 next=currentfunction->vars;						/* point to variables */
 prev=currentfunction->vars;
@@ -1636,7 +1769,7 @@ for(count=start;count < end;count++) {
 		    count=(FunctionCallEndToken - 1);
 	
 	}
-	else if(IsVariable(tokens[count]) == TRUE) {
+	else if(IsVariable(tokens[count])) {
 		skiptokens=ParseVariableName(tokens,count,end,&split);	/* split variable name */
 		if(skiptokens == -1) return(-1);
 
@@ -1736,7 +1869,17 @@ for(count=start;count < end;count++) {
 			    sprintf(temp[outcount++],"%d",val.a);
 	       		}
 		}
-	 }
+	}
+	else if(IsGlobalConstant(tokens[count])) {
+		GetVariableValue(tokens[count],NULL,0,0,&val,0,0);
+
+		if(type == VAR_STRING) {
+			strncpy(temp[outcount++],val.s,MAX_SIZE);
+		}
+		else if(type == VAR_NUMBER) {
+			sprintf(temp[outcount++],"%.6g",val.d);
+		}
+	}
 	else if (((char) *tokens[count] == '"') || IsSeperator(tokens[count],TokenCharacters) || IsNumber(tokens[count])) {
 		strncpy(temp[outcount++],tokens[count],MAX_SIZE);
 	}   

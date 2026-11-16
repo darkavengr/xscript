@@ -59,6 +59,7 @@ statement statements[] = {
 	     { "UNTIL",NULL,&until_statement,FALSE},\
 	     { "STOP",NULL,&stop_statement,FALSE},\
 	     { "THROW",NULL,&throw_statement,FALSE},\
+	     { "DEFINE",NULL,&define_statement,FALSE},\
 	     { "AS",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "TO",NULL,&bad_keyword_as_statement,FALSE},\
 	     { "STEP",NULL,&bad_keyword_as_statement,FALSE},\

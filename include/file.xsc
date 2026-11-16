@@ -21,6 +21,8 @@
 # File I/O
 #
 
+import error
+
 type FindResult
 	name as string
 	size as long
@@ -48,11 +50,12 @@ type FindResult
 	modifydate_year as integer
 endtype
 
+define O_RDONLY 1
+define O_WRONLY 2
+
 function open(filename as string,how as string) as integer
 declare handle as integer
 declare mode as integer
-declare O_RDONLY as constant integer = 1
-declare O_WRONLY as constant integer = 2
 
 if how = "r" then	# open read-only
 	mode=O_RDONLY

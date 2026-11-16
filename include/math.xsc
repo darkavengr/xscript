@@ -17,8 +17,8 @@
 #   along with XScript.  If not, see <https://www.gnu.org/Licenses/>.
 #
 
-declare pi as constant double = 3.14159265359
-declare e as constant double = 2.71828
+define pi 3.14159265359
+define e 2.71828
 
 #
 # Mathematical functions
@@ -29,75 +29,75 @@ declare result as double
 
 libcall xlib_abs(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function arctan(num as double) as double
 declare result as double
 
 libcall xlib_arctan(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function cos(num as double) as double
 declare result as double
 
 libcall xlib_cos(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function sin(num as double) as double
 declare result as double
 
 libcall xlib_sin(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function log(num as double) as double
 declare result as double
 
 libcall xlib_log(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function log2(num as double) as double
 declare result as double
 
 libcall xlib_log2(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function log10(num as double) as double
 declare result as double
 
 libcall xlib_log10(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function exp(num as double) as double
 declare result as double
 
 libcall xlib_exp(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function sqr(num as double) as double
 declare result as double
 
 libcall xlib_sqr(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function cubrt(num as double) as double
 declare result as double
 
 libcall xlib_cubrt(num) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 
 function rand(startnum as integer,endnum as integer) as integer
 declare result as double
 
 libcall xlib_rand(startnum,endnum) in "xscript-stdlib-1.0.0" to result
 return result
-end function
+endfunction
 

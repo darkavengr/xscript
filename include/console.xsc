@@ -22,6 +22,7 @@
 #
 
 import string
+import error
 
 function inkey() as string
 declare key as string
@@ -44,8 +45,6 @@ print "\e[48;5;"+str(BackgroundColor)+"m"
 endfunction
 
 function locate(x as integer,y as integer) as integer
-import error
-
 if (x < 1) or (y < 1) then
 	throw ERROR_INVALID_VALUE
 endif

@@ -130,6 +130,13 @@
 		varval val;
 		UserDefinedType *udt;
 	} libraryreturnvalue;
+
+	typedef struct {
+		char *name[MAX_SIZE];
+		varval val;
+		struct GLOBALCONST *next;
+	} GLOBALCONST;
+
 #endif
 
 void FreeFunctions(void);
@@ -187,4 +194,8 @@ int GetThrowFlag(void);
 void SetThrowFlag(void);
 void ClearThrowFlag(void);
 UserDefinedTypeField *GetUDTFieldPointer(UserDefinedType *udt,char *fieldname,int fieldx,int fieldy);
+bool IsGlobalConstant(char *name);
+int GetGlobalConstantValue(char *name,varval *val);
+int GetGlobalConstantValueType(char *name);
+int DefineGlobalConstant(char *name,varval *val);
 
