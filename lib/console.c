@@ -31,8 +31,7 @@
 void xlib_inkey(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.s=calloc(1,MAX_SIZE);	/* allocate return string */
 if(returnval->val.s == NULL) {
-	returnval->systemerrornumber=errno;
-	returnval->returnvalue=-1;
+	returnval->returnvalue=-errno;
 	return;
 }
 
@@ -42,16 +41,14 @@ fgets(returnval->val.s,1,stdin);
 void xlib_input(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 char *x=NULL;
 
-*x='A';
-
 returnval->val.s=calloc(1,MAX_SIZE);	/* allocate return string */
 if(returnval->val.s == NULL) {
-	returnval->systemerrornumber=errno;
-	returnval->returnvalue=-1;
+	returnval->returnvalue=-errno;
 	return;
 }
 
 fgets(returnval->val.s,MAX_SIZE,stdin);	/* read line */
+
 RemoveNewline(returnval->val.s);		/* remove newline */
 }
 

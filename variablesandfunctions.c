@@ -51,6 +51,7 @@ vars_t *findvar;
 int callpos=0;
 GLOBALCONST *GlobalConstants=NULL;
 GLOBALCONST *GlobalConstantsEnd=NULL;
+GLOBALCONST *findconst=NULL;
 
 /*
  * Intialize main function
@@ -101,61 +102,24 @@ newfunc.next=NULL;
 
 PushFunctionCallInformation(&newfunc);
 
-DeclareBuiltInVariables(progname,args);			/* declare built-in variables */
+DeclareBuiltInVariables();			/* declare built-in variables */
 }
 
 /*
  * Declare built-in variables
  * 
- * In: args	command-line arguments
+ * In: Nothing
  * 
  * Returns: Nothing
  * 
  */
-void DeclareBuiltInVariables(char *progname,char *args) {
-varval cmdargs;
-
-cmdargs.s=calloc(1,MAX_SIZE);
-if(cmdargs.s == NULL) {
-	SetLastError(NO_MEM);
-	return(-1);
-}
-
+void DeclareBuiltInVariables(void) {
 /* add built-in variables */
-
-cmdargs.i=0;
 
 CreateVariable("ERR","INTEGER",1,1);			/* error number */
 CreateVariable("ERRL","INTEGER",1,1);			/* error line */
 CreateVariable("ERRFUNC","STRING",1,1);			/* error function */
 CreateVariable("ERRFILE","STRING",1,1);			/* error file */
-
-if(progname != NULL) {
-	CreateVariable("PROGRAMNAME","STRING",1,1);		/* script name */
-
-	strncpy(cmdargs.s,progname,MAX_SIZE);
-	UpdateVariable("PROGRAMNAME","",&cmdargs,0,0,0,0);
-}
-
-
-/* Command-line arguments, if any */
-
-if(args != NULL) {
-	CreateVariable("COMMAND","STRING",1,1);
-
-	strncpy(cmdargs.s,args,MAX_SIZE);
-	UpdateVariable("COMMAND","",&cmdargs,0,0,0,0);
-}
-
-/* XScript version */
-if(CreateVariable("VERSION","DOUBLE",1,1) == -1) return(-1);
-
-cmdargs.d=(double) XSCRIPT_VERSION_MAJOR + ((double) XSCRIPT_VERSION_MINOR/100) + ((double) XSCRIPT_VERSION_REVISION/1000);
-UpdateVariable("VERSION","",&cmdargs,0,0,0,0);
-
-GetVariablePointer("VERSION")->IsConstant=TRUE;		/* set variable as constant */
-
-free(cmdargs.s);
 }
 
 /*
@@ -310,7 +274,7 @@ bool IsGlobalConstant(char *name) {
 GLOBALCONST *next=GlobalConstants;
 
 while(next != NULL) {
-	if(strncmp(next->name,name,MAX_SIZE) == 0) return(TRUE);
+	if(strcmpi(next->name,name) == 0) return(TRUE);
 
 	next=next->next;
 }
@@ -331,7 +295,7 @@ int GetGlobalConstantValue(char *name,varval *val) {
 GLOBALCONST *next=GlobalConstants;
 
 while(next != NULL) {
-	if(strncmp(next->name,name,MAX_SIZE) == 0) {
+	if(strcmpi(next->name,name) == 0) {
 		memcpy(val,&next->val,sizeof(varval));
 
 		return(0);
@@ -357,7 +321,7 @@ int GetGlobalConstantValueType(char *name) {
 GLOBALCONST *next=GlobalConstants;
 
 while(next != NULL) {
-	if(strncmp(next->name,name,MAX_SIZE) == 0) return(next->val.type);
+	if(strcmpi(next->name,name) == 0) return(next->val.type);
 
 	next=next->next;
 }
@@ -417,6 +381,44 @@ GlobalConstantsEnd->next=NULL;
 
 SetLastError(NO_ERROR);
 return(0);
+}
+
+/*
+ *  Find first global constant
+ * 
+ *  In: var	Buffer to hold global constant information
+ * 
+ *  Returns: 0 on success, -1 on failure
+ * 
+ */
+int FindFirstGlobalConstant(GLOBALCONST *gconst) {
+if(GlobalConstants == NULL) {
+	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+	return(-1);
+}
+
+memcpy(gconst,GlobalConstants,sizeof(GLOBALCONST));
+
+findconst=GlobalConstants->next;
+}
+
+/*
+ *  Find next global constant for current function
+ * 
+ *  In: var	Buffer to hold global constant information
+ * 
+ *  Returns: 0 on success, -1 on failure
+ * 
+ */
+int FindNextGlobalConstant(GLOBALCONST *gconst) {
+if(findconst == NULL) {
+	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
+	return(-1);
+}
+
+memcpy(gconst,findconst,sizeof(GLOBALCONST));
+
+findconst=findconst->next;
 }
 
 /*
@@ -774,16 +776,10 @@ if(IsGlobalConstant(name)) {		/* is global constant */
 	return(GetGlobalConstantValueType(name));
 }
 
-if(currentfunction == NULL) {
+next=GetVariablePointer(name);		/* get variable entry */
+if(next == NULL) {
+	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
 	return(-1);
-}
-else
-{
-	next=GetVariablePointer(name);		/* get variable entry */
-	if(next == NULL) {
-		SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
-		return(-1);
-	}
 }	
 
 return(next->type_int);		/* return variable type */
@@ -1428,9 +1424,7 @@ currentfunction=FunctionCallStackTop;			/* point to function */
 currentfunction->initialparameters=NULL;
 currentfunction->saveinformation_top=NULL;
 currentfunction->vars=NULL;
-DeclareBuiltInVariables(NULL,NULL);			/* declare built-in variables */
-
-printf("CallFunction() currentfunction->name=%s\n",currentfunction->name);
+DeclareBuiltInVariables();			/* declare built-in variables */
 
 parameters=next->parameters;
 
@@ -1744,7 +1738,7 @@ for(count=start;count < end;count++) {
 		  	get_return_value(&subst_returnvalue);
 
 		  	if(subst_returnvalue.type == VAR_STRING) {		/* returning string */
-				sprintf(temp[outcount++],"%s",retval.val.s);
+				StripQuotesFromString(retval.val.s,temp[outcount++]);
 		  	}
 		  	else if(subst_returnvalue.type == VAR_INTEGER) {		/* returning integer */
 				sprintf(temp[outcount++],"%d",retval.val.i);
@@ -1873,10 +1867,10 @@ for(count=start;count < end;count++) {
 	else if(IsGlobalConstant(tokens[count])) {
 		GetVariableValue(tokens[count],NULL,0,0,&val,0,0);
 
-		if(type == VAR_STRING) {
+		if(val.type == VAR_STRING) {
 			strncpy(temp[outcount++],val.s,MAX_SIZE);
 		}
-		else if(type == VAR_NUMBER) {
+		else if(val.type == VAR_NUMBER) {
 			sprintf(temp[outcount++],"%.6g",val.d);
 		}
 	}
@@ -1897,8 +1891,6 @@ memset(out,0,MAX_SIZE*MAX_SIZE);
 for(count=0;count < outcount;count++) {
 	strncpy(out[count],temp[count],MAX_SIZE);
 }
-
-//printf("return outcount=%d\n",outcount);
 
 return(outcount);
 }
@@ -1929,7 +1921,6 @@ for(count=start;count < end;count++) {
 val->type=VAR_STRING;
 
 val->s=calloc(1,size+2);			/* allocate output buffer for string and quote characters */
-
 if(val->s == NULL) {
 	SetLastError(NO_MEM);
 	return(-1);

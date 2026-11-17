@@ -594,3 +594,30 @@ SetLastError(NO_ERROR);
 return(0);
 }
 
+void stop(void) {
+printf("Program stopped. Type continue to resume\n");
+
+ClearIsRunningFlag();
+}
+
+int globals_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+GLOBALCONST globalconst;
+
+FindFirstGlobalConstant(&globalconst);
+	
+do {
+	printf("%s=",globalconst.name);
+
+	if(globalconst.val.type == VAR_STRING) {
+		printf("%s\n",globalconst.val.s);
+	}
+	else
+	{
+		printf("%.6g\n",globalconst.val.d);
+	}
+} while(FindNextGlobalConstant(&globalconst) != -1);
+
+SetLastError(0);	
+return(0);
+}
+

@@ -39,6 +39,7 @@ int load_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int run_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int clear_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 int backtrace_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
+int globals_command(int tc,char *tokens[MAX_SIZE][MAX_SIZE]);
 char *ReadLineFromBuffer(char *buf,char *linebuf,int size);
 int strcmpi(char *source,char *dest);
 char *GetCurrentBufferAddress(void);

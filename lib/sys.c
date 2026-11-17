@@ -36,12 +36,12 @@ if(returnvalue == 0) {		/* child process */
 	returnval->val.i=execlp(params[0].val->s,params[1].val->s);	/* execute process */
 
 	if(returnval->val.i == -1) {
-		returnval->systemerrornumber=errno;
+		returnval->systemerrornumber=-errno;
 		return;
 	}
 }
 else if(returnvalue == -1) {		/* child process */
-		returnval->systemerrornumber=errno;
+		returnval->systemerrornumber=-errno;
 		return;
 }
 
@@ -52,7 +52,7 @@ return(0);
 
 void xlib_exit(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 exit(params[0].val->i);
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 
 return;
 }
@@ -62,7 +62,7 @@ return;
 void xlib_sleep(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=sleep(params[0].val->i);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -71,7 +71,7 @@ return;
 void xlib_dup(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=dup(params[0].val->i);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -87,14 +87,14 @@ returnval->val.i=dup2(params[0].val->i,params[1].val->i);
 void xlib_chdir(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=chdir(params[0].val->s);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
 void xlib_getpid(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=getpid();
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -103,7 +103,7 @@ return;
 void xlib_getenv(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.s=getenv(params[0].val->s);
 
-if(returnval->val.s == NULL) returnval->systemerrornumber=errno;
+if(returnval->val.s == NULL) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -112,7 +112,7 @@ return;
 void xlib_wait(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=wait(params[0].val->i);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -122,7 +122,7 @@ return;
 void xlib_kill(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=kill(params[0].val->i,params[1].val->i);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 

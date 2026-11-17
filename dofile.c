@@ -142,29 +142,18 @@ int returnvalue;
 varval progname;
 MODULES ModuleEntry;
 
-progname.s=calloc(1,strlen(filename)+1);
-if(progname.s == NULL) {
-	SetLastError(NO_MEM);
-	return(-1);
-}
-
 if(filename != NULL) {
 	if(LoadFile(filename) == -1) {
 		SetLastError(FILE_NOT_FOUND);
 		return(-1);
 	}
 
-	strncpy(progname.s,filename,strlen(filename)+1);				/* update program name */
-
-	CreateVariable("PROGRAMNAME","STRING",1,1);
-	UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
-
 	SetCurrentFileBufferPosition(FileBuffer);
 	SetCurrentBufferPosition(FileBuffer);
 	SetIsFileLoadedFlag();
 }
 
-InitializeMainFunction(filename,args);
+InitializeMainFunction();
 
 SetIsRunningFlag();
 SwitchToFileBuffer();			/* switch to file buffer */
@@ -184,16 +173,12 @@ do {
 	if(GetIsRunningFlag() == FALSE) {
 		CurrentBufferPosition=saveCurrentBufferPosition;
 
-		free(progname.s);
-
 		SetLastError(NO_ERROR);	/* program ended */
 		return(0);
 	}
 
 	if(ExecuteLine(linebuf) == -1) {			/* run statement */
 		ClearIsRunningFlag();
-
-		free(progname.s);
 		return(-1);
 	}
 
@@ -204,11 +189,6 @@ do {
 }    while((char) *CurrentBufferPosition != 0); 			/* until end */
 
 CurrentBufferPosition=saveCurrentBufferPosition;
-
-strcpy(progname.s,"");				/* update program name */
-UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
-
-free(progname.s);
 
 SetLastError(NO_ERROR);
 return(0);
@@ -598,7 +578,7 @@ for(count=1;count < tc;count++) {
 	if(strcmp(tokens[endtoken],";") == 0) printf(" ");	/* print space if semicolon seperator */
 }
 
-if(strcmp(tokens[tc],";") != 0) printf("\n");
+if(strcmp(tokens[tc-1],";") != 0) printf("\n");
 
 SetLastError(0);
 return(0);
@@ -1483,13 +1463,13 @@ int stop_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 
 /* If in interactive mode, return to command prompt, otherwise exit interpreter */
 
-if(GetInteractiveModeFlag() == TRUE) {
+if(GetInteractiveModeFlag() == FALSE) {
 	SetLastError(NOT_IN_INTERACTIVE_MODE);
 	return(-1);
 }
 
-ClearIsRunningFlag();
-return(-1);
+stop();				/* halt the interpreter */
+return(0);
 }
 
 /*
@@ -1736,8 +1716,9 @@ return(0);
  *
  */
 
-int define_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
 varval val;
+int define_statement(int tc,char *tokens[MAX_SIZE][MAX_SIZE]) {
+char *substtokens[MAX_SIZE][MAX_SIZE];
 
 if(IsGlobalConstant(tokens[1])) {		/* already defined */
 	SetLastError(VARIABLE_OR_FUNCTION_DOES_NOT_EXIST);
@@ -1746,14 +1727,17 @@ if(IsGlobalConstant(tokens[1])) {		/* already defined */
 
 if(IsString(tokens[2])) {
 	val.type=VAR_STRING;
-	
-	val.s=calloc(1,strlen(tokens[2]));		/* allocate string */
-	strncpy(val.s,tokens[2],MAX_SIZE);
+
+	ConatecateStrings(2,tc,tokens,&val);
+
+	printf("define_statement() val.s=%s\n",val.s);
 }
 else
 {
 	val.type=DEFAULT_TYPE_INT;
-	val.d=atof(tokens[2]);
+
+	SubstituteVariables(2,tc,tokens,substtokens);
+	val.d=EvaluateExpression(substtokens,0,tc);
 }
 
 return(DefineGlobalConstant(tokens[1],&val));

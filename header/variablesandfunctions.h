@@ -181,8 +181,8 @@ int PopSaveInformation(void);
 int GetVariableXSize(char *name);
 int GetVariableYSize(char *name);
 int IsFunction(char *name);
-int InitializeMainFunction(char *progname,char *args);
-void DeclareBuiltInVariables(char *progname,char *args);
+int InitializeMainFunction();
+void DeclareBuiltInVariables();
 void FreeFunctionsAndVariables(void);
 void FreeVariablesList(vars_t *vars);
 int IsNumber(char *str);
@@ -198,4 +198,6 @@ bool IsGlobalConstant(char *name);
 int GetGlobalConstantValue(char *name,varval *val);
 int GetGlobalConstantValueType(char *name);
 int DefineGlobalConstant(char *name,varval *val);
+int FindFirstGlobalConstant(GLOBALCONST *gconst);
+int FindNextGlobalConstant(GLOBALCONST *gconst);
 

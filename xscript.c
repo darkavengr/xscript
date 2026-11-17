@@ -56,17 +56,14 @@ bool IsPaused=FALSE;
 
 int main(int argc, char **argv) {
 int count;
-char *args=NULL;
-char *filename=NULL;
-char *dptr;
-char *aptr;
-varval cmdargs;
+varval cmd;
+varval args;
+varval version;
 int returnvalue;
 struct sigaction signalaction;
 struct sigaction oldsignalaction;
 sigset_t sigset;
-char *fullpath[MAX_SIZE];
-char *cwd[MAX_SIZE];
+char *temp[MAX_SIZE];
 struct rlimit new_rlimit;
 
 /* set stack size */
@@ -83,53 +80,81 @@ if(setrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
 	exit(1);
 }
 
-if(getrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
-	perror("xscript:");
-	exit(1);
-}
-
 InitalizeModules();		/* initialize modules */
 
-/* get script's absolute path */
+/****
+ Set global constants
+*/
 
-memset(fullpath,0,MAX_SIZE);
+cmd.s=calloc(1,MAX_SIZE);		/* allocate args buffer */
+if(cmd.s == NULL) {
+	PrintError(NO_MEM);
+	return(-1);
+}
+
+args.s=calloc(1,MAX_SIZE);		/* allocate args buffer */
+if(args.s == NULL) {
+	PrintError(NO_MEM);
+	return(-1);
+}
+
+cmd.type=VAR_STRING;
+args.type=VAR_STRING;	/* set type */
+
+/* PROGRAMNAME */
 
 if(argc > 1) {
 	if(*argv[1] != '/') {			/* if it's a relative path */
-		snprintf(fullpath,MAX_SIZE,"%s/%s",getcwd(cwd,MAX_SIZE),argv[1]);	/* prepend current directory to relative path */
+		snprintf(cmd.s,MAX_SIZE,"\"%s/%s\"",getcwd(temp,MAX_SIZE),argv[1]);	/* prepend current directory to relative path */
 	}
 	else
 	{
-		strncpy(fullpath,argv[1],MAX_SIZE);	/* if is absolute path then just copy it */
+		snprintf(cmd.s,MAX_SIZE,"\"%s\"",argv[1]);	/* if is absolute path then just copy it */
 	}
 }
 
-/* get arguments */
+if(DefineGlobalConstant("PROGRAMNAME",&cmd) == -1) {		/* define global constant program name */
+	PrintError(GetLastError());
+
+	exit(GetLastError());
+}
+
+StripQuotesFromString(cmd.s,temp);		/* remove quotes from filename */
+
+/* COMMAND */
 
 if(argc >= 3) {
-	args=calloc(1,MAX_SIZE);		/* allocate args buffer */
-	if(args == NULL) {
-		PrintError(NO_MEM);
-		return(-1);
-	}
-
 	for(count=2;count < argc;count++) {
-		strncat(args,argv[count],MAX_SIZE);
+		strncat(args.s,argv[count],MAX_SIZE);
 
-		if(count < argc-1) strncat(args," ",MAX_SIZE);
+		if(count < argc-1) strncat(args.s," ",MAX_SIZE);
 	}
 }
 
+if(DefineGlobalConstant("COMMAND",&args) == -1) {		/* define global constant command */
+	PrintError(GetLastError());
+	exit(GetLastError());
+}
+
+/* VERSION */
+
+version.type=VAR_NUMBER;		/* set type */
+version.d=(double) XSCRIPT_VERSION_MAJOR + ((double) XSCRIPT_VERSION_MINOR/100) + ((double) XSCRIPT_VERSION_REVISION/1000);
+
+if(DefineGlobalConstant("VERSION",&version) == -1) {		/* define global constant version */
+	PrintError(GetLastError());
+	exit(GetLastError());
+}
+
+/* set signal handler */
 signalaction.sa_sigaction=&signalhandler;
 signalaction.sa_flags=SA_NODEFER;
 signalaction.sa_mask=sigset;
 
-if(sigaction(SIGINT,&signalaction,&oldsignalaction) == -1) {		/* set signal handler */
+if(sigaction(SIGINT,&signalaction,&oldsignalaction) == -1) {
 	perror("xscript:");
 	exit(1);
 }
-
-/* intialize command-line arguments */
 
 if(argc == 1) {					/* no arguments */ 
 	InteractiveMode();			/* run interpreter in interactive mode */
@@ -138,16 +163,19 @@ else
 {
 	ClearInteractiveModeFlag();
 
-	if(ExecuteFile(fullpath,args) == -1) {	/* execute file */
+	if(ExecuteFile(temp,args.s) == -1) {	/* execute file */
 		PrintError(GetLastError());
 
-		free(args);
+		free(cmd.s);
+		free(args.s);
+
 		cleanup();		/* deallocate lists */
 		exit(returnvalue);
 	}
-
-	free(args);
 }
+
+free(cmd.s);
+free(args.s);
 
 cleanup();			/* deallocate lists */
 exit(0);
@@ -167,9 +195,7 @@ if(sig == SIGINT) {			/* ctrl-c */
 
 	if(GetInteractiveModeFlag() == TRUE) {		/* if in interactive mode */
 		if(GetIsRunningFlag() == TRUE) {		/* is running */
-			printf("Program stopped. Type continue to resume\n");
-
-			ClearIsRunningFlag();
+			stop();
 			return;
 	   	}
 	   	else

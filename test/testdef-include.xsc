@@ -1,3 +1,13 @@
 import math
-print pi
+import string
+import console
+
+declare radius as integer
+
+print "Enter radius:";
+radius=val(input())
+
+print "The area of the circle is ",pi*radius*radius
+
+
 

@@ -53,7 +53,7 @@ return(0);
 void xlib_open(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=open(params[0].val->s,params[1].val->i);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -62,7 +62,7 @@ return;
 void xlib_close(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=close(params[0].val->i);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 
 }
@@ -74,7 +74,7 @@ return;
 void xlib_read(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=read(params[0].val->i,params[1].val->s,params[2].val->i);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -85,17 +85,17 @@ return;
 void xlib_write(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=write(params[0].val->i,params[1].val->s,params[2].val->i);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
 //params[0]=handle (integer)
 //params[1]=position (integer)
-//params[2]=whence (integer);
+//params[2]=whence (integer)
 
 void xlib_seek(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=lseek(params[0].val->i,params[1].val->i,params[2].val->i);
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 
 }
@@ -104,7 +104,7 @@ return;
 
 void xlib_mkdir(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=mkdir(params[0].val->s,params[1].val->i);
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 
 }
@@ -113,7 +113,7 @@ return;
 
 void xlib_rmdir(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=rmdir(params[0].val->s);
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -124,7 +124,7 @@ return;
 void xlib_unlink(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=unlink(params[0].val->s);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 
 }
@@ -195,7 +195,7 @@ return(0);
 void xlib_findfirst(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=find(NULL,params[1].val->s,params[2].udt);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 
@@ -206,7 +206,7 @@ return;
 void xlib_findnext(int paramcount,vars_t *params,libraryreturnvalue *returnval) {
 returnval->val.i=find(params[0].val->a,params[1].val->s,params[2].udt);
 
-if(returnval->val.i == -1) returnval->systemerrornumber=errno;
+if(returnval->val.i == -1) returnval->systemerrornumber=-errno;
 return;
 }
 

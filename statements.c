@@ -89,6 +89,7 @@ statement statements[] = {
 	     { "HELP",NULL,&help_command,FALSE},\
 	     { "BACKTRACE",NULL,&backtrace_command,FALSE},\
 	     { "S",NULL,&singlestep_command,FALSE},\
+	     { "GLOBALS",NULL,&globals_command,FALSE},\
 	     { NULL,NULL,NULL } };
 
 /*
