@@ -102,7 +102,9 @@ newfunc.next=NULL;
 
 PushFunctionCallInformation(&newfunc);
 
-DeclareBuiltInVariables();			/* declare built-in variables */
+printf("InitializeMainFunction() args=%s\n",args);
+
+DeclareBuiltInVariables(progname,args);			/* declare built-in variables */
 }
 
 /*
@@ -113,13 +115,45 @@ DeclareBuiltInVariables();			/* declare built-in variables */
  * Returns: Nothing
  * 
  */
-void DeclareBuiltInVariables(void) {
+
+void DeclareBuiltInVariables(char *progname,char *args) {
+varval cmdargs;
+
+cmdargs.s=calloc(1,MAX_SIZE);
+if(cmdargs.s == NULL) {
+	SetLastError(NO_MEM);
+	return(-1);
+}
+
 /* add built-in variables */
+
+cmdargs.i=0;
 
 CreateVariable("ERR","INTEGER",1,1);			/* error number */
 CreateVariable("ERRL","INTEGER",1,1);			/* error line */
 CreateVariable("ERRFUNC","STRING",1,1);			/* error function */
 CreateVariable("ERRFILE","STRING",1,1);			/* error file */
+
+if(progname != NULL) {
+	CreateVariable("PROGRAMNAME","STRING",1,1);		/* script name */
+
+	strncpy(cmdargs.s,progname,MAX_SIZE);
+	UpdateVariable("PROGRAMNAME","",&cmdargs,0,0,0,0);
+}
+
+
+/* Command-line arguments, if any */
+
+CreateVariable("COMMAND","STRING",1,1);
+
+printf("args=%s\n",args);
+
+memset(cmdargs.s,0,MAX_SIZE);
+
+if(args != NULL) strncpy(cmdargs.s,args,MAX_SIZE);
+UpdateVariable("COMMAND","",&cmdargs,0,0,0,0);
+
+free(cmdargs.s);
 }
 
 /*
@@ -1424,7 +1458,8 @@ currentfunction=FunctionCallStackTop;			/* point to function */
 currentfunction->initialparameters=NULL;
 currentfunction->saveinformation_top=NULL;
 currentfunction->vars=NULL;
-DeclareBuiltInVariables();			/* declare built-in variables */
+
+DeclareBuiltInVariables(NULL,NULL);			/* declare built-in variables */
 
 parameters=next->parameters;
 

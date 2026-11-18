@@ -56,14 +56,17 @@ bool IsPaused=FALSE;
 
 int main(int argc, char **argv) {
 int count;
-varval cmd;
-varval args;
+char *args=NULL;
+char *filename=NULL;
+char *dptr;
+char *aptr;
 varval version;
 int returnvalue;
 struct sigaction signalaction;
 struct sigaction oldsignalaction;
 sigset_t sigset;
-char *temp[MAX_SIZE];
+char *fullpath[MAX_SIZE];
+char *cwd[MAX_SIZE];
 struct rlimit new_rlimit;
 
 /* set stack size */
@@ -80,60 +83,41 @@ if(setrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
 	exit(1);
 }
 
+if(getrlimit(RLIMIT_STACK,&new_rlimit) == -1) {
+	perror("xscript:");
+	exit(1);
+}
+
 InitalizeModules();		/* initialize modules */
 
-/****
- Set global constants
-*/
+/* get script's absolute path */
 
-cmd.s=calloc(1,MAX_SIZE);		/* allocate args buffer */
-if(cmd.s == NULL) {
-	PrintError(NO_MEM);
-	return(-1);
-}
-
-args.s=calloc(1,MAX_SIZE);		/* allocate args buffer */
-if(args.s == NULL) {
-	PrintError(NO_MEM);
-	return(-1);
-}
-
-cmd.type=VAR_STRING;
-args.type=VAR_STRING;	/* set type */
-
-/* PROGRAMNAME */
+memset(fullpath,0,MAX_SIZE);
 
 if(argc > 1) {
 	if(*argv[1] != '/') {			/* if it's a relative path */
-		snprintf(cmd.s,MAX_SIZE,"\"%s/%s\"",getcwd(temp,MAX_SIZE),argv[1]);	/* prepend current directory to relative path */
+		snprintf(fullpath,MAX_SIZE,"%s/%s",getcwd(cwd,MAX_SIZE),argv[1]);	/* prepend current directory to relative path */
 	}
 	else
 	{
-		snprintf(cmd.s,MAX_SIZE,"\"%s\"",argv[1]);	/* if is absolute path then just copy it */
+		strncpy(fullpath,argv[1],MAX_SIZE);	/* if is absolute path then just copy it */
 	}
 }
 
-if(DefineGlobalConstant("PROGRAMNAME",&cmd) == -1) {		/* define global constant program name */
-	PrintError(GetLastError());
-
-	exit(GetLastError());
-}
-
-StripQuotesFromString(cmd.s,temp);		/* remove quotes from filename */
-
-/* COMMAND */
+/* get arguments */
 
 if(argc >= 3) {
-	for(count=2;count < argc;count++) {
-		strncat(args.s,argv[count],MAX_SIZE);
-
-		if(count < argc-1) strncat(args.s," ",MAX_SIZE);
+	args=calloc(1,MAX_SIZE);		/* allocate args buffer */
+	if(args == NULL) {
+		PrintError(NO_MEM);
+		return(-1);
 	}
-}
 
-if(DefineGlobalConstant("COMMAND",&args) == -1) {		/* define global constant command */
-	PrintError(GetLastError());
-	exit(GetLastError());
+	for(count=2;count < argc;count++) {
+		strncat(args,argv[count],MAX_SIZE);
+
+		if(count < argc-1) strncat(args," ",MAX_SIZE);
+	}
 }
 
 /* VERSION */
@@ -146,15 +130,16 @@ if(DefineGlobalConstant("VERSION",&version) == -1) {		/* define global constant 
 	exit(GetLastError());
 }
 
-/* set signal handler */
 signalaction.sa_sigaction=&signalhandler;
 signalaction.sa_flags=SA_NODEFER;
 signalaction.sa_mask=sigset;
 
-if(sigaction(SIGINT,&signalaction,&oldsignalaction) == -1) {
+if(sigaction(SIGINT,&signalaction,&oldsignalaction) == -1) {		/* set signal handler */
 	perror("xscript:");
 	exit(1);
 }
+
+/* intialize command-line arguments */
 
 if(argc == 1) {					/* no arguments */ 
 	InteractiveMode();			/* run interpreter in interactive mode */
@@ -163,19 +148,18 @@ else
 {
 	ClearInteractiveModeFlag();
 
-	if(ExecuteFile(temp,args.s) == -1) {	/* execute file */
+	printf("main() args=%s\n",args);
+
+	if(ExecuteFile(fullpath,args) == -1) {	/* execute file */
 		PrintError(GetLastError());
 
-		free(cmd.s);
-		free(args.s);
-
+		free(args);
 		cleanup();		/* deallocate lists */
 		exit(returnvalue);
 	}
-}
 
-free(cmd.s);
-free(args.s);
+	free(args);
+}
 
 cleanup();			/* deallocate lists */
 exit(0);

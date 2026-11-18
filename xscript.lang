@@ -38,11 +38,10 @@
      <keyword>BOOLEAN</keyword>
      <keyword>CATCH</keyword>
      <keyword>CBREAK</keyword>
-     <keyword>CONSTANT</keyword>
      <keyword>CONTINUE</keyword>
      <keyword>DECLARE</keyword>
+     <keyword>DEFINE</keyword>
      <keyword>DELETE</keyword>
-     <keyword>DOUBLE</keyword>
      <keyword>ELSE</keyword>
      <keyword>ELSEIF</keyword>
      <keyword>END</keyword>
@@ -54,16 +53,14 @@
      <keyword>FALSE</keyword>
      <keyword>FOR</keyword>
      <keyword>FUNCTION</keyword>
+     <keyword>GLOBALS</keyword>
      <keyword>HELP</keyword>
-     <keyword>IF</keyword>
      <keyword>IMPORT</keyword>
      <keyword>IN</keyword>
-     <keyword>INTEGER</keyword>
      <keyword>ITERATE</keyword>
      <keyword>LBREAK</keyword>
      <keyword>LIBCALL</keyword>
      <keyword>LOAD</keyword>
-     <keyword>LONG</keyword>
      <keyword>NEXT</keyword>
      <keyword>NOT</keyword>
      <keyword>OR</keyword>
@@ -75,10 +72,8 @@
      <keyword>RUN</keyword>
      <keyword>S</keyword>
      <keyword>SBREAK</keyword>
-     <keyword>SINGLE</keyword>
      <keyword>STEP</keyword>
      <keyword>STOP</keyword>
-     <keyword>STRING</keyword>
      <keyword>THEN</keyword>
      <keyword>THROW</keyword>
      <keyword>TO</keyword>
@@ -176,3 +171,4 @@
 
   </definitions>
 </language>
+

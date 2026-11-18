@@ -153,7 +153,9 @@ if(filename != NULL) {
 	SetIsFileLoadedFlag();
 }
 
-InitializeMainFunction();
+printf("ExecuteFile() args=%s\n",args);
+
+InitializeMainFunction(filename,args);	/* initialize main function */
 
 SetIsRunningFlag();
 SwitchToFileBuffer();			/* switch to file buffer */
@@ -189,6 +191,17 @@ do {
 }    while((char) *CurrentBufferPosition != 0); 			/* until end */
 
 CurrentBufferPosition=saveCurrentBufferPosition;
+
+/* update program name */
+progname.s=calloc(1,strlen(filename)+1);
+if(progname.s == NULL) {
+	SetLastError(NO_MEM);
+	return(-1);
+}
+
+UpdateVariable("PROGRAMNAME",NULL,&progname,0,0,0,0);
+
+free(progname.s);
 
 SetLastError(NO_ERROR);
 return(0);
